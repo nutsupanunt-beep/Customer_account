@@ -278,7 +278,6 @@
     function toggleMobileSidebar() {
         isMobileSidebarOpen = !isMobileSidebarOpen;
         renderApp();
-        // Focus trap or just render is enough because we re-render whole app
     }
 
     function hashPassword(password) {
@@ -716,7 +715,6 @@
       }
 
       // Responsive Sidebar Classes
-      // Added overflow-x-hidden to prevent horizontal scrollbar
       const baseClasses = "w-64 p-6 shadow-lg flex flex-col z-40 transition-transform duration-300 ease-in-out h-full overflow-x-hidden";
       const mobileClasses = `absolute top-0 left-0 bottom-0 transform ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`;
       const desktopClasses = "md:relative md:translate-x-0";
@@ -733,7 +731,6 @@
             <!-- Close Button Mobile Only -->
             <button id="close-sidebar-btn" class="md:hidden text-gray-500 hover:text-gray-700">✖</button>
           </div>
-          <!-- Added no-scrollbar class here -->
           <nav class="space-y-2 flex-1 overflow-y-auto no-scrollbar">
             ${views.map(v => {
                 if (!canAccessView(v.id)) return '';
@@ -742,7 +739,7 @@
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.2.9 (No Scrollbar)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.2.10 (Recalculate Date)</p>
           </div>
         </div>
       `;
@@ -908,6 +905,21 @@
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
         {
+            version: "V.2.10 (Recalculate Date)",
+            date: "17/01/2026",
+            changes: [
+                "เมื่อแก้ไขวันที่สัญญา ระบบจะคำนวณวันจ่ายงวดถัดไปใหม่อัตโนมัติ"
+            ]
+        },
+        {
+            version: "V.2.9 (No Scrollbar)",
+            date: "17/01/2026",
+            changes: [
+                "ซ่อน Scrollbar ของเมนูข้างในโหมดมือถือ",
+                "ป้องกันการเลื่อนแนวนอนของเมนู"
+            ]
+        },
+        {
             version: "V.2.8 (Mobile Responsive)",
             date: "17/01/2026",
             changes: [
@@ -922,49 +934,6 @@
             changes: [
                 "เพิ่มเมนูตั้งค่าการเชื่อมต่อฐานข้อมูลสำหรับ Admin",
                 "สามารถเปลี่ยน URL และ Key ของ Supabase ได้จากหน้าตั้งค่า"
-            ]
-        },
-        {
-            version: "V.2.6 (Search Filter)",
-            date: "17/01/2026",
-            changes: [
-                "เพิ่มช่องค้นหาในหน้าจัดการลูกค้า",
-                "ระบบกรองข้อมูลแบบ Real-time (ชื่อลูกค้า/สินค้า)",
-                "ปุ่มเคลียร์คำค้นหา"
-            ]
-        },
-        {
-            version: "V.2.5 (User Display)",
-            date: "17/01/2026",
-            changes: [
-                "แสดงชื่อผู้ใช้งานที่กำลังล็อกอินในแถบเมนู",
-                "ปรับตำแหน่งชื่อผู้ใช้งานให้เห็นชัดเจนขึ้น"
-            ]
-        },
-        {
-            version: "V.2.4 (Improved UX)",
-            date: "17/01/2026",
-            changes: [
-                "ปรับปรุงปุ่มลบลูกค้าให้มี Pop-up ยืนยัน",
-                "เพิ่มรายละเอียดในหน้าประวัติการทำรายการ (สินค้า, ราคา)",
-                "แก้ไขการแสดงผล Modal ให้ถูกต้อง"
-            ]
-        },
-        {
-            version: "V.2.3 (Admin)",
-            date: "17/01/2026",
-            changes: [
-                "เพิ่มเมนูจัดการผู้ใช้งานสำหรับ Admin",
-                "Admin สามารถลบบัญชีผู้ใช้ได้",
-                "Admin สามารถเปลี่ยนรหัสผ่านของบัญชีอื่นได้",
-                "แก้ไขบั๊กการบันทึกการตั้งค่า"
-            ]
-        },
-        {
-            version: "V.2.2 (Guest View)",
-            date: "17/01/2026",
-            changes: [
-                "เพิ่มโหมด Guest View เลือกดูข้อมูลตามรายชื่อบัญชี",
             ]
         }
       ];
@@ -1268,11 +1237,25 @@
       if(editForm) {
           editForm.addEventListener('submit', async (e) => {
               e.preventDefault();
+              
+              // Recalculate Next Payment Date Logic
+              const customer = allRecords.find(r => r.id === editingCustomer);
+              const newContractDate = document.getElementById('edit-contract-date').value;
+              let nextPaymentDate = customer.next_payment_date; // Default to existing
+
+              // Always recalculate based on new contract date + paid installments + 1
+              // This ensures consistency if the date is changed
+              if (customer) {
+                  const paid = customer.paid_installments || 0;
+                  nextPaymentDate = addMonthsToDate(newContractDate, paid + 1);
+              }
+
               await updateCustomer(editingCustomer, {
                   customer_name: document.getElementById('edit-customer-name').value,
                   product: document.getElementById('edit-product').value,
                   product_price: parseFloat(document.getElementById('edit-product-price').value),
-                  contract_date: document.getElementById('edit-contract-date').value
+                  contract_date: newContractDate,
+                  next_payment_date: nextPaymentDate // Include updated date
               });
           });
           document.getElementById('cancel-edit-btn').addEventListener('click', hideModal);
