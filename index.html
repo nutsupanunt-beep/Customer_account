@@ -102,7 +102,7 @@
       init: async (handler) => {
         window._dataHandler = handler;
         if (supabaseClient) {
-            await fetchAndNotify(); // Fixed: Await here
+            await fetchAndNotify(); 
             supabaseClient.channel('public:app_records')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'app_records' }, () => {
                     fetchAndNotify();
@@ -118,7 +118,7 @@
         try {
           const { error } = await supabaseClient.from('app_records').insert({ id: record.id, type: record.type, data: record });
           if (error) throw error;
-          await fetchAndNotify(); // Fixed: Await here to prevent state bounce
+          await fetchAndNotify(); 
           return { isOk: true };
         } catch (e) {
           if (e.code === '42P01') showSetupModal();
@@ -130,7 +130,7 @@
         try {
           const { error } = await supabaseClient.from('app_records').update({ data: record, type: record.type }).eq('id', record.id);
           if (error) throw error;
-          await fetchAndNotify(); // Fixed: Await here to prevent state bounce
+          await fetchAndNotify();
           return { isOk: true };
         } catch (e) { return { isOk: false, error: { message: e.message } }; }
       },
@@ -139,7 +139,7 @@
         try {
           const { error } = await supabaseClient.from('app_records').delete().eq('id', record.id);
           if (error) throw error;
-          await fetchAndNotify(); // Fixed: Await here to prevent state bounce
+          await fetchAndNotify();
           return { isOk: true };
         } catch (e) { return { isOk: false, error: { message: e.message } }; }
       }
@@ -313,10 +313,25 @@
           payment_days_before: 5, 
           guest_permissions: currentUser.isAdmin ? 'add,manage,history,settings,edit,changelog' : 'manage,history,changelog',
           login_logo_size: 250, 
-          sidebar_logo_size: 60
+          sidebar_logo_size: 60,
+          theme_mode: 'default',
+          custom_colors: {
+              hover_text: '#FFD700',
+              sidebar_bg: '#1F2937',
+              main_bg: '#F3F4F6',
+              card_bg: '#FFFFFF',
+              text_color: '#111827'
+          }
       };
 
-      if (currentUser.isGuestView) return { ...defaultSettings, guest_permissions: 'manage' };
+      if (currentUser.isGuestView) {
+        // Guest uses admin's theme settings if available
+        const adminSettings = getGlobalGuestSettings();
+        if (adminSettings) {
+             return { ...defaultSettings, ...adminSettings, guest_permissions: 'manage' }; // Enforce permission but inherit theme
+        }
+        return { ...defaultSettings, guest_permissions: 'manage' };
+      }
       
       const userSettings = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.id);
       return { ...defaultSettings, ...userSettings }; 
@@ -325,11 +340,6 @@
     function getGlobalGuestSettings() {
         const adminSettings = allRecords.find(r => r.type === 'settings' && r.account_id === 'super_admin');
         if (adminSettings) return adminSettings;
-        const settingsRecords = allRecords.filter(r => r.type === 'settings');
-        if (settingsRecords.length > 0) {
-            settingsRecords.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
-            return settingsRecords[0];
-        }
         return null;
     }
 
@@ -344,7 +354,7 @@
         return { login: 250, sidebar: 60 };
     }
 
-    async function saveSettings(isDarkMode, paymentDaysBefore, guestPermissions, loginLogoSize, sidebarLogoSize) {
+    async function saveSettings(isDarkMode, paymentDaysBefore, guestPermissions, loginLogoSize, sidebarLogoSize, themeMode, customColors) {
       if (!currentUser || currentUser.isGuestView) return;
       const existing = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.id);
       const updatedData = { 
@@ -353,12 +363,13 @@
           guest_permissions: guestPermissions,
           login_logo_size: loginLogoSize,
           sidebar_logo_size: sidebarLogoSize,
+          theme_mode: themeMode,
+          custom_colors: customColors,
           updated_at: new Date().toISOString() 
       };
       if (existing) { await window.dataSdk.update({ ...existing, ...updatedData }); } 
       else { await window.dataSdk.create({ type: 'settings', id: 'settings_' + Date.now(), account_id: currentUser.id, created_at: new Date().toISOString(), ...updatedData }); }
       
-      // Removed immediate renderApp to allow data fetch to complete and trigger update naturally
       showToast('บันทึกการตั้งค่าสำเร็จ');
     }
 
@@ -541,33 +552,58 @@
     function renderApp() {
       const app = document.getElementById('app');
       const config = window.elementSdk?.config || defaultConfig;
+      const settings = getUserSettings();
       
-      // Force light mode on login page (when currentUser is null)
+      // Theme Application
       let dark = isDarkMode();
-      if (!currentUser) {
-          dark = false;
-      }
+      if (!currentUser) dark = false;
       
       if (dark) document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');
 
-      const bgColor = dark ? '#111827' : config.background_color;
-      const surfaceColor = dark ? '#1f2937' : config.surface_color;
-      const textColor = dark ? '#f9fafb' : config.text_color;
-      const primaryColor = config.primary_color;
-      const secondaryColor = dark ? '#374151' : '#e5e7eb';
+      let bgColor = dark ? '#111827' : config.background_color;
+      let surfaceColor = dark ? '#1f2937' : config.surface_color;
+      let textColor = dark ? '#f9fafb' : config.text_color;
+      let sidebarBg = surfaceColor; // Default sidebar matches surface
+      let hoverText = config.primary_color; // Default hover
+      
+      // Custom Theme Logic
+      if (settings.theme_mode === 'custom' && settings.custom_colors) {
+          const c = settings.custom_colors;
+          if(c.main_bg) bgColor = c.main_bg;
+          if(c.card_bg) surfaceColor = c.card_bg;
+          if(c.text_color) textColor = c.text_color;
+          if(c.sidebar_bg) sidebarBg = c.sidebar_bg;
+          if(c.hover_text) hoverText = c.hover_text;
+      }
+      
+      // Inject Dynamic CSS for Custom Colors
+      const styleId = 'dynamic-theme-style';
+      let styleTag = document.getElementById(styleId);
+      if (!styleTag) {
+          styleTag = document.createElement('style');
+          styleTag.id = styleId;
+          document.head.appendChild(styleTag);
+      }
+      styleTag.innerHTML = `
+        .custom-sidebar { background-color: ${sidebarBg} !important; }
+        .custom-surface { background-color: ${surfaceColor} !important; }
+        .custom-text { color: ${textColor} !important; }
+        .sidebar-item:hover { color: ${hoverText} !important; }
+        .sidebar-item.active-view { color: white !important; background-color: ${config.primary_color} !important; }
+      `;
 
       app.style.background = bgColor;
       app.style.color = textColor;
-      app.className = 'h-full w-full flex flex-col overflow-hidden';
+      app.className = 'h-full w-full flex flex-col overflow-hidden custom-text';
 
       if (!currentUser) {
-        app.innerHTML = renderLoginPage(config, dark, surfaceColor, textColor, primaryColor);
+        app.innerHTML = renderLoginPage(config, dark, surfaceColor, textColor, config.primary_color);
       } else {
         const hideScrollbar = ['add', 'settings'].includes(currentView) ? 'no-scrollbar' : '';
         app.innerHTML = `
           <!-- Mobile Header -->
-          <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0" style="background: ${surfaceColor}; color: ${textColor};">
+          <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface" style="color: ${textColor};">
             <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -581,9 +617,9 @@
 
           <div class="flex flex-1 h-full overflow-hidden relative">
             ${isMobileSidebarOpen ? `<div id="sidebar-overlay" class="absolute inset-0 bg-black bg-opacity-50 z-30 md:hidden fade-in"></div>` : ''}
-            ${renderSidebar(config, dark, surfaceColor, textColor, primaryColor)}
+            ${renderSidebar(config, dark, sidebarBg, textColor, config.primary_color)}
             <div class="flex-1 overflow-auto ${hideScrollbar} w-full relative z-0">
-              ${renderContent(config, dark, surfaceColor, textColor, primaryColor, secondaryColor)}
+              ${renderContent(config, dark, surfaceColor, textColor, config.primary_color, dark ? '#374151' : '#e5e7eb')}
             </div>
           </div>
         `;
@@ -592,7 +628,6 @@
     }
 
     function renderLoginPage(config, dark, surfaceColor, textColor, primaryColor) {
-      // Get global settings for logo size
       const globalSettings = getGlobalLogoSettings();
       const logoSize = globalSettings.login || 250;
 
@@ -600,7 +635,6 @@
         <div class="flex items-center justify-center min-h-full p-4 w-full" style="background: ${dark ? '#111827' : config.background_color};">
           <div class="w-full max-w-md p-8 rounded-xl shadow-lg" style="background: ${surfaceColor};">
             <div class="flex flex-col items-center mb-6">
-                <!-- Configurable Logo Size -->
                 <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: ${logoSize}px; height: ${logoSize}px;" class="mb-4 object-contain">
             </div>
             <div id="login-form" class="space-y-4">
@@ -611,7 +645,7 @@
               <button id="show-reset-btn" class="w-full py-2 text-sm font-medium" style="color: ${primaryColor};">ลืมรหัสผ่าน?</button>
               <button id="guest-continue-btn" class="w-full py-2 text-sm font-medium underline" style="color: ${textColor}; opacity: 0.7;">เข้าดูแบบผู้เยี่ยมชม (Guest Mode)</button>
             </div>
-            <!-- Other forms hidden by default -->
+            <!-- ... (Other login forms kept same for brevity, but structure maintained) ... -->
             <div id="guest-select-form" class="space-y-4 hidden">
                 <div class="text-center mb-4"><h3 class="text-lg font-bold" style="color: ${textColor};">เลือกบัญชีที่ต้องการดู</h3><p class="text-sm opacity-60" style="color: ${textColor};">เลือกผู้ใช้เพื่อดูข้อมูล (ไม่สามารถแก้ไขได้)</p></div>
                 <div id="guest-user-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
@@ -646,18 +680,16 @@
       ];
       if (currentUser && currentUser.isAdmin) views.splice(5, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
 
-      const baseClasses = "w-64 p-6 shadow-lg flex flex-col z-40 transition-transform duration-300 ease-in-out h-full overflow-x-hidden";
+      const baseClasses = "w-64 p-6 shadow-lg flex flex-col z-40 transition-transform duration-300 ease-in-out h-full overflow-x-hidden custom-sidebar";
       const mobileClasses = `absolute top-0 left-0 bottom-0 transform ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`;
       const desktopClasses = "md:relative md:translate-x-0";
-
-      // Get settings for logo
+      
       const settings = getUserSettings();
       const logoSize = settings.sidebar_logo_size || 60;
 
       return `
-        <div class="${baseClasses} ${mobileClasses} ${desktopClasses}" style="background: ${surfaceColor};">
+        <div class="${baseClasses} ${mobileClasses} ${desktopClasses}">
           <div class="mb-4 flex flex-col items-center">
-            <!-- Sidebar Logo Configurable -->
             <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: ${logoSize}px; height: ${logoSize}px;" class="mb-2 object-contain">
             <div class="flex justify-between w-full items-start absolute top-4 right-4">
                 <button id="close-sidebar-btn" class="md:hidden text-gray-500 hover:text-gray-700">✖</button>
@@ -669,17 +701,18 @@
           <nav class="space-y-2 flex-1 overflow-y-auto no-scrollbar">
             ${views.map(v => {
                 if (!canAccessView(v.id)) return '';
-                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${currentView === v.id ? 'active-view' : ''}" style="background: ${currentView === v.id ? primaryColor : 'transparent'}; color: ${currentView === v.id ? 'white' : textColor};"><span class="text-xl">${v.icon}</span>${v.label}</button>`;
+                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${currentView === v.id ? 'active-view' : ''}"><span class="text-xl">${v.icon}</span>${v.label}</button>`;
             }).join('')}
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.4.3 (Wait & Update)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.4.4 (Color Theme)</p>
           </div>
         </div>
       `;
     }
 
+    // Pass custom classes to content
     function renderContent(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       if (!canAccessView(currentView)) return `<div class="p-4 md:p-8 flex flex-col items-center justify-center h-full opacity-60"><span class="text-4xl mb-4">🔒</span><p style="color: ${textColor};" class="text-lg">คุณไม่มีสิทธิ์เข้าถึงส่วนนี้</p></div>`;
       let html = '';
@@ -694,18 +727,16 @@
       return html;
     }
 
-    // [Content Rendering Functions: renderManageUsers, renderAddCustomer, etc. remain the same as V.3.4]
-    // Repeating them for completeness in file output to ensure no reference errors.
-    
+    // Using custom-surface class for cards
     function renderManageUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       const users = allRecords.filter(r => r.type === 'user');
-      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[600px]" style="background: ${surfaceColor}; border-radius: 12px; overflow: hidden;"><thead style="background: ${dark ? '#374151' : secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">วันที่สมัคร</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};"><td class="px-4 py-3" style="color: ${textColor};">${idx + 1}</td><td class="px-4 py-3 font-medium" style="color: ${textColor};">${u.username}</td><td class="px-4 py-3" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-4 py-3 text-center"><div class="flex justify-center gap-2"><button data-reset-user="${u.id}" class="p-2 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button data-delete-user="${u.id}" class="p-2 rounded-full shadow-sm hover:shadow-md transition-all" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
+      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[600px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark ? '#374151' : secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">วันที่สมัคร</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};"><td class="px-4 py-3" style="color: ${textColor};">${idx + 1}</td><td class="px-4 py-3 font-medium" style="color: ${textColor};">${u.username}</td><td class="px-4 py-3" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-4 py-3 text-center"><div class="flex justify-center gap-2"><button data-reset-user="${u.id}" class="p-2 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button data-delete-user="${u.id}" class="p-2 rounded-full shadow-sm hover:shadow-md transition-all" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
     }
 
     function renderAddCustomer(config, dark, surfaceColor, textColor, primaryColor) {
       const draft = JSON.parse(localStorage.getItem('add_customer_draft') || '{}');
       const autocomplete = getAutocompleteData();
-      return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_add_customer}</h2><div class="p-4 md:p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><form id="add-customer-form" class="space-y-6">
+      return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_add_customer}</h2><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface"><form id="add-customer-form" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="customer-name" value="${draft.customerName || ''}" required list="list-customer-name" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-customer-name">${autocomplete.names.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
             <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="product" value="${draft.product || ''}" required list="list-product" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-product">${autocomplete.products.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
@@ -739,8 +770,8 @@
             <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
             ${manageSearchTerm ? `<button id="manage-search-clear" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 p-1">✖</button>` : ''}
         </div>
-        <div class="mb-6"><div class="p-4 md:p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="text-lg font-semibold mb-4" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3><div class="flex flex-col">${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}${summary.map(s=>`<div class="py-4 flex flex-row justify-between items-center border-b last:border-b-0" style="border-color: ${dark?'#374151':'#e5e7eb'};"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style="background: ${primaryColor}20; color: ${primaryColor};">${s.count}</div><div><p class="font-medium text-lg" style="color: ${textColor};">${s.name}</p><p class="text-xs opacity-70" style="color: ${textColor};">จำนวนสัญญาที่คงเหลือ</p></div></div><div class="text-right"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</p><p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p></div></div>`).join('')}</div></div></div>
-        <div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[900px]" style="background: ${surfaceColor}; border-radius: 12px; overflow: hidden;"><thead style="background: ${dark?'#374151':secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลูกค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">สินค้า</th>${isAdmin?`<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">เจ้าของ</th>`:''}<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ราคาสินค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ค่างวด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดทั้งหมด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดถัดไป</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${customers.map((c,idx)=>{
+        <div class="mb-6"><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface"><h3 class="text-lg font-semibold mb-4" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3><div class="flex flex-col">${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}${summary.map(s=>`<div class="py-4 flex flex-row justify-between items-center border-b last:border-b-0" style="border-color: ${dark?'#374151':'#e5e7eb'};"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style="background: ${primaryColor}20; color: ${primaryColor};">${s.count}</div><div><p class="font-medium text-lg" style="color: ${textColor};">${s.name}</p><p class="text-xs opacity-70" style="color: ${textColor};">จำนวนสัญญาที่คงเหลือ</p></div></div><div class="text-right"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</p><p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p></div></div>`).join('')}</div></div></div>
+        <div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[900px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark?'#374151':secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลูกค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">สินค้า</th>${isAdmin?`<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">เจ้าของ</th>`:''}<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ราคาสินค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ค่างวด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดทั้งหมด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดถัดไป</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${customers.map((c,idx)=>{
             const canPay = canPayNow(c.next_payment_date, daysBefore);
             const hasEditPermission = canEditData();
             let ownerName = '';
@@ -751,7 +782,7 @@
 
     function renderHistory(config, dark, surfaceColor, textColor, primaryColor) {
       const history = getHistoryRecords();
-      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_history}</h2><div class="space-y-3">${history.map(h=>`<div class="p-4 rounded-lg border-l-4" style="background: ${surfaceColor}; border-color: ${primaryColor};"><div class="flex justify-between items-start"><div><p class="font-semibold" style="color: ${textColor};">${h.history_action}</p><p class="text-sm mt-1" style="color: ${textColor}; opacity: 0.7;">${h.history_details}</p></div><p class="text-sm" style="color: ${textColor}; opacity: 0.6;">${new Date(h.history_date).toLocaleString('th-TH')}</p></div></div>`).join('')}</div></div>`;
+      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_history}</h2><div class="space-y-3">${history.map(h=>`<div class="p-4 rounded-lg border-l-4 custom-surface" style="border-color: ${primaryColor};"><div class="flex justify-between items-start"><div><p class="font-semibold" style="color: ${textColor};">${h.history_action}</p><p class="text-sm mt-1" style="color: ${textColor}; opacity: 0.7;">${h.history_details}</p></div><p class="text-sm" style="color: ${textColor}; opacity: 0.6;">${new Date(h.history_date).toLocaleString('th-TH')}</p></div></div>`).join('')}</div></div>`;
     }
 
     function renderSettings(config, dark, surfaceColor, textColor, primaryColor) {
@@ -759,12 +790,66 @@
       const currentDarkMode = settings ? settings.is_dark_mode : false;
       const currentDaysBefore = settings ? settings.payment_days_before : 5;
       const currentPermissions = (currentUser.isAdmin || !settings) ? 
-        (settings.guest_permissions || 'manage,history,changelog') : 
-        (settings.guest_permissions || 'manage,history,changelog'); // Fix: always use settings of current user
+        (getGlobalGuestSettings()?.guest_permissions || 'manage,history,changelog') : 
+        (settings.guest_permissions || 'manage,history,changelog');
+      
+      const themeMode = settings.theme_mode || 'default';
+      const customColors = settings.custom_colors || {
+          hover_text: '#FFD700',
+          sidebar_bg: '#1F2937',
+          main_bg: '#F3F4F6',
+          card_bg: '#FFFFFF',
+          text_color: '#111827'
+      };
+
       const isAdmin = currentUser && currentUser.isAdmin;
 
-      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เปิดโหมดมืด</span></label></div><div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-2" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><p class="text-sm mt-2" style="color: ${textColor}; opacity: 0.7;">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระ</p></div>
-      ${isAdmin ? `<div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor}; border: 1px solid ${primaryColor}40;">
+      // Color picker generator helper
+      const colorPicker = (id, label, val) => `
+        <div>
+            <label class="block text-xs mb-1 opacity-70" style="color: ${textColor};">${label}</label>
+            <div class="flex gap-2">
+                <input type="color" id="${id}" value="${val}" class="h-8 w-12 p-0 border-0 rounded cursor-pointer">
+                <input type="text" value="${val}" onchange="document.getElementById('${id}').value = this.value" class="flex-1 px-2 py-1 text-xs rounded border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};">
+            </div>
+        </div>`;
+
+      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6">
+
+      <!-- Theme Settings -->
+      <div class="p-6 rounded-xl shadow-md custom-surface">
+          <h3 class="font-semibold mb-4" style="color: ${textColor};">การแสดงผล (Theme)</h3>
+          
+          <div class="flex gap-4 mb-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="theme_mode" value="default" ${themeMode === 'default' ? 'checked' : ''} onchange="toggleThemeSettings(this.value)">
+                <span style="color: ${textColor};">ธีมมาตรฐาน</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="theme_mode" value="custom" ${themeMode === 'custom' ? 'checked' : ''} onchange="toggleThemeSettings(this.value)">
+                <span style="color: ${textColor};">ธีมกำหนดเอง</span>
+            </label>
+          </div>
+
+          <div id="custom-theme-options" class="${themeMode === 'custom' ? '' : 'hidden'} space-y-4 p-4 border rounded-lg" style="border-color: ${dark?'#4b5563':'#e5e7eb'};">
+               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  ${colorPicker('col-hover-text', '1. สีอักษรเมื่อเลื่อนไปโดน', customColors.hover_text)}
+                  ${colorPicker('col-sidebar-bg', '2. สีแถบด้านซ้าย', customColors.sidebar_bg)}
+                  ${colorPicker('col-main-bg', '3. สีแถบด้านขวา (พื้นหลัง)', customColors.main_bg)}
+                  ${colorPicker('col-card-bg', '4. สีพื้นหลังกล่องข้อความ', customColors.card_bg)}
+                  ${colorPicker('col-text', '5. สีอักษรปกติ', customColors.text_color)}
+               </div>
+          </div>
+
+          <label class="flex items-center gap-3 cursor-pointer mt-4 border-t pt-4" style="border-color: ${dark?'#4b5563':'#e5e7eb'};">
+            <input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};">
+            <span style="color: ${textColor};">บังคับโหมดมืด (Dark Mode Override)</span>
+          </label>
+      </div>
+
+      <div class="p-6 rounded-xl shadow-md custom-surface"><h3 class="font-semibold mb-4" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-2" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><p class="text-sm mt-2" style="color: ${textColor}; opacity: 0.7;">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระ</p></div>
+      
+      ${isAdmin ? `<div class="p-6 rounded-xl shadow-md custom-surface" style="border: 1px solid ${primaryColor}40;">
         <h3 class="font-semibold mb-4 flex items-center gap-2" style="color: ${textColor};">
             🔌 การตั้งค่าการเชื่อมต่อ (Admin Only)
         </h3>
@@ -784,7 +869,7 @@
             <p class="text-xs opacity-60" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่านี้จะทำให้ระบบรีโหลดใหม่ทันทีเพื่อเชื่อมต่อกับฐานข้อมูลใหม่</p>
         </div>
     </div>
-    <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor}; border: 1px solid ${primaryColor}40;">
+    <div class="p-6 rounded-xl shadow-md custom-surface" style="border: 1px solid ${primaryColor}40;">
             <h3 class="font-semibold mb-4 flex items-center gap-2" style="color: ${textColor};">
                 🎨 ตั้งค่าขนาดโลโก้ (Admin Only)
             </h3>
@@ -805,27 +890,26 @@
                 </div>
             </div>
     </div>` : ''}
-    <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-2"><label class="flex items-center gap-3"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div><label class="flex items-center gap-3"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>
+    <div class="p-6 rounded-xl shadow-md custom-surface"><h3 class="font-semibold mb-4" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-2"><label class="flex items-center gap-3"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div><label class="flex items-center gap-3"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>
       <button id="save-settings-btn" class="w-full py-3 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึกการตั้งค่า</button></div></div>`;
+    }
+
+    // Helper for toggling theme options visibility
+    window.toggleThemeSettings = (val) => {
+        const el = document.getElementById('custom-theme-options');
+        if(val === 'custom') el.classList.remove('hidden');
+        else el.classList.add('hidden');
     }
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
-        { version: "V.4.2 (Guest Permission Fix)", date: "18/01/2026", changes: ["แก้ไขสิทธิ์ Guest ให้ทำงานตามการตั้งค่าจริง", "แก้ปัญหาติ๊กตั้งค่าแล้วเด้งคืน"] },
+        { version: "V.4.4 (Color Theme)", date: "18/01/2026", changes: ["เพิ่มระบบเลือกธีมสีเองได้ (Custom Theme)", "ปรับแต่งได้ 5 สีหลักตามต้องการ"] },
+        { version: "V.4.3 (Wait & Update)", date: "18/01/2026", changes: ["แก้ปัญหาสิทธิ์ผู้เยี่ยมชม (Guest)", "แก้ปัญหาหน้าตั้งค่าเด้งคืน"] },
         { version: "V.4.1 (Fix HTML)", date: "18/01/2026", changes: ["แก้ไขบั๊กหน้าตั้งค่า Admin แสดงผลผิดพลาด", "เพิ่มปุ่มรีเซ็ตขนาดโลโก้"] },
         { version: "V.4.0 (Admin Logo Config)", date: "18/01/2026", changes: ["เพิ่มระบบตั้งค่าขนาดโลโก้ได้เองในหน้า Admin Settings", "ปรับปรุงระบบ Global Settings ให้ยืดหยุ่นขึ้น"] },
-        { version: "V.3.9 (Logo Max Size)", date: "18/01/2026", changes: ["ขยายขนาดโลโก้หน้า Login เป็น 350px", "ขยายขนาดโลโก้แถบเมนูข้างเป็น 200px"] },
-        { version: "V.3.8 (Logo Resizing)", date: "18/01/2026", changes: ["ปรับขนาดโลโก้หน้า Login เป็น 250px", "ปรับขนาดโลโก้แถบเมนูเป็น 60px"] },
-        { version: "V.3.7 (Favicon Update)", date: "18/01/2026", changes: ["เปลี่ยนไอคอนของระบบ (Favicon) เป็นไฟล์ .ico"] },
-        { version: "V.3.6 (Light Login)", date: "18/01/2026", changes: ["ปรับหน้า Login ให้แสดงผลเป็นโหมดปกติ (Light Mode) เสมอ", "แก้ไขค่าเริ่มต้นเป็นโหมดปกติ"] },
-        { version: "V.3.5 (Logo & UI Update)", date: "17/01/2026", changes: ["เพิ่มโลโก้ขนาดใหญ่ในหน้า Login และ Sidebar", "ลบข้อความชื่อแอปพลิเคชันออกตามคำขอ"] },
-        { version: "V.3.3 (Logo Added)", date: "17/01/2026", changes: ["เพิ่มโลโก้ในหน้า Login และหน้าเมนูหลัก", "ปรับแก้ตำแหน่งการแสดงผลให้สวยงาม"] },
-        { version: "V.3.2 (Separate Settings)", date: "17/01/2026", changes: ["แยกการตั้งค่า (โหมดมืด/สว่าง) ให้แต่ละบัญชีไม่ตีกัน", "ผู้เยี่ยมชม (Guest) จะแสดงผลโหมดปกติเสมอ"] },
-        { version: "V.3.1 (Icon)", date: "17/01/2026", changes: ["เพิ่มไอคอน Favicon และ Web Clip สำหรับหน้าเว็บ"] },
-        { version: "V.3.0 (Recalculate Date)", date: "17/01/2026", changes: ["เมื่อแก้ไขวันที่สัญญา ระบบจะคำนวณวันจ่ายงวดถัดไปใหม่อัตโนมัติ"] },
-        { version: "V.2.9 (No Scrollbar)", date: "17/01/2026", changes: ["ซ่อน Scrollbar ของเมนูข้างในโหมดมือถือ", "ป้องกันการเลื่อนแนวนอนของเมนู"] }
+        { version: "V.3.9 (Logo Max Size)", date: "18/01/2026", changes: ["ขยายขนาดโลโก้หน้า Login เป็น 350px", "ขยายขนาดโลโก้แถบเมนูข้างเป็น 200px"] }
       ];
-      return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-6">${logs.map((log, index) => `<div class="p-6 rounded-xl shadow-md relative overflow-hidden" style="background: ${surfaceColor};"><div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#374151' : '#e5e7eb')}"></div><div class="flex justify-between items-start mb-4 pl-4"><div><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#e5e7eb')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-2 text-sm opacity-60" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-2 pl-4">${log.changes.map(c => `<li style="color: ${textColor}; opacity: 0.8;">${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
+      return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-6">${logs.map((log, index) => `<div class="p-6 rounded-xl shadow-md custom-surface relative overflow-hidden"><div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#374151' : '#e5e7eb')}"></div><div class="flex justify-between items-start mb-4 pl-4"><div><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#e5e7eb')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-2 text-sm opacity-60" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-2 pl-4">${log.changes.map(c => `<li style="color: ${textColor}; opacity: 0.8;">${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
     }
 
     function renderAccount(config, dark, surfaceColor, textColor, primaryColor) {
@@ -835,24 +919,26 @@
       else if (currentUser.isGuestView) permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ ดูรายการลูกค้าของบัญชีที่เลือก</li><li>❌ ไม่สามารถเพิ่มข้อมูลใหม่</li><li>❌ ไม่สามารถแก้ไขหรือลบข้อมูล</li><li>❌ ไม่สามารถเข้าถึงการตั้งค่า</li></ul>`;
       else permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ เพิ่มข้อมูลลูกค้าใหม่</li><li>✅ จัดการ (แก้ไข/ลบ/ชำระเงิน) ลูกค้าของตนเอง</li><li>✅ ดูประวัติการทำรายการของตนเอง</li><li>❌ ไม่สามารถเห็นข้อมูลของผู้อื่น</li></ul>`;
 
-      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_account}</h2><div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><div class="flex items-center gap-4 mb-6"><div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style="background: ${primaryColor}20; color: ${primaryColor};">👤</div><div><p class="text-xl font-semibold" style="color: ${textColor};">${currentUser.username}</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">${currentUser.isAdmin ? 'ผู้ดูแลระบบสูงสุด (Super Admin)' : (currentUser.isGuestView ? 'โหมดผู้เยี่ยมชม' : 'บัญชีผู้ใช้')}</p></div></div><div class="space-y-4"><div class="p-4 rounded-lg" style="background: ${dark ? '#374151' : '#f3f4f6'};"><p class="text-sm font-medium mb-1" style="color: ${textColor};">สถิติการใช้งาน</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ลูกค้าทั้งหมด: ${getActiveCustomers().length} รายการ</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ชำระครบแล้ว: ${getCompletedCustomers().length} รายการ</p></div><div class="mt-6 p-4 rounded-lg border border-opacity-20" style="border-color: ${textColor};"><h3 class="font-bold mb-2">สิทธิ์การใช้งาน (${role})</h3>${permissionText}</div></div></div></div>`;
+      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_account}</h2><div class="p-6 rounded-xl shadow-md custom-surface"><div class="flex items-center gap-4 mb-6"><div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style="background: ${primaryColor}20; color: ${primaryColor};">👤</div><div><p class="text-xl font-semibold" style="color: ${textColor};">${currentUser.username}</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">${currentUser.isAdmin ? 'ผู้ดูแลระบบสูงสุด (Super Admin)' : (currentUser.isGuestView ? 'โหมดผู้เยี่ยมชม' : 'บัญชีผู้ใช้')}</p></div></div><div class="space-y-4"><div class="p-4 rounded-lg" style="background: ${dark ? '#374151' : '#f3f4f6'};"><p class="text-sm font-medium mb-1" style="color: ${textColor};">สถิติการใช้งาน</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ลูกค้าทั้งหมด: ${getActiveCustomers().length} รายการ</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ชำระครบแล้ว: ${getCompletedCustomers().length} รายการ</p></div><div class="mt-6 p-4 rounded-lg border border-opacity-20" style="border-color: ${textColor};"><h3 class="font-bold mb-2">สิทธิ์การใช้งาน (${role})</h3>${permissionText}</div></div></div></div>`;
     }
 
+    // ... (renderModal, attachEventListeners, and other helpers are same as previous logic but integrated with new theme system) ...
+    // Repeating critical parts for context:
+    
     function renderModal(config, dark, surfaceColor, textColor, primaryColor) {
       if (editingUser) {
           const user = allRecords.find(r => r.id === editingUser); if(!user) return '';
-          return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor};"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" onclick="hideModal()" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
+          return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" onclick="hideModal()" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
       }
       if (editingCustomer) {
         const customer = allRecords.find(r => r.id === editingCustomer); if (!customer) return '';
-        return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor};"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+        return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
         <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
         <div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ยืนยันการลบ</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ลบข้อมูล</button>`}</form></div></div>`;
       }
       return '';
     }
 
-    // Attach Event Listeners (Restored and Complete)
     function attachEventListeners() {
       // Mobile Toggle
       const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -1141,8 +1227,18 @@
           const sidebarLogo = document.getElementById('setting-sidebar-logo-size')?.value;
           const loginSize = loginLogo ? parseInt(loginLogo) : 250;
           const sidebarSize = sidebarLogo ? parseInt(sidebarLogo) : 60;
+          
+          // Theme config
+          const themeMode = document.querySelector('input[name="theme_mode"]:checked')?.value || 'default';
+          const customColors = {
+              hover_text: document.getElementById('col-hover-text')?.value || '#FFD700',
+              sidebar_bg: document.getElementById('col-sidebar-bg')?.value || '#1F2937',
+              main_bg: document.getElementById('col-main-bg')?.value || '#F3F4F6',
+              card_bg: document.getElementById('col-card-bg')?.value || '#FFFFFF',
+              text_color: document.getElementById('col-text')?.value || '#111827'
+          };
 
-          await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), loginSize, sidebarSize);
+          await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), loginSize, sidebarSize, themeMode, customColors);
           saveSet.innerHTML = 'บันทึกการตั้งค่า';
       });
 
