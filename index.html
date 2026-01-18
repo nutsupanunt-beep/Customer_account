@@ -568,7 +568,7 @@
       let hoverText = config.primary_color; // Default hover
       
       // Custom Theme Logic
-      if (settings.theme_mode === 'custom' && settings.custom_colors) {
+      if (settings && settings.theme_mode === 'custom' && settings.custom_colors) {
           const c = settings.custom_colors;
           if(c.main_bg) bgColor = c.main_bg;
           if(c.card_bg) surfaceColor = c.card_bg;
@@ -706,7 +706,7 @@
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.4.4 (Color Theme)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.4.5 (Permissions Fixed)</p>
           </div>
         </div>
       `;
