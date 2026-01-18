@@ -316,7 +316,7 @@
       const defaultSettings = { 
           is_dark_mode: false, 
           payment_days_before: 5, 
-          guest_permissions: currentUser.isAdmin ? 'add,manage,history,settings,edit,changelog' : 'manage,history,changelog'
+          guest_permissions: currentUser.isAdmin ? 'add,manage,history,settings,edit,changelog' : 'manage,history,changelog',
       };
 
       if (currentUser.isGuestView) {
@@ -335,6 +335,10 @@
         const adminSettings = allRecords.find(r => r.type === 'settings' && r.account_id === 'super_admin');
         if (adminSettings) return adminSettings;
         return null;
+    }
+
+    function getGlobalLogoSettings() {
+        return { login: 280, sidebar: 160 }; // Fixed sizes as requested
     }
 
     async function saveSettings(data) {
@@ -446,7 +450,7 @@
       if (result.isOk) {
         await addHistory('เพิ่มลูกค้า', `เพิ่มลูกค้า ${customerData.customerName} สินค้า ${customerData.product}`);
         saveAutocompleteData(customerData); showToast('เพิ่มข้อมูลลูกค้าสำเร็จ');
-        localStorage.removeItem('add_customer_draft');
+        // REMOVED localStorage saving logic as requested
       } else showToast('เกิดข้อผิดพลาด: ' + result.error.message, true);
     }
 
@@ -571,12 +575,12 @@
     }
 
     function renderLoginPage(config, dark, surfaceColor, textColor, primaryColor) {
-      // Fixed Fixed layout per request V.4.8
+      // Fixed Layout V.5.0: Logo 280px, MB 32px
       return `
         <div class="flex items-center justify-center min-h-full p-4 w-full" style="background: ${dark ? '#111827' : config.background_color};">
           <div class="w-full max-w-md p-8 rounded-xl shadow-lg" style="background: ${surfaceColor};">
-            <div class="flex flex-col items-center mb-8"> <!-- Fixed Margin Bottom -->
-                <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 280px; height: auto;" class="object-contain"> <!-- Fixed Width -->
+            <div class="flex flex-col items-center mb-8">
+                <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 280px; height: auto;" class="object-contain">
             </div>
             <div id="login-form" class="space-y-4">
               <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="login-username" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
@@ -627,8 +631,8 @@
 
       return `
         <div class="${baseClasses} ${mobileClasses} ${desktopClasses}" style="background: ${surfaceColor};">
-          <div class="flex flex-col items-center mb-4"> <!-- Fixed Margin Bottom -->
-            <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 160px; height: auto;" class="object-contain"> <!-- Fixed Width -->
+          <div class="flex flex-col items-center mb-10"> <!-- V.5.0 Increased margin bottom -->
+            <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 160px; height: auto;" class="object-contain mb-6"> <!-- V.5.0 Increased margin bottom -->
             <div class="flex justify-between w-full items-start absolute top-4 right-4">
                 <button id="close-sidebar-btn" class="md:hidden text-gray-500 hover:text-gray-700">✖</button>
             </div>
@@ -644,7 +648,7 @@
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.4.9 (Admin Only Settings)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.5.1 (No Draft Save)</p>
           </div>
         </div>
       `;
@@ -672,18 +676,18 @@
     }
 
     function renderAddCustomer(config, dark, surfaceColor, textColor, primaryColor) {
-      const draft = JSON.parse(localStorage.getItem('add_customer_draft') || '{}');
+      // Removed draft loading
       const autocomplete = getAutocompleteData();
       return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_add_customer}</h2><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface"><form id="add-customer-form" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="customer-name" value="${draft.customerName || ''}" required list="list-customer-name" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-customer-name">${autocomplete.names.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="product" value="${draft.product || ''}" required list="list-product" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-product">${autocomplete.products.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="product-price" value="${draft.productPrice || ''}" required list="list-product-price" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-product-price">${autocomplete.prices.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ดอกเบี้ย %</label><input type="number" id="interest-rate" value="${draft.interestRate || ''}" required step="0.01" list="list-interest-rate" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-interest-rate">${autocomplete.interests.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">งวดผ่อน</label><input type="number" id="installments" value="${draft.installments || ''}" required list="list-installments" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-installments">${autocomplete.installments.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ค่าบิล</label><input type="number" id="bill-fee" value="${draft.billFee || ''}" min="0" list="list-bill-fee" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-bill-fee">${autocomplete.fees.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รวมจ่ายต่องวด</label><input type="number" id="bill-amount-input" value="${draft.billAmountInput || ''}" readonly class="w-full px-4 py-2 rounded-lg border opacity-70 cursor-not-allowed" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};" tabindex="-1"></div>
-            <div id="contract-date-wrapper"><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="contract-date" value="${draft.contractDate || new Date().toISOString().split('T')[0]}" required class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="customer-name" value="" required list="list-customer-name" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-customer-name">${autocomplete.names.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="product" value="" required list="list-product" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-product">${autocomplete.products.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="product-price" value="" required list="list-product-price" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-product-price">${autocomplete.prices.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ดอกเบี้ย %</label><input type="number" id="interest-rate" value="" required step="0.01" list="list-interest-rate" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-interest-rate">${autocomplete.interests.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">งวดผ่อน</label><input type="number" id="installments" value="" required list="list-installments" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-installments">${autocomplete.installments.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ค่าบิล</label><input type="number" id="bill-fee" value="" min="0" list="list-bill-fee" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-bill-fee">${autocomplete.fees.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รวมจ่ายต่องวด</label><input type="number" id="bill-amount-input" value="" readonly class="w-full px-4 py-2 rounded-lg border opacity-70 cursor-not-allowed" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};" tabindex="-1"></div>
+            <div id="contract-date-wrapper"><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="contract-date" value="${new Date().toISOString().split('T')[0]}" required class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
             <div class="col-span-full mt-4"><div class="p-4 md:p-6 rounded-xl border border-dashed shadow-sm" style="background: ${dark ? '#374151' : '#f9fafb'}; border-color: ${dark ? '#4b5563' : '#d1d5db'};"><label class="block text-base font-semibold mb-4 border-b pb-2" style="color: ${textColor}; border-color: ${dark ? '#4b5563' : '#e5e7eb'};">สรุปยอดผ่อนชำระ</label><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="text-center md:text-left"><p class="text-sm opacity-70 mb-1" style="color: ${textColor};">ค่างวดต่อเดือน (คำนวณ)</p><input type="text" id="bill-amount-display" readonly class="text-3xl font-bold bg-transparent border-none p-0 focus:ring-0 w-full md:w-auto text-center md:text-left" style="color: ${primaryColor};" placeholder="฿0"></div><div id="calculation-details" class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4 text-center hidden"><div class="p-2 rounded-lg" style="background: ${dark ? '#1f2937' : 'white'};"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">เงินต้น</p><span id="detail-principal" class="font-medium text-lg" style="color: ${textColor};">0</span></div><div class="p-2 rounded-lg" style="background: ${dark ? '#1f2937' : 'white'};"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ดอกเบี้ยรวม</p><span id="detail-interest" class="font-medium text-lg text-red-500">0</span></div><div class="p-2 rounded-lg" style="background: ${dark ? '#1f2937' : 'white'};"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมทั้งหมด</p><span id="detail-total" class="font-medium text-lg text-green-600">0</span></div></div></div></div></div>
         </div>
         <button type="submit" id="save-customer-btn" class="w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 mt-4" style="background: ${primaryColor}; color: white;">บันทึกข้อมูลลูกค้า</button>
@@ -797,6 +801,8 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.5.1 (No Draft Save)", date: "18/01/2026", changes: ["ยกเลิกระบบจำค่าข้อมูลลูกค้า (Draft) เมื่อปิดหน้าเว็บหรือออกจากระบบ", "ล้างค่าฟอร์มทุกครั้งที่เปิดใหม่"] },
+        { version: "V.5.0 (Spaced Layout)", date: "18/01/2026", changes: ["ปรับระยะห่างโลโก้และเมนูให้โปร่งสบายตามากขึ้น", "เพิ่มระยะห่างระหว่างโลโก้กับชื่อบัญชี"] },
         { version: "V.4.9 (Admin Only Settings)", date: "18/01/2026", changes: ["ย้ายเมนูตั้งค่าสิทธิ์ Guest ไปไว้ในส่วนของ Admin เท่านั้น", "ผู้ใช้ทั่วไปจะไม่เห็นเมนูนี้อีกต่อไป"] },
         { version: "V.4.8 (Fixed Logo Layout)", date: "18/01/2026", changes: ["ล็อคตำแหน่งและขนาดโลโก้ให้คงที่ตามมาตรฐาน", "หน้า Login: ขนาด 280px / ระยะห่าง 32px", "เมนูข้าง: ขนาด 160px / ระยะห่าง 16px"] },
         { version: "V.4.7 (Removed Custom Theme)", date: "18/01/2026", changes: ["ลบฟีเจอร์ Custom Theme ออก", "คงฟีเจอร์ปรับขนาดและระยะห่างโลโก้ไว้"] },
@@ -977,15 +983,7 @@
                       document.getElementById('detail-total').textContent = '฿' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                   }
                   
-                  // Draft
-                  const draft = {
-                      customerName: name,
-                      product: product,
-                      productPrice: p, interestRate: r, installments: n, billFee: f,
-                      contractDate: document.getElementById('contract-date').value,
-                      billAmountInput: m
-                  };
-                  localStorage.setItem('add_customer_draft', JSON.stringify(draft));
+                  // Draft saving removed as requested
               } else {
                   // Clear or hide values if not valid
                   if(display) display.value = '';
