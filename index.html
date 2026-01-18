@@ -8,13 +8,8 @@
   <!-- ========================================== -->
   <!-- ส่วนที่แก้ไข: ใช้โลโก้จากไฟล์ edited-image.png -->
   <!-- ========================================== -->
-  <!-- 1. ไอคอนบนแถบ Browser -->
   <link rel="icon" type="image/x-icon" href="edited-image.ico">
-  
-  <!-- 2. ไอคอนสำหรับ iPhone/iPad/Android -->
   <link rel="apple-touch-icon" href="edited-image.png">
-  
-  <!-- 3. รูปภาพเวลาแชร์ -->
   <meta property="og:image" content="edited-image.png">
   <meta property="og:title" content="ระบบจัดการลูกค้าออนไลน์">
   <meta property="og:description" content="ระบบบันทึกและจัดการข้อมูลลูกค้า">
@@ -478,7 +473,11 @@
     }
 
     async function deleteUser(userId) {
-        const user = allRecords.find(r => r.id === userId && r.type === 'user'); if(!user) return;
+        const user = allRecords.find(r => r.id === userId && r.type === 'user'); 
+        if(!user) {
+            showToast('ไม่พบข้อมูลผู้ใช้', true);
+            return;
+        }
         const result = await window.dataSdk.delete(user);
         if(result.isOk) { showToast('ลบบัญชีผู้ใช้สำเร็จ'); hideModal(); } else showToast('ลบไม่สำเร็จ: ' + result.error.message, true);
     }
@@ -648,7 +647,7 @@
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.5.1 (No Draft Save)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.5.2 (Fix Admin)</p>
           </div>
         </div>
       `;
@@ -801,6 +800,7 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.5.2 (Fix Admin)", date: "18/01/2026", changes: ["แก้บั๊กปุ่มลบ/รีเซ็ตในหน้า Admin ไม่ทำงาน", "ปรับปรุงความเสถียรของหน้าต่าง Modal"] },
         { version: "V.5.1 (No Draft Save)", date: "18/01/2026", changes: ["ยกเลิกระบบจำค่าข้อมูลลูกค้า (Draft) เมื่อปิดหน้าเว็บหรือออกจากระบบ", "ล้างค่าฟอร์มทุกครั้งที่เปิดใหม่"] },
         { version: "V.5.0 (Spaced Layout)", date: "18/01/2026", changes: ["ปรับระยะห่างโลโก้และเมนูให้โปร่งสบายตามากขึ้น", "เพิ่มระยะห่างระหว่างโลโก้กับชื่อบัญชี"] },
         { version: "V.4.9 (Admin Only Settings)", date: "18/01/2026", changes: ["ย้ายเมนูตั้งค่าสิทธิ์ Guest ไปไว้ในส่วนของ Admin เท่านั้น", "ผู้ใช้ทั่วไปจะไม่เห็นเมนูนี้อีกต่อไป"] },
@@ -832,7 +832,8 @@
     function renderModal(config, dark, surfaceColor, textColor, primaryColor) {
       if (editingUser) {
           const user = allRecords.find(r => r.id === editingUser); if(!user) return '';
-          return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" onclick="hideModal()" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
+          // Changed cancel button from onclick to id-based listener for better module compatibility
+          return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
       }
       if (editingCustomer) {
         const customer = allRecords.find(r => r.id === editingCustomer); if (!customer) return '';
@@ -1051,7 +1052,7 @@
           });
       }
 
-      // Admin Manage User Buttons
+      // Admin Manage User Buttons (Fixed Logic)
       document.querySelectorAll('[data-delete-user]').forEach(b => b.addEventListener('click', (e) => {
           if(confirm('คุณต้องการลบบัญชีนี้ใช่หรือไม่?')) deleteUser(e.currentTarget.dataset.deleteUser);
       }));
@@ -1108,6 +1109,10 @@
               if(!newPass) return showToast('กรุณากรอกรหัสผ่าน', true);
               await adminResetPassword(editingUser, newPass);
           });
+          
+          // Added listener for cancel button on Admin Reset Form
+          const cancelAdminReset = document.getElementById('cancel-admin-reset-btn');
+          if(cancelAdminReset) cancelAdminReset.addEventListener('click', hideModal);
       }
 
       // Settings
