@@ -102,7 +102,7 @@
       init: async (handler) => {
         window._dataHandler = handler;
         if (supabaseClient) {
-            fetchAndNotify();
+            await fetchAndNotify(); // Fixed: Await here
             supabaseClient.channel('public:app_records')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'app_records' }, () => {
                     fetchAndNotify();
@@ -118,7 +118,7 @@
         try {
           const { error } = await supabaseClient.from('app_records').insert({ id: record.id, type: record.type, data: record });
           if (error) throw error;
-          fetchAndNotify(); 
+          await fetchAndNotify(); // Fixed: Await here to prevent state bounce
           return { isOk: true };
         } catch (e) {
           if (e.code === '42P01') showSetupModal();
@@ -130,7 +130,7 @@
         try {
           const { error } = await supabaseClient.from('app_records').update({ data: record, type: record.type }).eq('id', record.id);
           if (error) throw error;
-          fetchAndNotify();
+          await fetchAndNotify(); // Fixed: Await here to prevent state bounce
           return { isOk: true };
         } catch (e) { return { isOk: false, error: { message: e.message } }; }
       },
@@ -139,7 +139,7 @@
         try {
           const { error } = await supabaseClient.from('app_records').delete().eq('id', record.id);
           if (error) throw error;
-          fetchAndNotify();
+          await fetchAndNotify(); // Fixed: Await here to prevent state bounce
           return { isOk: true };
         } catch (e) { return { isOk: false, error: { message: e.message } }; }
       }
@@ -308,7 +308,6 @@
 
     function getUserSettings() {
       if (!currentUser) return null;
-      // Default Settings
       const defaultSettings = { 
           is_dark_mode: false, 
           payment_days_before: 5, 
@@ -358,8 +357,9 @@
       };
       if (existing) { await window.dataSdk.update({ ...existing, ...updatedData }); } 
       else { await window.dataSdk.create({ type: 'settings', id: 'settings_' + Date.now(), account_id: currentUser.id, created_at: new Date().toISOString(), ...updatedData }); }
+      
+      // Removed immediate renderApp to allow data fetch to complete and trigger update naturally
       showToast('บันทึกการตั้งค่าสำเร็จ');
-      renderApp();
     }
 
     function canAccessView(view) {
@@ -367,10 +367,20 @@
       if (currentUser.isAdmin) return true;
       
       if (currentUser.isGuestView) {
-          // Fix: Read permissions dynamically from the target account's settings
+          // 1. Try Target User Settings
           const targetSettings = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.targetAccountId);
-          const perms = targetSettings ? (targetSettings.guest_permissions || '') : 'manage,history,changelog';
-          return perms.includes(view);
+          if (targetSettings && targetSettings.guest_permissions) {
+              return targetSettings.guest_permissions.includes(view);
+          }
+          
+          // 2. Fallback to Admin Settings (Global)
+          const adminSettings = allRecords.find(r => r.type === 'settings' && r.account_id === 'super_admin');
+          if (adminSettings && adminSettings.guest_permissions) {
+              return adminSettings.guest_permissions.includes(view);
+          }
+
+          // 3. Default Fallback
+          return 'manage,history,changelog'.includes(view);
       }
       
       // Normal User
@@ -382,10 +392,19 @@
         if (currentUser.isAdmin) return true;
         
         if (currentUser.isGuestView) {
-             // Fix: Read edit permission dynamically
+             // 1. Try Target User Settings
              const targetSettings = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.targetAccountId);
-             const perms = targetSettings ? (targetSettings.guest_permissions || '') : '';
-             return perms.includes('edit');
+             if (targetSettings && targetSettings.guest_permissions) {
+                 return targetSettings.guest_permissions.includes('edit');
+             }
+
+             // 2. Fallback to Admin Settings (Global)
+             const adminSettings = allRecords.find(r => r.type === 'settings' && r.account_id === 'super_admin');
+             if (adminSettings && adminSettings.guest_permissions) {
+                 return adminSettings.guest_permissions.includes('edit');
+             }
+
+             return false;
         }
         return true;
     }
@@ -655,7 +674,7 @@
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.4.2 (Guest Permission Fix)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.4.3 (Wait & Update)</p>
           </div>
         </div>
       `;
