@@ -239,7 +239,6 @@
       toast.className = `toast ${isError ? 'error' : ''}`;
       toast.textContent = message;
       document.body.appendChild(toast);
-      // Increased duration to 20 seconds as requested
       setTimeout(() => toast.remove(), 20000);
     }
 
@@ -579,6 +578,13 @@
       app.style.color = textColor;
       app.className = 'h-full w-full flex flex-col overflow-hidden custom-text';
 
+      // 1. Scroll Preservation Logic
+      const scrollContainer = app.querySelector('.overflow-auto');
+      let savedScrollTop = 0;
+      if (scrollContainer) {
+          savedScrollTop = scrollContainer.scrollTop;
+      }
+
       if (!currentUser) {
         app.innerHTML = renderLoginPage(config, dark, surfaceColor, textColor, config.primary_color);
       } else {
@@ -605,6 +611,12 @@
             </div>
           </div>
         `;
+        
+        // 2. Restore Scroll Position
+        const newScrollContainer = app.querySelector('.overflow-auto');
+        if (newScrollContainer && savedScrollTop > 0) {
+            newScrollContainer.scrollTop = savedScrollTop;
+        }
       }
       attachEventListeners();
     }
@@ -685,7 +697,7 @@
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
             <!-- Sidebar Logout Button: Red Background, White Text -->
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.6.8 (Colors Fixed)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.7.0 (Scroll Fix)</p>
           </div>
         </div>
       `;
@@ -737,7 +749,15 @@
           const term = manageSearchTerm.toLowerCase();
           customers = customers.filter(c => c.customer_name.toLowerCase().includes(term) || c.product.toLowerCase().includes(term));
       }
+      
+      // Sort customers alphabetically by name (New)
+      customers.sort((a, b) => a.customer_name.localeCompare(b.customer_name, 'th'));
+
       const summary = getCustomersSummary(customers);
+      
+      // Calculate Grand Total
+      const grandTotal = summary.reduce((sum, item) => sum + item.totalNextMonth, 0);
+
       const daysBefore = getPaymentDaysBefore();
       const isAdmin = currentUser && currentUser.isAdmin;
       return `<div class="p-4 md:p-8">
@@ -749,24 +769,35 @@
             <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
             ${manageSearchTerm ? `<button id="manage-search-clear" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 p-1">✖</button>` : ''}
         </div>
-        <div class="mb-6"><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface"><h3 class="text-lg font-semibold mb-4" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3><div class="flex flex-col">${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}${summary.map(s=>`
-          <div class="py-4 flex flex-row justify-between items-center border-b last:border-b-0" style="border-color: ${dark?'#374151':'#e5e7eb'};">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style="background: ${primaryColor}20; color: ${primaryColor};">${s.count}</div>
-                <div>
-                    <p class="font-medium text-lg" style="color: ${textColor};">${s.name}</p>
-                    <p class="text-xs opacity-70" style="color: ${textColor};">จำนวนสัญญาที่คงเหลือ</p>
+        <div class="mb-6"><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface">
+            <!-- Header with Grand Total -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                <h3 class="text-lg font-semibold" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
+                <div class="text-left sm:text-right mt-2 sm:mt-0">
+                    <p class="text-xs opacity-60" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
+                    <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
                 </div>
             </div>
-            <div class="flex flex-col items-end gap-2">
-                <div class="text-right">
-                    <p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</p>
-                    <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
+            
+            <div class="flex flex-col">
+            ${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}${summary.map(s=>`
+              <div class="py-4 flex flex-row justify-between items-center border-b last:border-b-0" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style="background: ${primaryColor}20; color: ${primaryColor};">${s.count}</div>
+                    <div>
+                        <p class="font-medium text-lg" style="color: ${textColor};">${s.name}</p>
+                        <p class="text-xs opacity-70" style="color: ${textColor};">จำนวนสัญญาที่คงเหลือ</p>
+                    </div>
                 </div>
-                ${canEditData() ? `<button data-pay-all="${s.name}" class="px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md" style="background: #10b981; color: white;">💳 ชำระยอดรวม</button>` : ''}
-            </div>
-          </div>
-        `).join('')}</div></div></div>
+                <div class="flex flex-col items-end gap-2">
+                    <div class="text-right">
+                        <p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</p>
+                        <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
+                    </div>
+                    ${canEditData() ? `<button data-pay-all="${s.name}" class="px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md" style="background: #10b981; color: white;">💳 ชำระยอดรวม</button>` : ''}
+                </div>
+              </div>
+            `).join('')}</div></div></div>
         <div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[900px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark?'#374151':secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลูกค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">สินค้า</th>${isAdmin?`<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">เจ้าของ</th>`:''}<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ราคาสินค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ค่างวด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดทั้งหมด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดถัดไป</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${customers.map((c,idx)=>{
             const canPay = canPayNow(c.next_payment_date, daysBefore);
             const hasEditPermission = canEditData();
@@ -899,6 +930,8 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.7.0 (Scroll Fix)", date: "19/01/2026", changes: ["แก้ปัญหาหน้าเด้งเมื่อกดจ่ายเงิน", "เรียงรายชื่อลูกค้าตามตัวอักษร ก-ฮ"] },
+        { version: "V.6.9 (Grand Total)", date: "19/01/2026", changes: ["เพิ่มการแสดงยอดรวมที่ต้องชำระทั้งหมดในหน้าจัดการลูกค้า", "ปรับปรุงการแสดงผลสรุปยอดให้ดูง่ายขึ้น"] },
         { version: "V.6.8 (Colors Fixed)", date: "19/01/2026", changes: ["ปุ่มออกจากระบบเป็นสีแดง ปุ่มเข้าสู่ระบบเป็นสีน้ำเงิน", "เพิ่มเวลาแสดงการแจ้งเตือนเป็น 20 วินาที"] },
         { version: "V.6.7 (Detailed History Colors)", date: "23/01/2026", changes: ["เพิ่มรายละเอียดในประวัติการชำระเงิน", "แยกสีหัวข้อประวัติตามประเภท (เพิ่ม=น้ำเงิน, แก้ไข=เหลือง, ลบ=แดง, ชำระครบ=เขียว)"] },
         { version: "V.6.6 (New Edit Fields)", date: "23/01/2026", changes: ["เพิ่มช่องแก้ไขค่างวดและจำนวนงวดในหน้าต่างแก้ไขข้อมูลลูกค้า"] },
