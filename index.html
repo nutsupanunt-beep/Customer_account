@@ -477,8 +477,13 @@
 
     // New Function for Bulk Payment
     async function payAllForCustomer(name) {
-        const targets = getActiveCustomers().filter(c => c.customer_name === name);
-        if(targets.length === 0) return;
+        const daysBefore = getPaymentDaysBefore();
+        // ฟิลเตอร์เฉพาะรายการที่ "ถึงกำหนดชำระแล้ว" เท่านั้น
+        const targets = getActiveCustomers().filter(c => c.customer_name === name && canPayNow(c.next_payment_date, daysBefore));
+        if(targets.length === 0) {
+            showToast('ไม่มีรายการที่ถึงกำหนดชำระ', true);
+            return;
+        }
         
         let count = 0;
         for (const c of targets) {
@@ -780,7 +785,12 @@
             </div>
             
             <div class="flex flex-col">
-            ${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}${summary.map(s=>`
+            ${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}${summary.map(s=>{
+              // ตรวจสอบว่าลูกค้าคนนี้มีรายการไหนถึงกำหนดชำระแล้วบ้าง
+              const customerItems = customers.filter(c => c.customer_name === s.name);
+              const hasDueItems = customerItems.some(c => canPayNow(c.next_payment_date, daysBefore));
+              
+              return `
               <div class="py-4 flex flex-row justify-between items-center border-b last:border-b-0" style="border-color: ${dark?'#374151':'#e5e7eb'};">
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style="background: ${primaryColor}20; color: ${primaryColor};">${s.count}</div>
@@ -794,10 +804,10 @@
                         <p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</p>
                         <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
                     </div>
-                    ${canEditData() ? `<button data-pay-all="${s.name}" class="px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md" style="background: #10b981; color: white;">💳 ชำระยอดรวม</button>` : ''}
+                    ${canEditData() ? `<button data-pay-all="${s.name}" class="px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md ${hasDueItems ? '' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? '#10b981' : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระยอดรวม</button>` : ''}
                 </div>
               </div>
-            `).join('')}</div></div></div>
+            `}).join('')}</div></div></div>
         <div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[900px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark?'#374151':secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลูกค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">สินค้า</th>${isAdmin?`<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">เจ้าของ</th>`:''}<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ราคาสินค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ค่างวด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดทั้งหมด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดถัดไป</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${customers.map((c,idx)=>{
             const canPay = canPayNow(c.next_payment_date, daysBefore);
             const hasEditPermission = canEditData();
@@ -930,6 +940,7 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.7.1 (Pay Total Fix)", date: "25/02/2026", changes: ["ปุ่ม 'ชำระยอดรวม' จะกดได้ก็ต่อเมื่อมีรายการที่ถึงกำหนดชำระเท่านั้น", "เมื่อกดชำระยอดรวม จะตัดยอดเฉพาะสัญญาที่ถึงกำหนดชำระเท่านั้น"] },
         { version: "V.7.0 (Scroll Fix)", date: "19/01/2026", changes: ["แก้ปัญหาหน้าเด้งเมื่อกดจ่ายเงิน", "เรียงรายชื่อลูกค้าตามตัวอักษร ก-ฮ"] },
         { version: "V.6.9 (Grand Total)", date: "19/01/2026", changes: ["เพิ่มการแสดงยอดรวมที่ต้องชำระทั้งหมดในหน้าจัดการลูกค้า", "ปรับปรุงการแสดงผลสรุปยอดให้ดูง่ายขึ้น"] },
         { version: "V.6.8 (Colors Fixed)", date: "19/01/2026", changes: ["ปุ่มออกจากระบบเป็นสีแดง ปุ่มเข้าสู่ระบบเป็นสีน้ำเงิน", "เพิ่มเวลาแสดงการแจ้งเตือนเป็น 20 วินาที"] },
