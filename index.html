@@ -484,15 +484,37 @@
       };
       const result = await window.dataSdk.create(newCustomer);
       if (result.isOk) {
-        await addHistory('เพิ่มข้อมูล', `เพิ่มลูกค้า ${customerData.customerName} สินค้า ${customerData.product}`);
+        // V.9.2 Detailed Add History
+        await addHistory('เพิ่มข้อมูล', `เพิ่มข้อมูลลูกค้า <b>${customerData.customerName}</b><br><span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs"><b>รายละเอียด:</b><br>• สินค้า: ${customerData.product}<br>• ราคา: ฿${(customerData.productPrice||0).toLocaleString()}</span>`);
         saveAutocompleteData(customerData); showToast('เพิ่มข้อมูลลูกค้าสำเร็จ');
       } else showToast('เกิดข้อผิดพลาด: ' + result.error.message, true);
     }
 
     async function updateCustomer(customerId, updates) {
       const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
+      
+      // V.9.2: Calculate specific changes for detailed history
+      let changes = [];
+      if (customer.customer_name !== updates.customer_name) changes.push(`ชื่อลูกค้า: ${customer.customer_name} ➔ ${updates.customer_name}`);
+      if (customer.product !== updates.product) changes.push(`สินค้า: ${customer.product} ➔ ${updates.product}`);
+      if (parseFloat(customer.product_price || 0) !== parseFloat(updates.product_price || 0)) changes.push(`ราคาสินค้า: ฿${(customer.product_price||0).toLocaleString()} ➔ ฿${(updates.product_price||0).toLocaleString()}`);
+      if (parseFloat(customer.monthly_payment || 0) !== parseFloat(updates.monthly_payment || 0)) changes.push(`ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()} ➔ ฿${(updates.monthly_payment||0).toLocaleString()}`);
+      if (parseInt(customer.installments || 0) !== parseInt(updates.installments || 0)) changes.push(`จำนวนงวด: ${customer.installments} ➔ ${updates.installments}`);
+      if (customer.contract_date !== updates.contract_date) changes.push(`วันที่ทำสัญญา: ${customer.contract_date} ➔ ${updates.contract_date}`);
+
+      let details = `แก้ไขข้อมูลของ <b>${customer.customer_name}</b> (รายการ: ${customer.product})`;
+      if (changes.length > 0) {
+          details += `<span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300"><b>รายการที่ถูกปรับเปลี่ยน:</b><br>• ${changes.join('<br>• ')}</span>`;
+      } else {
+          details += `<span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300">ไม่มีการเปลี่ยนค่าใดๆ</span>`;
+      }
+
       const result = await window.dataSdk.update({ ...customer, ...updates, updated_at: new Date().toISOString() });
-      if (result.isOk) { await addHistory('แก้ไขข้อมูล', `แก้ไขข้อมูลลูกค้า ${customer.customer_name}`); showToast('แก้ไขข้อมูลสำเร็จ'); hideModal(); } 
+      if (result.isOk) { 
+          await addHistory('แก้ไขข้อมูล', details); 
+          showToast('แก้ไขข้อมูลสำเร็จ'); 
+          hideModal(); 
+      } 
       else showToast('เกิดข้อผิดพลาด: ' + result.error.message, true);
     }
 
@@ -541,7 +563,12 @@
     async function deleteCustomer(customerId) {
       const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
       const result = await window.dataSdk.delete(customer);
-      if (result.isOk) { await addHistory('ลบข้อมูล', `ลบลูกค้า ${customer.customer_name}`); showToast('ลบข้อมูลสำเร็จ'); confirmDeleteId = null; } 
+      if (result.isOk) { 
+          // V.9.2 Detailed Delete History
+          await addHistory('ลบข้อมูล', `ลบข้อมูลของ <b>${customer.customer_name}</b><br><span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs"><b>รายละเอียดที่ถูกลบ:</b><br>• สินค้า: ${customer.product}<br>• ราคา: ฿${(customer.product_price||0).toLocaleString()}<br>• ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()}</span>`); 
+          showToast('ลบข้อมูลสำเร็จ'); 
+          confirmDeleteId = null; 
+      } 
       else showToast('เกิดข้อผิดพลาด: ' + result.error.message, true);
     }
 
@@ -774,7 +801,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.8 (Summary UI Enhancement)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.9.2 (Detailed History)</p>
           </div>
         </div>
       `;
@@ -883,7 +910,7 @@
                   // Sort the breakdown list by lender name as well
                   const lenders = Object.keys(s.lenderTotals).sort((a, b) => a.localeCompare(b, 'th'));
 
-                  // V.8.8 Adjusting header and sizes for multiple lenders
+                  // V.8.4 Adjusting text sizes for summary red box area
                   if (isSpecialView) {
                       if (lenders.length === 1) {
                           const lenderColor = getLenderColor(lenders[0], dark);
@@ -998,7 +1025,7 @@
                                                   </button>
                                                   <button data-edit="${c.id}" class="flex items-center justify-center w-10 h-10 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#4b5563':'#e5e7eb'}; color: ${textColor};" title="แก้ไข"><span class="text-lg">✏️</span></button>
                                               </div>
-                                              ` : `<span class="px-3 py-1.5 text-sm rounded-full font-medium shadow-sm" style="background: ${lenderColor}15; color: ${lenderColor}; border: 1px solid ${lenderColor}30;">${ownerName}</span>`}
+                                              ` : `<span class="text-base font-bold" style="color: ${lenderColor};">${ownerName}</span>`}
                                           </td>
                                       </tr>
                                       `;
@@ -1140,8 +1167,10 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.9.2 (Detailed Edit History)", date: "28/02/2026", changes: ["หน้าประวัติทำรายการ: แสดงรายละเอียดการแก้ไขชัดเจนว่าเปลี่ยนค่าอะไร จากเดิมเป็นอะไร", "ปรับปรุงข้อความบันทึกประวัติการเพิ่มและลบข้อมูลให้ละเอียดขึ้น"] },
         { version: "V.9.1 (Pay All Button UI)", date: "28/02/2026", changes: ["เปลี่ยนข้อความปุ่ม 'ชำระยอดรวม' เป็น 'ชำระทั้งหมด'", "เพิ่มความสูงและปรับสัดส่วนปุ่มชำระทั้งหมดให้สมส่วนกดง่ายขึ้น"] },
         { version: "V.9.0 (Bigger Icons)", date: "28/02/2026", changes: ["ขยายขนาดไอคอนปุ่มชำระเงินและปุ่มแก้ไขในตารางให้ใหญ่และกดง่ายขึ้น"] },
+        { version: "V.8.9 (Clean UI Styles)", date: "28/02/2026", changes: ["ลบกรอบสีพื้นหลังของชื่อผู้ให้บริการออกให้เหลือแต่ข้อความ", "ขยายขนาดตัวอักษรหัวข้อ 'ผู้ให้บริการ' และ 'ยอดรวม' ให้มองเห็นชัดเจนขึ้น"] },
         { version: "V.8.8 (Summary UI Enhancement)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวอักษรยอดรวมที่ต้องชำระทั้งหมดให้ใหญ่ขึ้น", "เพิ่มหัวข้อคอลัมน์ 'ผู้ให้บริการ' และ 'ยอดรวม' เพื่อให้อ่านง่ายขึ้นในส่วนสรุปรายคน"] },
         { version: "V.8.7 (Mobile Color Fix)", date: "28/02/2026", changes: ["แก้ปัญหาแถบสีดำโผล่ทับข้อความเวลาเปิดดูข้อมูลลูกค้าในมือถือ"] },
         { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
@@ -1155,14 +1184,7 @@
         { version: "V.7.8 (Label Updates)", date: "27/02/2026", changes: ["เปลี่ยนข้อความ 'บัญชีต้นทาง' เป็น 'ผู้ให้บริการสินเชื่อ' ในโหมดตรวจสอบยอดชำระ"] },
         { version: "V.7.7 (Global Guest)", date: "27/02/2026", changes: ["หน้าตรวจสอบยอดชำระแสดงข้อมูลลูกค้าของทุกบัญชีรวมกัน", "เปลี่ยนช่องจัดการในโหมดผู้เยี่ยมชมให้แสดง 'บัญชีต้นทาง'"] },
         { version: "V.7.6 (Hover Effect)", date: "27/02/2026", changes: ["เพิ่มเอฟเฟกต์เด้ง (Pop-out) พร้อมเงาเมื่อนำเมาส์ไปชี้ที่แถบรายชื่อลูกค้าในหน้าจัดการ"] },
-        { version: "V.7.5 (Login Layout)", date: "27/02/2026", changes: ["ปรับตำแหน่งปุ่มในหน้า Login: ย้ายลงทะเบียนลงล่างสุด, ตรวจสอบยอดชำระลำดับที่ 2, ลืมรหัสผ่านมุมขวาล่าง"] },
-        { version: "V.7.4 (Default View & UI Fix)", date: "27/02/2026", changes: ["ตั้งหน้า 'จัดการรายการลูกค้า' เป็นหน้าเริ่มต้น", "ลบคำว่า 'ชื่อลูกค้า' ออกจากส่วนสรุปยอดเพื่อให้ดูสะอาดขึ้น"] },
-        { version: "V.7.3 (Clear Summary UI)", date: "27/02/2026", changes: ["ปรับปรุงการแสดงผลสรุปยอดลูกค้าให้ชัดเจนขึ้น", "เพิ่มหัวข้อ ชื่อลูกค้า และ จำนวนรายการ เพื่อให้อ่านง่าย"] },
-        { version: "V.7.2 (Accordion List)", date: "27/02/2026", changes: ["ซ่อนตารางลูกค้าเป็นค่าเริ่มต้น ป้องกันหน้าจอรก", "กดที่ชื่อลูกค้าในกรอบสรุปเพื่อกาง/พับดูรายการสินค้าแบบ Accordion"] },
-        { version: "V.7.1 (Pay Total Fix)", date: "25/02/2026", changes: ["ปุ่ม 'ชำระยอดรวม' จะกดได้ก็ต่อเมื่อมีรายการที่ถึงกำหนดชำระเท่านั้น", "เมื่อกดชำระยอดรวม จะตัดยอดเฉพาะสัญญาที่ถึงกำหนดชำระเท่านั้น"] },
-        { version: "V.7.0 (Scroll Fix)", date: "19/01/2026", changes: ["แก้ปัญหาหน้าเด้งเมื่อกดจ่ายเงิน", "เรียงรายชื่อลูกค้าตามตัวอักษร ก-ฮ"] },
-        { version: "V.6.9 (Grand Total)", date: "19/01/2026", changes: ["เพิ่มการแสดงยอดรวมที่ต้องชำระทั้งหมดในหน้าจัดการลูกค้า", "ปรับปรุงการแสดงผลสรุปยอดให้ดูง่ายขึ้น"] },
-        { version: "V.6.8 (Colors Fixed)", date: "19/01/2026", changes: ["ปุ่มออกจากระบบเป็นสีแดง ปุ่มเข้าสู่ระบบเป็นสีน้ำเงิน", "เพิ่มเวลาแสดงการแจ้งเตือนเป็น 20 วินาที"] }
+        { version: "V.7.5 (Login Layout)", date: "27/02/2026", changes: ["ปรับตำแหน่งปุ่มในหน้า Login: ย้ายลงทะเบียนลงล่างสุด, ตรวจสอบยอดชำระลำดับที่ 2, ลืมรหัสผ่านมุมขวาล่าง"] }
       ];
       return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-6">${logs.map((log, index) => `<div class="p-6 rounded-xl shadow-md custom-surface relative overflow-hidden"><div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#374151' : '#e5e7eb')}"></div><div class="flex justify-between items-start mb-4 pl-4"><div><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#e5e7eb')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-2 text-sm opacity-60" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-2 pl-4">${log.changes.map(c => `<li style="color: ${textColor}; opacity: 0.8;">${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
     }
@@ -1401,6 +1423,7 @@
           renderApp();
       }));
 
+      // V.9.2: Detailed Edit History Logic
       const editForm = document.getElementById('edit-customer-form');
       if(editForm) {
           editForm.addEventListener('submit', async (e) => {
@@ -1417,6 +1440,7 @@
                   nextPaymentDate = addMonthsToDate(newContractDate, paid + 1);
               }
 
+              // Update data and generate detail history inside updateCustomer function
               await updateCustomer(editingCustomer, {
                   customer_name: document.getElementById('edit-customer-name').value,
                   product: document.getElementById('edit-product').value,
