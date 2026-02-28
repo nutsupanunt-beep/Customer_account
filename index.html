@@ -267,16 +267,21 @@
     }
 
     function checkLogin() {
-      const sessionUser = sessionStorage.getItem('currentUser');
-      if (sessionUser) {
-        currentUser = JSON.parse(sessionUser);
+      // V.8.5: เช็คจาก localStorage ก่อน (ถ้ากด remember me) ถ้าไม่มีค่อยเช็ค sessionStorage
+      let savedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
         if (currentUser.isGuestView && currentView === 'add') currentView = 'manage';
       }
     }
 
-    function login(username, password) {
+    function login(username, password, rememberMe = false) {
       if (username === 'admin' && password === 'admin') {
         currentUser = { id: 'super_admin', username: 'Admin (Super)', isAdmin: true };
+        
+        if (rememberMe) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        else sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
         showToast('เข้าสู่ระบบ Super Admin สำเร็จ');
         renderApp();
         return true;
@@ -284,6 +289,10 @@
       const userRecord = allRecords.find(r => r.type === 'user' && r.username === username && r.password_hash === hashPassword(password));
       if (userRecord) {
         currentUser = { username: userRecord.username, id: userRecord.id };
+        
+        if (rememberMe) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        else sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
         showToast('เข้าสู่ระบบสำเร็จ');
         renderApp();
         return true;
@@ -296,6 +305,11 @@
       currentUser = null;
       currentView = 'manage'; 
       isMobileSidebarOpen = false;
+      
+      // ลบข้อมูลการล็อกอินทั้ง 2 แบบ
+      localStorage.removeItem('currentUser');
+      sessionStorage.removeItem('currentUser');
+      
       showToast(wasGuest ? 'กลับไปหน้าหลัก' : 'ออกจากระบบสำเร็จ');
       renderApp();
     }
@@ -677,6 +691,13 @@
             <div id="login-form" class="space-y-4 pb-2">
               <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="login-username" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
               <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="login-password" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+              
+              <!-- V.8.5: Remember Me Checkbox -->
+              <div class="flex items-center mt-3 mb-1">
+                  <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-gray-300 focus:ring-opacity-50" style="accent-color: ${primaryColor}; cursor: pointer;">
+                  <label for="remember-me" class="ml-2 block text-sm cursor-pointer select-none" style="color: ${textColor}; opacity: 0.8;">เข้าสู่ระบบค้างไว้</label>
+              </div>
+
               <button id="login-btn" class="w-full py-3 rounded-lg font-medium transition-colors mt-2" style="background: #3b82f6; color: white;">เข้าสู่ระบบ</button>
               <button id="guest-continue-btn" class="w-full py-3 rounded-lg font-medium transition-colors" style="background: #f59e0b; color: white;">ตรวจสอบยอดชำระ</button>
               
@@ -742,7 +763,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.4 (Font Size Updates)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.5 (Remember Me)</p>
           </div>
         </div>
       `;
@@ -1099,6 +1120,7 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.8.5 (Remember Me)", date: "28/02/2026", changes: ["เพิ่มปุ่ม 'เข้าสู่ระบบค้างไว้' ในหน้า Login", "เมื่อติ๊กถูก ระบบจะจำการล็อกอินแม้ปิดเว็บไปแล้ว"] },
         { version: "V.8.4 (Font Size Updates)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวหนังสือรายชื่อผู้ให้บริการสินเชื่อและยอดรวมในกล่องสรุปให้เห็นชัดเจนขึ้น"] },
         { version: "V.8.3 (Lender Colors)", date: "28/02/2026", changes: ["เพิ่มระบบสุ่มสีแยกตามชื่อผู้ให้บริการสินเชื่อ เพื่อให้อ่านง่ายและแยกแยะได้ชัดเจนขึ้น"] },
         { version: "V.8.2 (Sort by Lender)", date: "28/02/2026", changes: ["เรียงลำดับรายการสินค้าตามชื่อผู้ให้บริการสินเชื่อ (ก-ฮ) ในหน้าตรวจสอบยอด"] },
@@ -1162,9 +1184,10 @@
           e.preventDefault();
           const u = document.getElementById('login-username').value;
           const p = document.getElementById('login-password').value;
+          const remember = document.getElementById('remember-me') ? document.getElementById('remember-me').checked : false;
           if(!u || !p) return showToast('กรุณากรอกข้อมูล', true);
           loginBtn.innerHTML = '<div class="spinner"></div>';
-          if(!login(u,p)) { showToast('ข้อมูลไม่ถูกต้อง', true); loginBtn.innerHTML = 'เข้าสู่ระบบ'; }
+          if(!login(u,p, remember)) { showToast('ข้อมูลไม่ถูกต้อง', true); loginBtn.innerHTML = 'เข้าสู่ระบบ'; }
       });
 
       ['login-username', 'login-password'].forEach(id => {
@@ -1187,6 +1210,7 @@
               targetAccountId: 'ALL'
           };
           currentView = 'manage';
+          sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
           renderApp();
       });
 
