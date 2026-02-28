@@ -952,7 +952,7 @@
                             <div class="text-right w-full flex flex-col items-end">
                                 ${breakdownHtml}
                             </div>
-                            ${canEditData() ? `<button data-pay-all="${s.name}" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md ${hasDueItems ? '' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? '#10b981' : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระยอดรวม</button>` : ''}
+                            ${canEditData() ? `<button data-pay-all="${s.name}" onclick="event.stopPropagation();" class="px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md ${hasDueItems ? '' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? '#10b981' : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระทั้งหมด</button>` : ''}
                         </div>
                     </div>
                   `;
@@ -1140,6 +1140,7 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.9.1 (Pay All Button UI)", date: "28/02/2026", changes: ["เปลี่ยนข้อความปุ่ม 'ชำระยอดรวม' เป็น 'ชำระทั้งหมด'", "เพิ่มความสูงและปรับสัดส่วนปุ่มชำระทั้งหมดให้สมส่วนกดง่ายขึ้น"] },
         { version: "V.9.0 (Bigger Icons)", date: "28/02/2026", changes: ["ขยายขนาดไอคอนปุ่มชำระเงินและปุ่มแก้ไขในตารางให้ใหญ่และกดง่ายขึ้น"] },
         { version: "V.8.8 (Summary UI Enhancement)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวอักษรยอดรวมที่ต้องชำระทั้งหมดให้ใหญ่ขึ้น", "เพิ่มหัวข้อคอลัมน์ 'ผู้ให้บริการ' และ 'ยอดรวม' เพื่อให้อ่านง่ายขึ้นในส่วนสรุปรายคน"] },
         { version: "V.8.7 (Mobile Color Fix)", date: "28/02/2026", changes: ["แก้ปัญหาแถบสีดำโผล่ทับข้อความเวลาเปิดดูข้อมูลลูกค้าในมือถือ"] },
