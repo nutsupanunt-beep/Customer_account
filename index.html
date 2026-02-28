@@ -204,6 +204,7 @@
       </div>
   </div>
   <script>
+    // V.9.5 กู้คืนธีมสีดั้งเดิมที่คุณคุ้นเคยกลับมา
     const defaultConfig = {
       app_title: "ระบบจัดการลูกค้า",
       menu_add_customer: "เพิ่มข้อมูลลูกค้า",
@@ -212,11 +213,11 @@
       menu_settings: "การตั้งค่า",
       menu_account: "บัญชีผู้ใช้",
       menu_changelog: "ประวัติการอัปเดต",
-      primary_color: "#3b82f6",
-      secondary_color: "#1f2937",
-      text_color: "#111827",
-      background_color: "#f3f4f6",
-      surface_color: "#ffffff"
+      primary_color: "#3b82f6",     // Original Blue
+      secondary_color: "#1f2937",   
+      text_color: "#111827",        
+      background_color: "#f3f4f6",  
+      surface_color: "#ffffff"      
     };
 
     let allRecords = [];
@@ -459,6 +460,54 @@
         return isDark ? colorsDark[index] : colorsLight[index];
     }
 
+    // V.9.6 ฟังก์ชันเลือกไอคอนจากชื่อสินค้าอัตโนมัติ (เพิ่มหมวดหมู่จัดเต็ม)
+    function getProductIcon(productName) {
+        if (!productName) return '📦';
+        const name = productName.toLowerCase();
+        
+        // 1. สัตว์เลี้ยง
+        if (name.match(/(แมว|หมา|สุนัข|ปลา|นก|สัตว์เลี้ยง|อาหารแมว|อาหารหมา|ทรายแมว|กรง)/)) return '🐶';
+        
+        // 2. ความงามและของใช้ส่วนตัว
+        if (name.match(/(ครีม|เซรั่ม|ลิป|สบู่|แชมพู|โลชั่น|น้ำหอม|แป้ง|มาสก์|บำรุง|เครื่องสำอาง|กันแดด)/)) return '💄';
+        
+        // 3. บ้านและเฟอร์นิเจอร์
+        if (name.match(/(โต๊ะ|เก้าอี้|เตียง|โซฟา|ตู้|ชั้นวาง|ผ้าม่าน|หมอน|ผ้าห่ม|ที่นอน|เฟอร์นิเจอร์)/)) return '🛋️';
+        
+        // 4. เครื่องมือช่างและอุปกรณ์สวน
+        if (name.match(/(สว่าน|ค้อน|น็อต|เลื่อย|ไขควง|ตลับเมตร|เครื่องมือ|สายยาง|จอบ|เสียม|กรรไกรตัดหญ้า)/)) return '🛠️';
+        
+        // 5. กีฬาและออกกำลังกาย
+        if (name.match(/(ดัมเบล|ลู่วิ่ง|ลูกฟุตบอล|ฟุตบอล|แบดมินตัน|กอล์ฟ|โยคะ|จักรยานออกกำลัง|เวย์|โปรตีน)/)) return '⚽';
+        
+        // 6. หนังสือและเครื่องเขียน
+        if (name.match(/(หนังสือ|สมุด|ปากกา|ดินสอ|ยางลบ|ไม้บรรทัด|แฟ้ม|กระดาษ)/)) return '📚';
+        
+        // 7. เครื่องประดับและนาฬิกา
+        if (name.match(/(นาฬิกา|สร้อย|แหวน|แว่น|ต่างหู|กำไล|เครื่องประดับ|watch)/)) return '⌚';
+        
+        // 8. ของเล่นและเกม
+        if (name.match(/(เกม|ของเล่น|ตุ๊กตา|เลโก้|crybaby|art toy|กล่องสุ่ม|ps5|nintendo|บอร์ดเกม)/)) return '🎮';
+
+        // 9. อาหาร ยา เครื่องดื่ม
+        if (name.match(/(อาหาร|ขนม|น้ำ|ข้าว|ยา|ไก่|หมู|เนื้อ|ผลไม้|ผัก|กาแฟ|เครื่องดื่ม|ชา|วิตามิน)/)) return '🍎';
+        
+        // 10. ยานพาหนะ อุปกรณ์แต่งรถ
+        if (name.match(/(รถ|มอเตอร์ไซค์|จักรยาน|ยาง|ล้อ|เครื่องยนต์|น้ำมัน|อะไหล่|carplay|ฟองน้ำ|หมวกกันน็อค|เบาะ)/)) return '🚗';
+        
+        // 11. เครื่องใช้ไฟฟ้า
+        if (name.match(/(ทีวี|แอร์|ตู้เย็น|พัดลม|เครื่องซักผ้า|ปั่น|ไมโครเวฟ|เตารีด|ดูดฝุ่น|tv|เตา|หม้อทอด)/)) return '📺';
+        
+        // 12. อิเล็กทรอนิกส์ ไอที มือถือ
+        if (name.match(/(มือถือ|โทรศัพท์|ไอโฟน|iphone|samsung|ซัมซุง|คอม|โน๊ตบุ๊ค|แท็บเล็ต|ipad|หูฟัง|ลำโพง|ชาร์จ|แบต|คีย์บอร์ด|เมาส์|จอ|apple|กล้อง|camera|เลนส์|ไมค์)/)) return '📱';
+        
+        // 13. แฟชั่น ของใช้ทั่วไป
+        if (name.match(/(กระเป๋า|เสื้อ|กางเกง|รองเท้า|หมวก|ผ้า|พรม|แปรง|ถุงเท้า|เข็มขัด)/)) return '🛍️';
+
+        // ค่าเริ่มต้น
+        return '📦'; 
+    }
+
     function getAutocompleteData() {
       return JSON.parse(localStorage.getItem('app_autocomplete_options') || '{"names":[], "products":[], "prices":[], "interests":[], "installments":[], "fees":[]}');
     }
@@ -484,7 +533,6 @@
       };
       const result = await window.dataSdk.create(newCustomer);
       if (result.isOk) {
-        // V.9.2 Detailed Add History
         await addHistory('เพิ่มข้อมูล', `เพิ่มข้อมูลลูกค้า <b>${customerData.customerName}</b><br><span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs"><b>รายละเอียด:</b><br>• สินค้า: ${customerData.product}<br>• ราคา: ฿${(customerData.productPrice||0).toLocaleString()}</span>`);
         saveAutocompleteData(customerData); showToast('เพิ่มข้อมูลลูกค้าสำเร็จ');
       } else showToast('เกิดข้อผิดพลาด: ' + result.error.message, true);
@@ -493,7 +541,6 @@
     async function updateCustomer(customerId, updates) {
       const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
       
-      // V.9.2: Calculate specific changes for detailed history
       let changes = [];
       if (customer.customer_name !== updates.customer_name) changes.push(`ชื่อลูกค้า: ${customer.customer_name} ➔ ${updates.customer_name}`);
       if (customer.product !== updates.product) changes.push(`สินค้า: ${customer.product} ➔ ${updates.product}`);
@@ -564,7 +611,6 @@
       const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
       const result = await window.dataSdk.delete(customer);
       if (result.isOk) { 
-          // V.9.2 Detailed Delete History
           await addHistory('ลบข้อมูล', `ลบข้อมูลของ <b>${customer.customer_name}</b><br><span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs"><b>รายละเอียดที่ถูกลบ:</b><br>• สินค้า: ${customer.product}<br>• ราคา: ฿${(customer.product_price||0).toLocaleString()}<br>• ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()}</span>`); 
           showToast('ลบข้อมูลสำเร็จ'); 
           confirmDeleteId = null; 
@@ -692,9 +738,7 @@
           <!-- Mobile Header -->
           <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface" style="color: ${textColor}; background: ${surfaceColor};">
             <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <span class="text-2xl font-bold">≡</span>
             </button>
             <div class="flex items-center gap-2 flex-1 justify-center">
                 <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" class="h-10 w-auto object-contain">
@@ -727,12 +771,12 @@
                 <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 280px; height: auto;" class="object-contain">
             </div>
             <div id="login-form" class="space-y-4 pb-2">
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="login-username" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="login-password" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="login-username" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:outline-none transition-all" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];"></div>
+              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="login-password" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:outline-none transition-all" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];"></div>
               
               <!-- V.8.5: Remember Me Checkbox -->
               <div class="flex items-center mt-3 mb-1">
-                  <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-gray-300 focus:ring-opacity-50" style="accent-color: ${primaryColor}; cursor: pointer;">
+                  <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-gray-300 focus:ring-[${primaryColor}]" style="accent-color: ${primaryColor}; cursor: pointer;">
                   <label for="remember-me" class="ml-2 block text-sm cursor-pointer select-none" style="color: ${textColor}; opacity: 0.8;">เข้าสู่ระบบค้างไว้</label>
               </div>
 
@@ -801,7 +845,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.9.3 (Mobile Layout)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.9.6 (Extended Emojis)</p>
           </div>
         </div>
       `;
@@ -990,7 +1034,7 @@
                                       <th class="px-3 py-2 text-left font-semibold">งวดทั้งหมด</th>
                                       <th class="px-3 py-2 text-left font-semibold">งวดถัดไป</th>
                                       <!-- For guests, this column will show the account owner instead of manage buttons -->
-                                      <th class="px-3 py-2 text-center font-semibold">${canEditData() ? 'จัดการ' : 'ผู้ให้บริการสินเชื่อ'}</th>
+                                      <th class="px-3 py-2 text-center font-semibold">${canEditData() ? 'จัดการ' : 'ผู้ให้บริการ'}</th>
                                   </tr>
                               </thead>
                               <tbody>
@@ -1006,7 +1050,11 @@
                                       
                                       return `
                                       <tr class="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f3f4f6'};">
-                                          <td class="px-3 py-3 font-medium" style="color: ${textColor};">${c.product}</td>
+                                          <td class="px-3 py-3 font-medium flex items-center gap-2" style="color: ${textColor};">
+                                              <!-- V.9.6 Render Emoji Icon here -->
+                                              <span class="text-xl">${getProductIcon(c.product)}</span>
+                                              <span>${c.product}</span>
+                                          </td>
                                           <td class="px-3 py-3 opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
                                           <td class="px-3 py-3 font-semibold" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
                                           <td class="px-3 py-3 opacity-80" style="color: ${textColor};">${c.paid_installments}/${c.installments}</td>
@@ -1161,6 +1209,9 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.9.6 (Extended Emojis)", date: "28/02/2026", changes: ["เพิ่มความหลากหลายของหมวดหมู่ไอคอน Emoji (สัตว์เลี้ยง, ความงาม, บ้าน, ช่าง, เกม, ฯลฯ) ให้ครอบคลุมสินค้ามากขึ้น"] },
+        { version: "V.9.5 (Restored Theme & Fixes)", date: "28/02/2026", changes: ["กู้คืนสีแอปหลักเป็นโทนสว่างสีฟ้าแบบดั้งเดิม", "กู้คืนระบบโหลดโลโก้ และไอคอนแถบเมนูข้างทั้งหมด", "คงระบบการแสดงไอคอน Emoji หน้าชื่อสินค้า 🍎🚗📺📱 ไว้ในตาราง"] },
+        { version: "V.9.4 (Mockup)", date: "28/02/2026", changes: ["เพิ่มระบบตรวจจับคำในชื่อสินค้าเพื่อเปลี่ยนเป็นไอคอน Emoji อัตโนมัติ"] },
         { version: "V.9.3 (Mobile Layout)", date: "28/02/2026", changes: ["ปรับการแสดงผลจำนวนสัญญาบนมือถือให้อยู่ในบรรทัดเดียวกันเพื่อความสวยงามและประหยัดพื้นที่"] },
         { version: "V.9.2 (Detailed Edit History)", date: "28/02/2026", changes: ["หน้าประวัติทำรายการ: แสดงรายละเอียดการแก้ไขชัดเจนว่าเปลี่ยนค่าอะไร จากเดิมเป็นอะไร", "ปรับปรุงข้อความบันทึกประวัติการเพิ่มและลบข้อมูลให้ละเอียดขึ้น"] },
         { version: "V.9.1 (Pay All Button UI)", date: "28/02/2026", changes: ["เปลี่ยนข้อความปุ่ม 'ชำระยอดรวม' เป็น 'ชำระทั้งหมด'", "เพิ่มความสูงและปรับสัดส่วนปุ่มชำระทั้งหมดให้สมส่วนกดง่ายขึ้น"] },
@@ -1169,24 +1220,7 @@
         { version: "V.8.8 (Summary UI Enhancement)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวอักษรยอดรวมที่ต้องชำระทั้งหมดให้ใหญ่ขึ้น", "เพิ่มหัวข้อคอลัมน์ 'ผู้ให้บริการ' และ 'ยอดรวม' เพื่อให้อ่านง่ายขึ้นในส่วนสรุปรายคน"] },
         { version: "V.8.7 (Mobile Color Fix)", date: "28/02/2026", changes: ["แก้ปัญหาแถบสีดำโผล่ทับข้อความเวลาเปิดดูข้อมูลลูกค้าในมือถือ"] },
         { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
-        { version: "V.8.5 (Remember Me)", date: "28/02/2026", changes: ["เพิ่มปุ่ม 'เข้าสู่ระบบค้างไว้' ในหน้า Login", "เมื่อติ๊กถูก ระบบจะจำการล็อกอินแม้ปิดเว็บไปแล้ว"] },
-        { version: "V.8.4 (Font Size Updates)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวหนังสือรายชื่อผู้ให้บริการสินเชื่อและยอดรวมในกล่องสรุปให้เห็นชัดเจนขึ้น"] },
-        { version: "V.8.3 (Lender Colors)", date: "28/02/2026", changes: ["เพิ่มระบบสุ่มสีแยกตามชื่อผู้ให้บริการสินเชื่อ เพื่อให้อ่านง่ายและแยกแยะได้ชัดเจนขึ้น"] },
-        { version: "V.8.2 (Sort by Lender)", date: "28/02/2026", changes: ["เรียงลำดับรายการสินค้าตามชื่อผู้ให้บริการสินเชื่อ (ก-ฮ) ในหน้าตรวจสอบยอด"] },
-        { version: "V.8.1 (Custom Pay Icon)", date: "27/02/2026", changes: ["เปลี่ยนไอคอนปุ่มชำระเงินรายสัญญาเป็นรูปภาพตามที่ผู้ใช้อัปโหลด (pay-icon.png)"] },
-        { version: "V.8.0 (Guest Names Update)", date: "27/02/2026", changes: ["เปลี่ยนข้อความการล็อกอินแบบเยี่ยมชมเป็น 'หน้าตรวจสอบยอด'", "ปรับปุ่มล็อกเอาท์ในโหมดเยี่ยมชมเป็น 'กลับไปหน้าหลัก'"] },
-        { version: "V.7.9 (Lender Breakdown)", date: "27/02/2026", changes: ["หน้าตรวจสอบยอดชำระ หากลูกค้ามีสินเชื่อจากหลายผู้ให้บริการ จะแยกแสดงยอดชำระรวมของแต่ละคนให้อัตโนมัติ"] },
-        { version: "V.7.8 (Label Updates)", date: "27/02/2026", changes: ["เปลี่ยนข้อความ 'บัญชีต้นทาง' เป็น 'ผู้ให้บริการสินเชื่อ' ในโหมดตรวจสอบยอดชำระ"] },
-        { version: "V.7.7 (Global Guest)", date: "27/02/2026", changes: ["หน้าตรวจสอบยอดชำระแสดงข้อมูลลูกค้าของทุกบัญชีรวมกัน", "เปลี่ยนช่องจัดการในโหมดผู้เยี่ยมชมให้แสดง 'บัญชีต้นทาง'"] },
-        { version: "V.7.6 (Hover Effect)", date: "27/02/2026", changes: ["เพิ่มเอฟเฟกต์เด้ง (Pop-out) พร้อมเงาเมื่อนำเมาส์ไปชี้ที่แถบรายชื่อลูกค้าในหน้าจัดการ"] },
-        { version: "V.7.5 (Login Layout)", date: "27/02/2026", changes: ["ปรับตำแหน่งปุ่มในหน้า Login: ย้ายลงทะเบียนลงล่างสุด, ตรวจสอบยอดชำระลำดับที่ 2, ลืมรหัสผ่านมุมขวาล่าง"] },
-        { version: "V.7.4 (Default View & UI Fix)", date: "27/02/2026", changes: ["ตั้งหน้า 'จัดการรายการลูกค้า' เป็นหน้าเริ่มต้น", "ลบคำว่า 'ชื่อลูกค้า' ออกจากส่วนสรุปยอดเพื่อให้ดูสะอาดขึ้น"] },
-        { version: "V.7.3 (Clear Summary UI)", date: "27/02/2026", changes: ["ปรับปรุงการแสดงผลสรุปยอดลูกค้าให้ชัดเจนขึ้น", "เพิ่มหัวข้อ ชื่อลูกค้า และ จำนวนรายการ เพื่อให้อ่านง่าย"] },
-        { version: "V.7.2 (Accordion List)", date: "27/02/2026", changes: ["ซ่อนตารางลูกค้าเป็นค่าเริ่มต้น ป้องกันหน้าจอรก", "กดที่ชื่อลูกค้าในกรอบสรุปเพื่อกาง/พับดูรายการสินค้าแบบ Accordion"] },
-        { version: "V.7.1 (Pay Total Fix)", date: "25/02/2026", changes: ["ปุ่ม 'ชำระยอดรวม' จะกดได้ก็ต่อเมื่อมีรายการที่ถึงกำหนดชำระเท่านั้น", "เมื่อกดชำระยอดรวม จะตัดยอดเฉพาะสัญญาที่ถึงกำหนดชำระเท่านั้น"] },
-        { version: "V.7.0 (Scroll Fix)", date: "19/01/2026", changes: ["แก้ปัญหาหน้าเด้งเมื่อกดจ่ายเงิน", "เรียงรายชื่อลูกค้าตามตัวอักษร ก-ฮ"] },
-        { version: "V.6.9 (Grand Total)", date: "19/01/2026", changes: ["เพิ่มการแสดงยอดรวมที่ต้องชำระทั้งหมดในหน้าจัดการลูกค้า", "ปรับปรุงการแสดงผลสรุปยอดให้ดูง่ายขึ้น"] },
-        { version: "V.6.8 (Colors Fixed)", date: "19/01/2026", changes: ["ปุ่มออกจากระบบเป็นสีแดง ปุ่มเข้าสู่ระบบเป็นสีน้ำเงิน", "เพิ่มเวลาแสดงการแจ้งเตือนเป็น 20 วินาที"] }
+        { version: "V.8.5 (Remember Me)", date: "28/02/2026", changes: ["เพิ่มปุ่ม 'เข้าสู่ระบบค้างไว้' ในหน้า Login", "เมื่อติ๊กถูก ระบบจะจำการล็อกอินแม้ปิดเว็บไปแล้ว"] }
       ];
       return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-6">${logs.map((log, index) => `<div class="p-6 rounded-xl shadow-md custom-surface relative overflow-hidden"><div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#374151' : '#e5e7eb')}"></div><div class="flex justify-between items-start mb-4 pl-4"><div><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#e5e7eb')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-2 text-sm opacity-60" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-2 pl-4">${log.changes.map(c => `<li style="color: ${textColor}; opacity: 0.8;">${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
     }
@@ -1373,8 +1407,8 @@
       }
 
       document.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', async (e) => {
-          const id = e.currentTarget.dataset.pay;
-          e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
+          const id = e.currentTarget.closest('button').dataset.pay;
+          e.currentTarget.closest('button').innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
           await makePayment(id);
       }));
       
@@ -1388,7 +1422,7 @@
       }));
 
       document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', (e) => {
-          editingCustomer = e.currentTarget.dataset.edit;
+          editingCustomer = e.currentTarget.closest('button').dataset.edit;
           renderApp();
       }));
 
@@ -1425,7 +1459,6 @@
           renderApp();
       }));
 
-      // V.9.2: Detailed Edit History Logic
       const editForm = document.getElementById('edit-customer-form');
       if(editForm) {
           editForm.addEventListener('submit', async (e) => {
@@ -1442,7 +1475,6 @@
                   nextPaymentDate = addMonthsToDate(newContractDate, paid + 1);
               }
 
-              // Update data and generate detail history inside updateCustomer function
               await updateCustomer(editingCustomer, {
                   customer_name: document.getElementById('edit-customer-name').value,
                   product: document.getElementById('edit-product').value,
