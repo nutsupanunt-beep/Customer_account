@@ -431,6 +431,19 @@
       return daysUntil <= daysBefore;
     }
 
+    // ฟังก์ชันสร้างสีจากชื่อผู้ให้บริการ (Lender)
+    function getLenderColor(name, isDark) {
+        if (!name || name === '-') return isDark ? '#9ca3af' : '#6b7280'; // Gray fallback
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const colorsLight = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0d9488', '#db2777', '#4f46e5', '#ca8a04', '#059669'];
+        const colorsDark = ['#60a5fa', '#f87171', '#4ade80', '#c084fc', '#fb923c', '#2dd4bf', '#f472b6', '#818cf8', '#facc15', '#34d399'];
+        const index = Math.abs(hash) % colorsLight.length;
+        return isDark ? colorsDark[index] : colorsLight[index];
+    }
+
     function getAutocompleteData() {
       return JSON.parse(localStorage.getItem('app_autocomplete_options') || '{"names":[], "products":[], "prices":[], "interests":[], "installments":[], "fees":[]}');
     }
@@ -729,7 +742,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.1 (Custom Pay Icon)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.4 (Font Size Updates)</p>
           </div>
         </div>
       `;
@@ -817,41 +830,60 @@
                 ${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}
                 ${summary.map(s=>{
                   const customerItems = customers.filter(c => c.customer_name === s.name);
+                  
+                  // NEW V.8.2: Sort customer items alphabetically by lender name (account owner's username)
+                  customerItems.sort((a, b) => {
+                      let ownerA = '-';
+                      const userA = allRecords.find(r => r.type === 'user' && r.id === a.account_id);
+                      if(userA) ownerA = userA.username;
+                      
+                      let ownerB = '-';
+                      const userB = allRecords.find(r => r.type === 'user' && r.id === b.account_id);
+                      if(userB) ownerB = userB.username;
+                      
+                      return ownerA.localeCompare(ownerB, 'th');
+                  });
+
                   const hasDueItems = customerItems.some(c => canPayNow(c.next_payment_date, daysBefore));
                   const isExpanded = expandedCustomerName === s.name;
                   
-                  // Breakdown logic for right side
                   let breakdownHtml = '';
-                  const lenders = Object.keys(s.lenderTotals);
+                  // Sort the breakdown list by lender name as well
+                  const lenders = Object.keys(s.lenderTotals).sort((a, b) => a.localeCompare(b, 'th'));
 
+                  // V.8.4 Adjusting text sizes for summary red box area
                   if (isSpecialView) {
                       if (lenders.length === 1) {
+                          const lenderColor = getLenderColor(lenders[0], dark);
                           breakdownHtml = `
                               <div class="flex flex-col items-end">
-                                  <span class="text-[11px] font-semibold opacity-60 mb-1" style="color: ${textColor};">ยอดชำระ (ผู้ให้บริการ: ${lenders[0]})</span>
-                                  <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.lenderTotals[lenders[0]].toLocaleString()}</p>
+                                  <span class="text-sm font-semibold opacity-80 mb-1" style="color: ${lenderColor};">ยอดชำระ (ผู้ให้บริการ: ${lenders[0]})</span>
+                                  <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${s.lenderTotals[lenders[0]].toLocaleString()}</p>
                               </div>
                           `;
                       } else {
-                          breakdownHtml = lenders.map(lender => `
-                              <div class="flex items-center justify-end gap-2 mb-1.5 w-full">
-                                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded" style="background: ${primaryColor}15; color: ${primaryColor};">ผู้ให้บริการ: ${lender}</span>
-                                  <span class="text-lg font-bold" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
+                          breakdownHtml = lenders.map(lender => {
+                              const lenderColor = getLenderColor(lender, dark);
+                              return `
+                              <div class="flex items-center justify-end gap-2 mb-2 w-full">
+                                  <span class="text-sm font-medium px-2 py-0.5 rounded" style="background: ${lenderColor}15; color: ${lenderColor}; border: 1px solid ${lenderColor}30;">ผู้ให้บริการ: ${lender}</span>
+                                  <span class="text-xl font-bold" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
                               </div>
-                          `).join('');
+                              `;
+                          }).join('');
                           
                           breakdownHtml += `
-                              <div class="flex items-center justify-end gap-2 mt-2 pt-2 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                                  <span class="text-[11px] font-semibold opacity-60 uppercase" style="color: ${textColor};">รวมทุกสัญญา</span>
-                                  <span class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
+                              <div class="flex items-center justify-end gap-3 mt-3 pt-3 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                                  <span class="text-base font-semibold opacity-80 uppercase" style="color: ${textColor};">รวมทุกสัญญา</span>
+                                  <span class="text-2xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
                               </div>
                           `;
                       }
                   } else {
                       breakdownHtml = `
                           <div class="flex flex-col items-end">
-                              <span class="text-[11px] font-semibold opacity-60 uppercase mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</span>
-                              <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
+                              <span class="text-sm font-semibold opacity-80 uppercase mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</span>
+                              <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
                           </div>
                       `;
                   }
@@ -891,7 +923,6 @@
                               <thead style="color: ${textColor}; border-bottom: 2px solid ${dark?'#374151':'#e5e7eb'};">
                                   <tr>
                                       <th class="px-3 py-2 text-left font-semibold">สินค้า</th>
-                                      ${isAdmin ? `<th class="px-3 py-2 text-left font-semibold">เจ้าของ</th>` : ''}
                                       <th class="px-3 py-2 text-left font-semibold">ราคาสินค้า</th>
                                       <th class="px-3 py-2 text-left font-semibold">ค่างวด</th>
                                       <th class="px-3 py-2 text-left font-semibold">งวดทั้งหมด</th>
@@ -908,11 +939,12 @@
                                       let ownerName = '-';
                                       const o = allRecords.find(r => r.type === 'user' && r.id === c.account_id);
                                       if(o) ownerName = o.username;
+
+                                      const lenderColor = getLenderColor(ownerName, dark);
                                       
                                       return `
                                       <tr class="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f3f4f6'};">
                                           <td class="px-3 py-3 font-medium" style="color: ${textColor};">${c.product}</td>
-                                          ${isAdmin ? `<td class="px-3 py-3 opacity-70" style="color: ${textColor};">${ownerName}</td>` : ''}
                                           <td class="px-3 py-3 opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
                                           <td class="px-3 py-3 font-semibold" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
                                           <td class="px-3 py-3 opacity-80" style="color: ${textColor};">${c.paid_installments}/${c.installments}</td>
@@ -925,7 +957,7 @@
                                                   </button>
                                                   <button data-edit="${c.id}" class="flex items-center justify-center w-8 h-8 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#4b5563':'#e5e7eb'}; color: ${textColor};" title="แก้ไข">✏️</button>
                                               </div>
-                                              ` : `<span class="px-2 py-1 text-xs rounded-full font-medium" style="background: ${primaryColor}15; color: ${primaryColor};">${ownerName}</span>`}
+                                              ` : `<span class="px-3 py-1.5 text-sm rounded-full font-medium shadow-sm" style="background: ${lenderColor}15; color: ${lenderColor}; border: 1px solid ${lenderColor}30;">${ownerName}</span>`}
                                           </td>
                                       </tr>
                                       `;
@@ -1067,6 +1099,9 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.8.4 (Font Size Updates)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวหนังสือรายชื่อผู้ให้บริการสินเชื่อและยอดรวมในกล่องสรุปให้เห็นชัดเจนขึ้น"] },
+        { version: "V.8.3 (Lender Colors)", date: "28/02/2026", changes: ["เพิ่มระบบสุ่มสีแยกตามชื่อผู้ให้บริการสินเชื่อ เพื่อให้อ่านง่ายและแยกแยะได้ชัดเจนขึ้น"] },
+        { version: "V.8.2 (Sort by Lender)", date: "28/02/2026", changes: ["เรียงลำดับรายการสินค้าตามชื่อผู้ให้บริการสินเชื่อ (ก-ฮ) ในหน้าตรวจสอบยอด"] },
         { version: "V.8.1 (Custom Pay Icon)", date: "27/02/2026", changes: ["เปลี่ยนไอคอนปุ่มชำระเงินรายสัญญาเป็นรูปภาพตามที่ผู้ใช้อัปโหลด (pay-icon.png)"] },
         { version: "V.8.0 (Guest Names Update)", date: "27/02/2026", changes: ["เปลี่ยนข้อความการล็อกอินแบบเยี่ยมชมเป็น 'หน้าตรวจสอบยอด'", "ปรับปุ่มล็อกเอาท์ในโหมดเยี่ยมชมเป็น 'กลับไปหน้าหลัก'"] },
         { version: "V.7.9 (Lender Breakdown)", date: "27/02/2026", changes: ["หน้าตรวจสอบยอดชำระ หากลูกค้ามีสินเชื่อจากหลายผู้ให้บริการ จะแยกแสดงยอดชำระรวมของแต่ละคนให้อัตโนมัติ"] },
