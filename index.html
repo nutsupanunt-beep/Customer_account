@@ -880,8 +880,8 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4" style="border-color: ${dark?'#374151':'#e5e7eb'};">
                     <h3 class="text-lg font-semibold" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
                     <div class="text-left sm:text-right mt-2 sm:mt-0">
-                        <p class="text-sm font-semibold opacity-80 mb-1" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
-                        <p class="text-3xl font-bold" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
+                        <p class="text-base font-bold opacity-80 mb-1" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
+                        <p class="text-4xl font-black tracking-tight" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
                     </div>
                 </div>
                 
@@ -910,43 +910,37 @@
                   // Sort the breakdown list by lender name as well
                   const lenders = Object.keys(s.lenderTotals).sort((a, b) => a.localeCompare(b, 'th'));
 
-                  // V.8.4 Adjusting text sizes for summary red box area
+                  // V.8.9 Unified summary UI
                   if (isSpecialView) {
-                      if (lenders.length === 1) {
-                          const lenderColor = getLenderColor(lenders[0], dark);
-                          breakdownHtml = `
-                              <div class="flex flex-col items-end">
-                                  <span class="text-sm font-semibold opacity-80 mb-1" style="color: ${lenderColor};">ยอดชำระ (ผู้ให้บริการ: ${lenders[0]})</span>
-                                  <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${s.lenderTotals[lenders[0]].toLocaleString()}</p>
+                      breakdownHtml = `
+                          <div class="w-full flex flex-col items-end">
+                              <div class="flex items-center justify-end gap-3 mb-2 w-full border-b pb-1" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'}60;">
+                                  <span class="text-sm font-semibold opacity-70" style="color: ${textColor};">ผู้ให้บริการ</span>
+                                  <span class="text-sm font-semibold opacity-70 w-24 text-right" style="color: ${textColor};">ยอดรวม</span>
                               </div>
-                          `;
-                      } else {
-                          breakdownHtml = `
-                              <div class="w-full flex flex-col items-end">
-                                  <div class="flex items-center justify-end gap-3 mb-2 w-full border-b pb-1" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'}60;">
-                                      <span class="text-sm font-semibold opacity-70" style="color: ${textColor};">ผู้ให้บริการ</span>
-                                      <span class="text-sm font-semibold opacity-70 w-24 text-right" style="color: ${textColor};">ยอดรวม</span>
-                                  </div>
-                          `;
+                      `;
 
-                          breakdownHtml += lenders.map(lender => {
-                              const lenderColor = getLenderColor(lender, dark);
-                              return `
-                              <div class="flex items-center justify-end gap-3 mb-2 w-full">
-                                  <span class="text-base font-bold" style="color: ${lenderColor};">${lender}</span>
-                                  <span class="text-xl font-bold w-24 text-right" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
-                              </div>
-                              `;
-                          }).join('');
-                          
+                      breakdownHtml += lenders.map(lender => {
+                          const lenderColor = getLenderColor(lender, dark);
+                          return `
+                          <div class="flex items-center justify-end gap-3 mb-2 w-full">
+                              <span class="text-base font-bold" style="color: ${lenderColor};">${lender}</span>
+                              <span class="text-xl font-bold w-24 text-right" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
+                          </div>
+                          `;
+                      }).join('');
+                      
+                      // แสดงยอดรวมเฉพาะกรณีที่มีผู้ให้บริการหลายคนเพื่อไม่ให้ข้อมูลซ้ำซ้อน
+                      if (lenders.length > 1) {
                           breakdownHtml += `
                                   <div class="flex items-center justify-end gap-3 mt-2 pt-2 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
                                       <span class="text-base font-semibold opacity-80" style="color: ${textColor};">รวมทุกสัญญา</span>
                                       <span class="text-2xl font-bold w-24 text-right" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
                                   </div>
-                              </div>
                           `;
                       }
+                      
+                      breakdownHtml += `</div>`;
                   } else {
                       breakdownHtml = `
                           <div class="flex flex-col items-end">
@@ -1167,10 +1161,7 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
-        { version: "V.9.2 (Detailed Edit History)", date: "28/02/2026", changes: ["หน้าประวัติทำรายการ: แสดงรายละเอียดการแก้ไขชัดเจนว่าเปลี่ยนค่าอะไร จากเดิมเป็นอะไร", "ปรับปรุงข้อความบันทึกประวัติการเพิ่มและลบข้อมูลให้ละเอียดขึ้น"] },
-        { version: "V.9.1 (Pay All Button UI)", date: "28/02/2026", changes: ["เปลี่ยนข้อความปุ่ม 'ชำระยอดรวม' เป็น 'ชำระทั้งหมด'", "เพิ่มความสูงและปรับสัดส่วนปุ่มชำระทั้งหมดให้สมส่วนกดง่ายขึ้น"] },
-        { version: "V.9.0 (Bigger Icons)", date: "28/02/2026", changes: ["ขยายขนาดไอคอนปุ่มชำระเงินและปุ่มแก้ไขในตารางให้ใหญ่และกดง่ายขึ้น"] },
-        { version: "V.8.9 (Clean UI Styles)", date: "28/02/2026", changes: ["ลบกรอบสีพื้นหลังของชื่อผู้ให้บริการออกให้เหลือแต่ข้อความ", "ขยายขนาดตัวอักษรหัวข้อ 'ผู้ให้บริการ' และ 'ยอดรวม' ให้มองเห็นชัดเจนขึ้น"] },
+        { version: "V.8.9 (Unified Summary UI)", date: "28/02/2026", changes: ["ปรับข้อความ 'ยอดรวมที่ต้องชำระทั้งหมด' และตัวเลขให้ใหญ่และชัดเจนขึ้น", "ปรับรูปแบบการแสดงผลสรุปยอดกรณีมีผู้ให้บริการรายเดียวให้เหมือนกับรายหลายคน (มีหัวข้อผู้ให้บริการและยอดรวม)"] },
         { version: "V.8.8 (Summary UI Enhancement)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวอักษรยอดรวมที่ต้องชำระทั้งหมดให้ใหญ่ขึ้น", "เพิ่มหัวข้อคอลัมน์ 'ผู้ให้บริการ' และ 'ยอดรวม' เพื่อให้อ่านง่ายขึ้นในส่วนสรุปรายคน"] },
         { version: "V.8.7 (Mobile Color Fix)", date: "28/02/2026", changes: ["แก้ปัญหาแถบสีดำโผล่ทับข้อความเวลาเปิดดูข้อมูลลูกค้าในมือถือ"] },
         { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
