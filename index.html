@@ -219,13 +219,14 @@
 
     let allRecords = [];
     let currentUser = null;
-    let currentView = 'add';
+    let currentView = 'manage'; // Default view
     let editingCustomer = null;
     let editingUser = null;
     let confirmDeleteId = null;
     let showingModal = null;
     let isMobileSidebarOpen = false;
     let manageSearchTerm = '';
+    let expandedCustomerName = null;
 
     const dataHandler = {
       onDataChanged(data) {
@@ -234,12 +235,21 @@
       }
     };
 
+    window.toggleCustomerExpand = function(name) {
+        if (expandedCustomerName === name) {
+            expandedCustomerName = null; 
+        } else {
+            expandedCustomerName = name; 
+        }
+        renderApp();
+    };
+
     function showToast(message, isError = false) {
       const toast = document.createElement('div');
       toast.className = `toast ${isError ? 'error' : ''}`;
       toast.textContent = message;
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 20000);
+      setTimeout(() => toast.remove(), 20000); // 20 seconds
     }
 
     function showModal(content) { showingModal = content; renderApp(); }
@@ -267,7 +277,6 @@
     function login(username, password) {
       if (username === 'admin' && password === 'admin') {
         currentUser = { id: 'super_admin', username: 'Admin (Super)', isAdmin: true };
-        // Removed sessionStorage.setItem
         showToast('เข้าสู่ระบบ Super Admin สำเร็จ');
         renderApp();
         return true;
@@ -275,7 +284,6 @@
       const userRecord = allRecords.find(r => r.type === 'user' && r.username === username && r.password_hash === hashPassword(password));
       if (userRecord) {
         currentUser = { username: userRecord.username, id: userRecord.id };
-        // Removed sessionStorage.setItem
         showToast('เข้าสู่ระบบสำเร็จ');
         renderApp();
         return true;
@@ -284,11 +292,11 @@
     }
 
     function logout() {
+      const wasGuest = currentUser && currentUser.isGuestView;
       currentUser = null;
-      // Removed sessionStorage.removeItem (not needed)
-      currentView = 'add';
+      currentView = 'manage'; 
       isMobileSidebarOpen = false;
-      showToast('ออกจากระบบสำเร็จ');
+      showToast(wasGuest ? 'กลับไปหน้าหลัก' : 'ออกจากระบบสำเร็จ');
       renderApp();
     }
 
@@ -338,7 +346,7 @@
     }
 
     function getGlobalLogoSettings() {
-        return { login: 280, sidebar: 160 }; // Fixed sizes as requested
+        return { login: 280, sidebar: 160 }; 
     }
 
     async function saveSettings(data) {
@@ -450,7 +458,6 @@
       if (result.isOk) {
         await addHistory('เพิ่มข้อมูล', `เพิ่มลูกค้า ${customerData.customerName} สินค้า ${customerData.product}`);
         saveAutocompleteData(customerData); showToast('เพิ่มข้อมูลลูกค้าสำเร็จ');
-        // REMOVED localStorage saving logic as requested
       } else showToast('เกิดข้อผิดพลาด: ' + result.error.message, true);
     }
 
@@ -475,10 +482,8 @@
       }
     }
 
-    // New Function for Bulk Payment
     async function payAllForCustomer(name) {
         const daysBefore = getPaymentDaysBefore();
-        // ฟิลเตอร์เฉพาะรายการที่ "ถึงกำหนดชำระแล้ว" เท่านั้น
         const targets = getActiveCustomers().filter(c => c.customer_name === name && canPayNow(c.next_payment_date, daysBefore));
         if(targets.length === 0) {
             showToast('ไม่มีรายการที่ถึงกำหนดชำระ', true);
@@ -534,20 +539,29 @@
 
     function getActiveCustomers() {
       if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r.type === 'customer' && r.status === 'active');
-      if (currentUser && currentUser.isGuestView) return allRecords.filter(r => r.type === 'customer' && r.status === 'active' && r.account_id === currentUser.targetAccountId);
+      if (currentUser && currentUser.isGuestView) {
+          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r.type === 'customer' && r.status === 'active');
+          return allRecords.filter(r => r.type === 'customer' && r.status === 'active' && r.account_id === currentUser.targetAccountId);
+      }
       return allRecords.filter(r => r.type === 'customer' && r.status === 'active' && (currentUser ? r.account_id === currentUser.id : true));
     }
 
     function getCompletedCustomers() {
       if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r.type === 'customer' && r.status === 'completed');
-      if (currentUser && currentUser.isGuestView) return allRecords.filter(r => r.type === 'customer' && r.status === 'completed' && r.account_id === currentUser.targetAccountId);
+      if (currentUser && currentUser.isGuestView) {
+          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r.type === 'customer' && r.status === 'completed');
+          return allRecords.filter(r => r.type === 'customer' && r.status === 'completed' && r.account_id === currentUser.targetAccountId);
+      }
       return allRecords.filter(r => r.type === 'customer' && r.status === 'completed' && (currentUser ? r.account_id === currentUser.id : true));
     }
 
     function getHistoryRecords() {
       const sorter = (a, b) => new Date(b.history_date) - new Date(a.history_date);
       if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r.type === 'history').sort(sorter);
-      if (currentUser && currentUser.isGuestView) return allRecords.filter(r => r.type === 'history' && r.account_id === currentUser.targetAccountId).sort(sorter);
+      if (currentUser && currentUser.isGuestView) {
+          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r.type === 'history').sort(sorter);
+          return allRecords.filter(r => r.type === 'history' && r.account_id === currentUser.targetAccountId).sort(sorter);
+      }
       return allRecords.filter(r => r.type === 'history' && (currentUser ? r.account_id === currentUser.id : true)).sort(sorter);
     }
 
@@ -555,8 +569,25 @@
       const customers = customersList || getActiveCustomers();
       const summary = {};
       customers.forEach(c => {
-        if (!summary[c.customer_name]) summary[c.customer_name] = { name: c.customer_name, totalNextMonth: 0, count: 0 };
-        summary[c.customer_name].totalNextMonth += c.monthly_payment; summary[c.customer_name].count += 1;
+        if (!summary[c.customer_name]) {
+            summary[c.customer_name] = { 
+                name: c.customer_name, 
+                totalNextMonth: 0, 
+                count: 0, 
+                lenderTotals: {} 
+            };
+        }
+        summary[c.customer_name].totalNextMonth += c.monthly_payment; 
+        summary[c.customer_name].count += 1;
+        
+        let ownerName = '-';
+        const o = allRecords.find(r => r.type === 'user' && r.id === c.account_id);
+        if (o) ownerName = o.username;
+        
+        if (!summary[c.customer_name].lenderTotals[ownerName]) {
+            summary[c.customer_name].lenderTotals[ownerName] = 0;
+        }
+        summary[c.customer_name].lenderTotals[ownerName] += c.monthly_payment;
       });
       return Object.values(summary);
     }
@@ -566,7 +597,6 @@
       const config = window.elementSdk?.config || defaultConfig;
       const settings = getUserSettings();
       
-      // Theme Application
       let dark = isDarkMode();
       if (!currentUser) dark = false;
       
@@ -583,7 +613,6 @@
       app.style.color = textColor;
       app.className = 'h-full w-full flex flex-col overflow-hidden custom-text';
 
-      // 1. Scroll Preservation Logic
       const scrollContainer = app.querySelector('.overflow-auto');
       let savedScrollTop = 0;
       if (scrollContainer) {
@@ -617,7 +646,6 @@
           </div>
         `;
         
-        // 2. Restore Scroll Position
         const newScrollContainer = app.querySelector('.overflow-auto');
         if (newScrollContainer && savedScrollTop > 0) {
             newScrollContainer.scrollTop = savedScrollTop;
@@ -627,28 +655,26 @@
     }
 
     function renderLoginPage(config, dark, surfaceColor, textColor, primaryColor) {
-      // Fixed Layout V.5.0: Logo 280px, MB 32px
       return `
         <div class="flex items-center justify-center min-h-full p-4 w-full" style="background: ${dark ? '#111827' : config.background_color};">
           <div class="w-full max-w-md p-8 rounded-xl shadow-lg" style="background: ${surfaceColor};">
             <div class="flex flex-col items-center mb-8">
                 <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 280px; height: auto;" class="object-contain">
             </div>
-            <div id="login-form" class="space-y-4">
+            <div id="login-form" class="space-y-4 pb-2">
               <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="login-username" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
               <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="login-password" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-              <button id="login-btn" class="w-full py-3 rounded-lg font-medium transition-colors" style="background: #3b82f6; color: white;">เข้าสู่ระบบ</button>
-              <button id="show-register-btn" class="w-full py-3 rounded-lg font-medium transition-colors" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ลงทะเบียนบัญชีใหม่</button>
-              <button id="show-reset-btn" class="w-full py-2 text-sm font-medium" style="color: ${primaryColor};">ลืมรหัสผ่าน?</button>
-              <!-- Updated Guest Button -->
-              <button id="guest-continue-btn" class="w-full py-3 rounded-lg font-medium transition-colors mt-2" style="background: #f59e0b; color: white;">ตรวจสอบยอดชำระ</button>
+              <button id="login-btn" class="w-full py-3 rounded-lg font-medium transition-colors mt-2" style="background: #3b82f6; color: white;">เข้าสู่ระบบ</button>
+              <button id="guest-continue-btn" class="w-full py-3 rounded-lg font-medium transition-colors" style="background: #f59e0b; color: white;">ตรวจสอบยอดชำระ</button>
+              
+              <div class="pt-4 mt-2 border-t" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                  <button id="show-register-btn" class="w-full py-3 rounded-lg font-medium transition-colors" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ลงทะเบียนบัญชีใหม่</button>
+              </div>
+              <div class="text-right mt-2">
+                  <button id="show-reset-btn" class="text-sm font-medium hover:underline" style="color: ${primaryColor};">ลืมรหัสผ่าน?</button>
+              </div>
             </div>
-            <!-- ... (Other login forms kept same for brevity, but structure maintained) ... -->
-            <div id="guest-select-form" class="space-y-4 hidden">
-                <div class="text-center mb-4"><h3 class="text-lg font-bold" style="color: ${textColor};">เลือกบัญชีที่ต้องการดู</h3><p class="text-sm opacity-60" style="color: ${textColor};">เลือกผู้ใช้เพื่อดูข้อมูล (ไม่สามารถแก้ไขได้)</p></div>
-                <div id="guest-user-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
-                <button id="back-from-guest-btn" class="w-full py-2 text-sm font-medium" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
-            </div>
+            
             <div id="register-form" class="space-y-4 hidden">
               <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="register-username" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
               <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="register-password" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
@@ -684,8 +710,8 @@
 
       return `
         <div class="${baseClasses} ${mobileClasses} ${desktopClasses}" style="background: ${surfaceColor};">
-          <div class="flex flex-col items-center mb-10"> <!-- V.5.0 Increased margin bottom -->
-            <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 160px; height: auto;" class="object-contain mb-6"> <!-- V.5.0 Increased margin bottom -->
+          <div class="flex flex-col items-center mb-10">
+            <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 160px; height: auto;" class="object-contain mb-6">
             <div class="flex justify-between w-full items-start absolute top-4 right-4">
                 <button id="close-sidebar-btn" class="md:hidden text-gray-500 hover:text-gray-700">✖</button>
             </div>
@@ -700,15 +726,15 @@
             }).join('')}
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
-            <!-- Sidebar Logout Button: Red Background, White Text -->
-            <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">ออกจากระบบ</button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.7.0 (Scroll Fix)</p>
+            <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
+                ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
+            </button>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.1 (Custom Pay Icon)</p>
           </div>
         </div>
       `;
     }
 
-    // Pass custom classes to content
     function renderContent(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       if (!canAccessView(currentView)) return `<div class="p-4 md:p-8 flex flex-col items-center justify-center h-full opacity-60"><span class="text-4xl mb-4">🔒</span><p style="color: ${textColor};" class="text-lg">คุณไม่มีสิทธิ์เข้าถึงส่วนนี้</p></div>`;
       let html = '';
@@ -723,14 +749,12 @@
       return html;
     }
 
-    // Using custom-surface class for cards
     function renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       const users = allRecords.filter(r => r.type === 'user');
-      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[600px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark ? '#374151' : secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">วันที่สมัคร</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};"><td class="px-4 py-3" style="color: ${textColor};">${idx + 1}</td><td class="px-4 py-3 font-medium" style="color: ${textColor};">${u.username}</td><td class="px-4 py-3" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-4 py-3 text-center"><div class="flex justify-center gap-2"><button type="button" class="btn-reset-user p-2 rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer" data-id="${u.id}" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button type="button" class="btn-delete-user p-2 rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer" data-id="${u.id}" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
+      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[600px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark ? '#374151' : secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">วันที่สมัคร</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};"><td class="px-4 py-3" style="color: ${textColor};">${idx + 1}</td><td class="px-4 py-3 font-medium" style="color: ${textColor};">${u.username}</td><td class="px-4 py-3" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-4 py-3 text-center"><div class="flex justify-center gap-2"><button type="button" class="btn-reset-user w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer" data-id="${u.id}" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button type="button" class="btn-delete-user w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer" data-id="${u.id}" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
     }
 
     function renderAddCustomer(config, dark, surfaceColor, textColor, primaryColor) {
-      // Removed draft loading
       const autocomplete = getAutocompleteData();
       return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_add_customer}</h2><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface"><form id="add-customer-form" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -750,23 +774,27 @@
 
     function renderManageCustomers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       let customers = getActiveCustomers();
+      
       if (manageSearchTerm) {
           const term = manageSearchTerm.toLowerCase();
-          customers = customers.filter(c => c.customer_name.toLowerCase().includes(term) || c.product.toLowerCase().includes(term));
+          customers = customers.filter(c => 
+              c.customer_name.toLowerCase().includes(term) || 
+              c.product.toLowerCase().includes(term)
+          );
       }
       
-      // Sort customers alphabetically by name (New)
       customers.sort((a, b) => a.customer_name.localeCompare(b.customer_name, 'th'));
-
       const summary = getCustomersSummary(customers);
-      
-      // Calculate Grand Total
       const grandTotal = summary.reduce((sum, item) => sum + item.totalNextMonth, 0);
 
       const daysBefore = getPaymentDaysBefore();
       const isAdmin = currentUser && currentUser.isAdmin;
+      const isGuestView = currentUser && currentUser.isGuestView;
+      const isSpecialView = isAdmin || isGuestView;
+      
       return `<div class="p-4 md:p-8">
         <h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_manage_customer}</h2>
+        
         <div class="relative mb-6">
             <input type="text" id="manage-search-input" value="${manageSearchTerm}" placeholder="ค้นหา" 
                 class="w-full px-4 py-3 pl-10 rounded-lg border shadow-sm focus:ring-2 focus:ring-opacity-50 transition-all" 
@@ -774,47 +802,147 @@
             <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
             ${manageSearchTerm ? `<button id="manage-search-clear" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 p-1">✖</button>` : ''}
         </div>
-        <div class="mb-6"><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface">
-            <!-- Header with Grand Total -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4" style="border-color: ${dark?'#374151':'#e5e7eb'};">
-                <h3 class="text-lg font-semibold" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
-                <div class="text-left sm:text-right mt-2 sm:mt-0">
-                    <p class="text-xs opacity-60" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
-                    <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
+
+        <div class="mb-6">
+            <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                    <h3 class="text-lg font-semibold" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
+                    <div class="text-left sm:text-right mt-2 sm:mt-0">
+                        <p class="text-xs opacity-60" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
+                        <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col space-y-3">
+                ${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}
+                ${summary.map(s=>{
+                  const customerItems = customers.filter(c => c.customer_name === s.name);
+                  const hasDueItems = customerItems.some(c => canPayNow(c.next_payment_date, daysBefore));
+                  const isExpanded = expandedCustomerName === s.name;
+                  
+                  // Breakdown logic for right side
+                  let breakdownHtml = '';
+                  const lenders = Object.keys(s.lenderTotals);
+
+                  if (isSpecialView) {
+                      if (lenders.length === 1) {
+                          breakdownHtml = `
+                              <div class="flex flex-col items-end">
+                                  <span class="text-[11px] font-semibold opacity-60 mb-1" style="color: ${textColor};">ยอดชำระ (ผู้ให้บริการ: ${lenders[0]})</span>
+                                  <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.lenderTotals[lenders[0]].toLocaleString()}</p>
+                              </div>
+                          `;
+                      } else {
+                          breakdownHtml = lenders.map(lender => `
+                              <div class="flex items-center justify-end gap-2 mb-1.5 w-full">
+                                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded" style="background: ${primaryColor}15; color: ${primaryColor};">ผู้ให้บริการ: ${lender}</span>
+                                  <span class="text-lg font-bold" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
+                              </div>
+                          `).join('');
+                          
+                          breakdownHtml += `
+                              <div class="flex items-center justify-end gap-2 mt-2 pt-2 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                                  <span class="text-[11px] font-semibold opacity-60 uppercase" style="color: ${textColor};">รวมทุกสัญญา</span>
+                                  <span class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
+                              </div>
+                          `;
+                      }
+                  } else {
+                      breakdownHtml = `
+                          <div class="flex flex-col items-end">
+                              <span class="text-[11px] font-semibold opacity-60 uppercase mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</span>
+                              <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
+                          </div>
+                      `;
+                  }
+
+                  let html = `
+                  <div class="border rounded-xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-gray-900" style="border-color: ${dark?'#374151':'#e5e7eb'}; background: ${isExpanded ? (dark?'#1f2937':'#f9fafb') : 'transparent'};">
+                    <div class="py-4 px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" onclick="window.toggleCustomerExpand('${s.name}')">
+                        
+                        <div class="flex items-center gap-6 mb-3 sm:mb-0 w-full sm:w-auto">
+                            <div class="flex flex-col justify-center">
+                                <p class="font-bold text-lg flex items-center gap-2" style="color: ${textColor};">
+                                    ${s.name}
+                                    <span class="text-[10px] opacity-50 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}">▼</span>
+                                </p>
+                            </div>
+                            <div class="flex flex-col border-l-2 pl-6" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
+                                <span class="text-[11px] font-semibold opacity-60 uppercase mb-1" style="color: ${textColor};">จำนวนรายการ</span>
+                                <p class="font-bold text-lg" style="color: ${primaryColor};">
+                                    ${s.count} <span class="text-sm font-normal opacity-70" style="color: ${textColor};">สัญญา</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-end gap-2 w-full sm:w-auto">
+                            <div class="text-right w-full flex flex-col items-end">
+                                ${breakdownHtml}
+                            </div>
+                            ${canEditData() ? `<button data-pay-all="${s.name}" onclick="event.stopPropagation();" class="px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md ${hasDueItems ? '' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? '#10b981' : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระยอดรวม</button>` : ''}
+                        </div>
+                    </div>
+                  `;
+
+                  if (isExpanded) {
+                      html += `
+                      <div class="bg-white dark:bg-gray-900 border-t p-4 overflow-x-auto" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                          <table class="w-full min-w-[700px] text-sm">
+                              <thead style="color: ${textColor}; border-bottom: 2px solid ${dark?'#374151':'#e5e7eb'};">
+                                  <tr>
+                                      <th class="px-3 py-2 text-left font-semibold">สินค้า</th>
+                                      ${isAdmin ? `<th class="px-3 py-2 text-left font-semibold">เจ้าของ</th>` : ''}
+                                      <th class="px-3 py-2 text-left font-semibold">ราคาสินค้า</th>
+                                      <th class="px-3 py-2 text-left font-semibold">ค่างวด</th>
+                                      <th class="px-3 py-2 text-left font-semibold">งวดทั้งหมด</th>
+                                      <th class="px-3 py-2 text-left font-semibold">งวดถัดไป</th>
+                                      <!-- For guests, this column will show the account owner instead of manage buttons -->
+                                      <th class="px-3 py-2 text-center font-semibold">${canEditData() ? 'จัดการ' : 'ผู้ให้บริการสินเชื่อ'}</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  ${customerItems.map((c) => {
+                                      const canPay = canPayNow(c.next_payment_date, daysBefore);
+                                      const hasEditPermission = canEditData();
+                                      
+                                      let ownerName = '-';
+                                      const o = allRecords.find(r => r.type === 'user' && r.id === c.account_id);
+                                      if(o) ownerName = o.username;
+                                      
+                                      return `
+                                      <tr class="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f3f4f6'};">
+                                          <td class="px-3 py-3 font-medium" style="color: ${textColor};">${c.product}</td>
+                                          ${isAdmin ? `<td class="px-3 py-3 opacity-70" style="color: ${textColor};">${ownerName}</td>` : ''}
+                                          <td class="px-3 py-3 opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
+                                          <td class="px-3 py-3 font-semibold" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
+                                          <td class="px-3 py-3 opacity-80" style="color: ${textColor};">${c.paid_installments}/${c.installments}</td>
+                                          <td class="px-3 py-3 opacity-80" style="color: ${textColor};">${new Date(c.next_payment_date).toLocaleDateString('th-TH')}</td>
+                                          <td class="px-3 py-3 text-center">
+                                              ${hasEditPermission ? `
+                                              <div class="flex justify-center gap-2 items-center">
+                                                  <button data-pay="${c.id}" class="flex items-center justify-center w-8 h-8 rounded-full shadow-sm hover:shadow-md transition-all ${canPay?'':'payment-disabled'}" style="background: ${canPay?primaryColor:'#9ca3af'}; color: white;" ${canPay?'':'disabled'} title="ชำระเงิน">
+                                                      <img src="pay-icon.png" alt="Pay" class="w-4 h-4 object-contain filter drop-shadow-sm" onerror="this.outerHTML='💰'">
+                                                  </button>
+                                                  <button data-edit="${c.id}" class="flex items-center justify-center w-8 h-8 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#4b5563':'#e5e7eb'}; color: ${textColor};" title="แก้ไข">✏️</button>
+                                              </div>
+                                              ` : `<span class="px-2 py-1 text-xs rounded-full font-medium" style="background: ${primaryColor}15; color: ${primaryColor};">${ownerName}</span>`}
+                                          </td>
+                                      </tr>
+                                      `;
+                                  }).join('')}
+                              </tbody>
+                          </table>
+                      </div>
+                      `;
+                  }
+                  
+                  html += `</div>`;
+                  return html;
+                }).join('')}
                 </div>
             </div>
-            
-            <div class="flex flex-col">
-            ${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}${summary.map(s=>{
-              // ตรวจสอบว่าลูกค้าคนนี้มีรายการไหนถึงกำหนดชำระแล้วบ้าง
-              const customerItems = customers.filter(c => c.customer_name === s.name);
-              const hasDueItems = customerItems.some(c => canPayNow(c.next_payment_date, daysBefore));
-              
-              return `
-              <div class="py-4 flex flex-row justify-between items-center border-b last:border-b-0" style="border-color: ${dark?'#374151':'#e5e7eb'};">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style="background: ${primaryColor}20; color: ${primaryColor};">${s.count}</div>
-                    <div>
-                        <p class="font-medium text-lg" style="color: ${textColor};">${s.name}</p>
-                        <p class="text-xs opacity-70" style="color: ${textColor};">จำนวนสัญญาที่คงเหลือ</p>
-                    </div>
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                    <div class="text-right">
-                        <p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</p>
-                        <p class="text-xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
-                    </div>
-                    ${canEditData() ? `<button data-pay-all="${s.name}" class="px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md ${hasDueItems ? '' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? '#10b981' : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระยอดรวม</button>` : ''}
-                </div>
-              </div>
-            `}).join('')}</div></div></div>
-        <div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[900px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark?'#374151':secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลูกค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">สินค้า</th>${isAdmin?`<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">เจ้าของ</th>`:''}<th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ราคาสินค้า</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ค่างวด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดทั้งหมด</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">งวดถัดไป</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${customers.map((c,idx)=>{
-            const canPay = canPayNow(c.next_payment_date, daysBefore);
-            const hasEditPermission = canEditData();
-            let ownerName = '';
-            if(isAdmin){ const o=allRecords.find(r=>r.type==='user'&&r.id===c.account_id); ownerName=o?o.username:'-'; }
-            return `<tr class="border-t" style="border-color: ${dark?'#374151':'#e5e7eb'};"><td class="px-4 py-3" style="color: ${textColor};">${idx+1}</td><td class="px-4 py-3 font-medium" style="color: ${textColor};">${c.customer_name}</td><td class="px-4 py-3" style="color: ${textColor};">${c.product}</td>${isAdmin?`<td class="px-4 py-3" style="color: ${primaryColor};">${ownerName}</td>`:''}<td class="px-4 py-3" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td><td class="px-4 py-3 font-semibold" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td><td class="px-4 py-3" style="color: ${textColor};">${c.paid_installments}/${c.installments}</td><td class="px-4 py-3" style="color: ${textColor};">${new Date(c.next_payment_date).toLocaleDateString('th-TH')}</td><td class="px-4 py-3">${hasEditPermission?`<div class="flex justify-center gap-2"><button data-pay="${c.id}" class="p-2 rounded-full shadow-sm hover:shadow-md transition-all ${canPay?'':'payment-disabled'}" style="background: ${canPay?primaryColor:'#9ca3af'}; color: white;" ${canPay?'':'disabled'} title="ชำระเงิน">💰</button><button data-edit="${c.id}" class="p-2 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#374151':secondaryColor}; color: ${textColor};" title="แก้ไข">✏️</button></div>`:`<span class="text-xs opacity-50 block text-center">-</span>`}</td></tr>`;
-        }).join('')}</tbody></table></div></div>`;
+        </div>
+      </div>`;
     }
 
     function renderHistory(config, dark, surfaceColor, textColor, primaryColor) {
@@ -931,7 +1059,6 @@
       <button id="save-settings-btn" class="w-full py-3 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึกการตั้งค่า</button></div></div>`;
     }
 
-    // Helper for toggling theme options visibility
     window.toggleThemeSettings = (val) => {
         const el = document.getElementById('custom-theme-options');
         if(val === 'custom') el.classList.remove('hidden');
@@ -940,36 +1067,23 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.8.1 (Custom Pay Icon)", date: "27/02/2026", changes: ["เปลี่ยนไอคอนปุ่มชำระเงินรายสัญญาเป็นรูปภาพตามที่ผู้ใช้อัปโหลด (pay-icon.png)"] },
+        { version: "V.8.0 (Guest Names Update)", date: "27/02/2026", changes: ["เปลี่ยนข้อความการล็อกอินแบบเยี่ยมชมเป็น 'หน้าตรวจสอบยอด'", "ปรับปุ่มล็อกเอาท์ในโหมดเยี่ยมชมเป็น 'กลับไปหน้าหลัก'"] },
+        { version: "V.7.9 (Lender Breakdown)", date: "27/02/2026", changes: ["หน้าตรวจสอบยอดชำระ หากลูกค้ามีสินเชื่อจากหลายผู้ให้บริการ จะแยกแสดงยอดชำระรวมของแต่ละคนให้อัตโนมัติ"] },
+        { version: "V.7.8 (Label Updates)", date: "27/02/2026", changes: ["เปลี่ยนข้อความ 'บัญชีต้นทาง' เป็น 'ผู้ให้บริการสินเชื่อ' ในโหมดตรวจสอบยอดชำระ"] },
+        { version: "V.7.7 (Global Guest)", date: "27/02/2026", changes: ["หน้าตรวจสอบยอดชำระแสดงข้อมูลลูกค้าของทุกบัญชีรวมกัน", "เปลี่ยนช่องจัดการในโหมดผู้เยี่ยมชมให้แสดง 'บัญชีต้นทาง'"] },
+        { version: "V.7.6 (Hover Effect)", date: "27/02/2026", changes: ["เพิ่มเอฟเฟกต์เด้ง (Pop-out) พร้อมเงาเมื่อนำเมาส์ไปชี้ที่แถบรายชื่อลูกค้าในหน้าจัดการ"] },
+        { version: "V.7.5 (Login Layout)", date: "27/02/2026", changes: ["ปรับตำแหน่งปุ่มในหน้า Login: ย้ายลงทะเบียนลงล่างสุด, ตรวจสอบยอดชำระลำดับที่ 2, ลืมรหัสผ่านมุมขวาล่าง"] },
+        { version: "V.7.4 (Default View & UI Fix)", date: "27/02/2026", changes: ["ตั้งหน้า 'จัดการรายการลูกค้า' เป็นหน้าเริ่มต้น", "ลบคำว่า 'ชื่อลูกค้า' ออกจากส่วนสรุปยอดเพื่อให้ดูสะอาดขึ้น"] },
+        { version: "V.7.3 (Clear Summary UI)", date: "27/02/2026", changes: ["ปรับปรุงการแสดงผลสรุปยอดลูกค้าให้ชัดเจนขึ้น", "เพิ่มหัวข้อ ชื่อลูกค้า และ จำนวนรายการ เพื่อให้อ่านง่าย"] },
+        { version: "V.7.2 (Accordion List)", date: "27/02/2026", changes: ["ซ่อนตารางลูกค้าเป็นค่าเริ่มต้น ป้องกันหน้าจอรก", "กดที่ชื่อลูกค้าในกรอบสรุปเพื่อกาง/พับดูรายการสินค้าแบบ Accordion"] },
         { version: "V.7.1 (Pay Total Fix)", date: "25/02/2026", changes: ["ปุ่ม 'ชำระยอดรวม' จะกดได้ก็ต่อเมื่อมีรายการที่ถึงกำหนดชำระเท่านั้น", "เมื่อกดชำระยอดรวม จะตัดยอดเฉพาะสัญญาที่ถึงกำหนดชำระเท่านั้น"] },
         { version: "V.7.0 (Scroll Fix)", date: "19/01/2026", changes: ["แก้ปัญหาหน้าเด้งเมื่อกดจ่ายเงิน", "เรียงรายชื่อลูกค้าตามตัวอักษร ก-ฮ"] },
         { version: "V.6.9 (Grand Total)", date: "19/01/2026", changes: ["เพิ่มการแสดงยอดรวมที่ต้องชำระทั้งหมดในหน้าจัดการลูกค้า", "ปรับปรุงการแสดงผลสรุปยอดให้ดูง่ายขึ้น"] },
         { version: "V.6.8 (Colors Fixed)", date: "19/01/2026", changes: ["ปุ่มออกจากระบบเป็นสีแดง ปุ่มเข้าสู่ระบบเป็นสีน้ำเงิน", "เพิ่มเวลาแสดงการแจ้งเตือนเป็น 20 วินาที"] },
         { version: "V.6.7 (Detailed History Colors)", date: "23/01/2026", changes: ["เพิ่มรายละเอียดในประวัติการชำระเงิน", "แยกสีหัวข้อประวัติตามประเภท (เพิ่ม=น้ำเงิน, แก้ไข=เหลือง, ลบ=แดง, ชำระครบ=เขียว)"] },
         { version: "V.6.6 (New Edit Fields)", date: "23/01/2026", changes: ["เพิ่มช่องแก้ไขค่างวดและจำนวนงวดในหน้าต่างแก้ไขข้อมูลลูกค้า"] },
-        { version: "V.6.5 (Pay Total)", date: "19/01/2026", changes: ["เพิ่มปุ่ม 'ชำระยอดรวม' เพื่อจ่ายค่างวดทุกสัญญาของลูกค้าคนเดียวพร้อมกัน", "ปรับปรุงระบบคำนวณยอดรวมรายบุคคล"] },
-        { version: "V.6.4 (Pay All Button)", date: "19/01/2026", changes: ["เพิ่มปุ่ม 'จ่ายก้อนนี้' สำหรับชำระยอดรวมทั้งหมดของลูกค้าทีเดียว"] },
-        { version: "V.6.3 (Orange Guest)", date: "19/01/2026", changes: ["เปลี่ยนปุ่ม Guest เป็น 'ตรวจสอบยอดชำระ' สีส้มอำพัน"] },
-        { version: "V.6.2 (White Glass Button)", date: "19/01/2026", changes: ["เปลี่ยนปุ่ม Guest เป็น 'ตรวจสอบยอดชำระ'", "ดีไซน์ปุ่มแบบ White Glassmorphism"] },
-        { version: "V.6.1 (Timeline)", date: "18/01/2026", changes: ["เปลี่ยนหน้าประวัติการทำรายการเป็นรูปแบบ Timeline", "ปรับปรุงหน้าประวัติการอัปเดตให้เป็น Timeline แบบใหม่", "เพิ่มเส้นเชื่อมและจุดสีเพื่อความสวยงาม"] },
-        { version: "V.6.0 (UI & Data Update)", date: "18/01/2026", changes: ["ปรับหน้าประวัติการทำรายการเป็นตารางมีกรอบ", "ปรับหน้าประวัติการอัปเดตเป็น Timeline", "แก้ไขการแสดงผลวันที่และข้อมูลให้ครบถ้วน"] },
-        { version: "V.5.8 (History Timeline)", date: "18/01/2026", changes: ["เปลี่ยนหน้าประวัติการทำรายการเป็นรูปแบบ Timeline", "เพิ่มการแสดงผลวันที่และเวลาที่ชัดเจนขึ้น"] },
-        { version: "V.5.7 (Changelog Timeline)", date: "18/01/2026", changes: ["เปลี่ยนหน้าประวัติการอัปเดตเป็นรูปแบบ Timeline"] },
-        { version: "V.5.6 (History Table)", date: "18/01/2026", changes: ["ปรับเปลี่ยนหน้าประวัติการทำรายการจากแบบการ์ดเป็นแบบตารางมีกรอบ"] },
-        { version: "V.5.5 (Enter & Auto-Logout)", date: "18/01/2026", changes: ["เพิ่มการกด Enter เพื่อล็อกอิน", "ออกจากระบบอัตโนมัติเมื่อปิดหน้าเว็บ (Memory Session)"] },
-        { version: "V.5.4 (Event Delegation Fix)", date: "18/01/2026", changes: ["แก้ปุ่มลบ/เปลี่ยนรหัสผ่านในหน้า Admin ให้กดได้แน่นอน", "เพิ่มความลื่นไหลในการตอบสนองปุ่มกด"] },
-        { version: "V.5.3 (Admin Fix)", date: "18/01/2026", changes: ["แก้บั๊กหน้าจัดการผู้ใช้งานของ Admin เข้าไม่ได้ (Function name collision)", "ปรับปรุงประสิทธิภาพโค้ด"] },
-        { version: "V.5.2 (Fix Admin)", date: "18/01/2026", changes: ["แก้บั๊กปุ่มลบ/รีเซ็ตในหน้า Admin ไม่ทำงาน", "ปรับปรุงความเสถียรของหน้าต่าง Modal"] },
-        { version: "V.5.1 (No Draft Save)", date: "18/01/2026", changes: ["ยกเลิกระบบจำค่าข้อมูลลูกค้า (Draft) เมื่อปิดหน้าเว็บหรือออกจากระบบ", "ล้างค่าฟอร์มทุกครั้งที่เปิดใหม่"] },
-        { version: "V.5.0 (Spaced Layout)", date: "18/01/2026", changes: ["ปรับระยะห่างโลโก้และเมนูให้โปร่งสบายตามากขึ้น", "เพิ่มระยะห่างระหว่างโลโก้กับชื่อบัญชี"] },
-        { version: "V.4.9 (Admin Only Settings)", date: "18/01/2026", changes: ["ย้ายเมนูตั้งค่าสิทธิ์ Guest ไปไว้ในส่วนของ Admin เท่านั้น", "ผู้ใช้ทั่วไปจะไม่เห็นเมนูนี้อีกต่อไป"] },
-        { version: "V.4.8 (Fixed Logo Layout)", date: "18/01/2026", changes: ["ล็อคตำแหน่งและขนาดโลโก้ให้คงที่ตามมาตรฐาน", "หน้า Login: ขนาด 280px / ระยะห่าง 32px", "เมนูข้าง: ขนาด 160px / ระยะห่าง 16px"] },
-        { version: "V.4.7 (Removed Custom Theme)", date: "18/01/2026", changes: ["ลบฟีเจอร์ Custom Theme ออก", "คงฟีเจอร์ปรับขนาดและระยะห่างโลโก้ไว้"] },
-        { version: "V.4.6 (Logo Margin Config)", date: "18/01/2026", changes: ["เพิ่มการตั้งค่าระยะห่าง (Margin) ของโลโก้", "ปรับปรุงระบบตั้งค่าโลโก้ให้ครบถ้วน"] },
-        { version: "V.4.4 (Color Theme)", date: "18/01/2026", changes: ["เพิ่มระบบเลือกธีมสีเองได้ (Custom Theme)", "ปรับแต่งได้ 5 สีหลักตามต้องการ"] },
-        { version: "V.4.3 (Wait & Update)", date: "18/01/2026", changes: ["แก้ปัญหาสิทธิ์ผู้เยี่ยมชม (Guest)", "แก้ปัญหาหน้าตั้งค่าเด้งคืน"] },
-        { version: "V.4.1 (Fix HTML)", date: "18/01/2026", changes: ["แก้ไขบั๊กหน้าตั้งค่า Admin แสดงผลผิดพลาด", "เพิ่มปุ่มรีเซ็ตขนาดโลโก้"] },
-        { version: "V.4.0 (Admin Logo Config)", date: "18/01/2026", changes: ["เพิ่มระบบตั้งค่าขนาดโลโก้ได้เองในหน้า Admin Settings", "ปรับปรุงระบบ Global Settings ให้ยืดหยุ่นขึ้น"] },
-        { version: "V.3.9 (Logo Max Size)", date: "18/01/2026", changes: ["ขยายขนาดโลโก้หน้า Login เป็น 350px", "ขยายขนาดโลโก้แถบเมนูข้างเป็น 200px"] }
+        { version: "V.6.5 (Pay Total)", date: "19/01/2026", changes: ["เพิ่มปุ่ม 'ชำระยอดรวม' เพื่อจ่ายค่างวดทุกสัญญาของลูกค้าคนเดียวพร้อมกัน", "ปรับปรุงระบบคำนวณยอดรวมรายบุคคล"] }
       ];
       return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-6">${logs.map((log, index) => `<div class="p-6 rounded-xl shadow-md custom-surface relative overflow-hidden"><div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#374151' : '#e5e7eb')}"></div><div class="flex justify-between items-start mb-4 pl-4"><div><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#e5e7eb')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-2 text-sm opacity-60" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-2 pl-4">${log.changes.map(c => `<li style="color: ${textColor}; opacity: 0.8;">${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
     }
@@ -978,19 +1092,15 @@
       const role = currentUser.isAdmin ? 'Admin' : (currentUser.isGuestView ? 'Guest' : 'User');
       let permissionText = '';
       if (currentUser.isAdmin) permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ เข้าถึงทุกเมนูและทุกฟังก์ชัน</li><li>✅ จัดการข้อมูลลูกค้าของทุกคน</li><li>✅ ลบและแก้ไขบัญชีผู้ใช้งานอื่น</li><li>✅ ตั้งค่าการเชื่อมต่อฐานข้อมูล</li></ul>`;
-      else if (currentUser.isGuestView) permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ ดูรายการลูกค้าของบัญชีที่เลือก</li><li>❌ ไม่สามารถเพิ่มข้อมูลใหม่</li><li>❌ ไม่สามารถแก้ไขหรือลบข้อมูล</li><li>❌ ไม่สามารถเข้าถึงการตั้งค่า</li></ul>`;
+      else if (currentUser.isGuestView) permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ ดูรายการลูกค้าทั้งหมด</li><li>❌ ไม่สามารถเพิ่มข้อมูลใหม่</li><li>❌ ไม่สามารถแก้ไขหรือลบข้อมูล</li><li>❌ ไม่สามารถเข้าถึงการตั้งค่า</li></ul>`;
       else permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ เพิ่มข้อมูลลูกค้าใหม่</li><li>✅ จัดการ (แก้ไข/ลบ/ชำระเงิน) ลูกค้าของตนเอง</li><li>✅ ดูประวัติการทำรายการของตนเอง</li><li>❌ ไม่สามารถเห็นข้อมูลของผู้อื่น</li></ul>`;
 
       return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_account}</h2><div class="p-6 rounded-xl shadow-md custom-surface"><div class="flex items-center gap-4 mb-6"><div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style="background: ${primaryColor}20; color: ${primaryColor};">👤</div><div><p class="text-xl font-semibold" style="color: ${textColor};">${currentUser.username}</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">${currentUser.isAdmin ? 'ผู้ดูแลระบบสูงสุด (Super Admin)' : (currentUser.isGuestView ? 'โหมดผู้เยี่ยมชม' : 'บัญชีผู้ใช้')}</p></div></div><div class="space-y-4"><div class="p-4 rounded-lg" style="background: ${dark ? '#374151' : '#f3f4f6'};"><p class="text-sm font-medium mb-1" style="color: ${textColor};">สถิติการใช้งาน</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ลูกค้าทั้งหมด: ${getActiveCustomers().length} รายการ</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ชำระครบแล้ว: ${getCompletedCustomers().length} รายการ</p></div><div class="mt-6 p-4 rounded-lg border border-opacity-20" style="border-color: ${textColor};"><h3 class="font-bold mb-2">สิทธิ์การใช้งาน (${role})</h3>${permissionText}</div></div></div></div>`;
     }
 
-    // ... (renderModal, attachEventListeners, and other helpers are same as previous logic but integrated with new theme system) ...
-    // Repeating critical parts for context:
-    
     function renderModal(config, dark, surfaceColor, textColor, primaryColor) {
       if (editingUser) {
           const user = allRecords.find(r => r.id === editingUser); if(!user) return '';
-          // Changed cancel button from onclick to id-based listener for better module compatibility
           return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
       }
       if (editingCustomer) {
@@ -1002,9 +1112,7 @@
       return '';
     }
 
-    // Attach Event Listeners (Restored and Complete)
     function attachEventListeners() {
-      // Mobile Toggle
       const mobileMenuBtn = document.getElementById('mobile-menu-btn');
       if(mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileSidebar);
       
@@ -1014,7 +1122,6 @@
       const sidebarOverlay = document.getElementById('sidebar-overlay');
       if(sidebarOverlay) sidebarOverlay.addEventListener('click', toggleMobileSidebar);
     
-      // Login
       const loginBtn = document.getElementById('login-btn');
       if (loginBtn) loginBtn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -1025,7 +1132,6 @@
           if(!login(u,p)) { showToast('ข้อมูลไม่ถูกต้อง', true); loginBtn.innerHTML = 'เข้าสู่ระบบ'; }
       });
 
-      // Login Enter Key Support - CHANGED to 'keyup' for better compatibility
       ['login-username', 'login-password'].forEach(id => {
           const el = document.getElementById(id);
           if (el) {
@@ -1037,41 +1143,38 @@
           }
       });
 
-      // Guest
       const guestBtn = document.getElementById('guest-continue-btn');
       if(guestBtn) guestBtn.addEventListener('click', () => {
-          const users = allRecords.filter(r => r.type === 'user');
-          const list = document.getElementById('guest-user-list');
-          if(users.length === 0) return showToast("ไม่มีบัญชีผู้ใช้ให้ดู", true);
-          list.innerHTML = users.map(u => `<button class="w-full text-left px-4 py-3 rounded-lg border hover:bg-gray-50 flex justify-between items-center transition-all user-select-btn" data-uid="${u.id}" data-name="${u.username}" style="border-color: #d1d5db; color: #111827;"><span>${u.username}</span><span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">เลือกดู</span></button>`).join('');
-          document.getElementById('login-form').classList.add('hidden');
-          document.getElementById('guest-select-form').classList.remove('hidden');
-          document.querySelectorAll('.user-select-btn').forEach(btn => {
-              btn.addEventListener('click', () => {
-                  currentUser = { id: 'guest', username: `ผู้เยี่ยมชม (${btn.dataset.name})`, isGuestView: true, targetAccountId: btn.dataset.uid };
-                  currentView = 'manage';
-                  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                  renderApp();
-              });
-          });
+          currentUser = { 
+              id: 'guest', 
+              username: `หน้าตรวจสอบยอด`, 
+              isGuestView: true, 
+              targetAccountId: 'ALL'
+          };
+          currentView = 'manage';
+          renderApp();
       });
 
-      // Register/Reset Toggles
       const toggle = (hideId, showId) => {
           document.getElementById(hideId).classList.add('hidden');
           document.getElementById(showId).classList.remove('hidden');
       };
+      
       const regBtn = document.getElementById('show-register-btn');
-      if(regBtn) regBtn.addEventListener('click', () => { toggle('login-form', 'register-form'); document.getElementById('guest-select-form').classList.add('hidden'); });
+      if(regBtn) regBtn.addEventListener('click', () => { toggle('login-form', 'register-form'); });
+      
       const resetBtn = document.getElementById('show-reset-btn');
       if(resetBtn) resetBtn.addEventListener('click', () => toggle('login-form', 'reset-form'));
+      
       const backBtns = document.querySelectorAll('[id^=back-from], [id^=back-to]');
       backBtns.forEach(b => b.addEventListener('click', () => {
-          ['register-form', 'reset-form', 'guest-select-form'].forEach(id => document.getElementById(id).classList.add('hidden'));
+          ['register-form', 'reset-form', 'guest-select-form'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.classList.add('hidden');
+          });
           document.getElementById('login-form').classList.remove('hidden');
       }));
 
-      // Actions
       const doRegister = document.getElementById('register-btn');
       if(doRegister) doRegister.addEventListener('click', async (e) => {
           e.preventDefault();
@@ -1098,14 +1201,12 @@
       const logoutBtn = document.getElementById('logout-btn');
       if(logoutBtn) logoutBtn.addEventListener('click', logout);
 
-      // Nav - Auto close on mobile
       document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', (e) => { 
           currentView = e.currentTarget.dataset.view; 
           isMobileSidebarOpen = false;
           renderApp(); 
       }));
 
-      // Add Form
       const addForm = document.getElementById('add-customer-form');
       if(addForm) {
           const updateCalc = () => {
@@ -1117,7 +1218,6 @@
               const fStr = document.getElementById('bill-fee').value;
               const f = parseFloat(fStr);
 
-              // Check if all required fields are valid and filled
               const isValid = name && product && !isNaN(p) && p > 0 && 
                               !isNaN(r) && !isNaN(n) && n > 0 && 
                               fStr !== '' && !isNaN(f);
@@ -1141,10 +1241,7 @@
                       document.getElementById('detail-interest').textContent = '฿' + totalInterest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                       document.getElementById('detail-total').textContent = '฿' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                   }
-                  
-                  // Draft saving removed as requested
               } else {
-                  // Clear or hide values if not valid
                   if(display) display.value = '';
                   if(input) input.value = '';
                   if(detailsDiv) detailsDiv.classList.add('hidden');
@@ -1170,18 +1267,18 @@
           });
       }
 
-      // Action Buttons
       document.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', async (e) => {
           const id = e.currentTarget.dataset.pay;
           e.currentTarget.innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
           await makePayment(id);
       }));
+      
       document.querySelectorAll('[data-pay-all]').forEach(b => b.addEventListener('click', async (e) => {
           const name = e.currentTarget.dataset.payAll;
           if(confirm(`ยืนยันการชำระยอดรวมทั้งหมดของลูกค้า ${name}?`)) {
               e.currentTarget.innerHTML = '<div class="spinner" style="width:16px;height:16px;"></div>';
               await payAllForCustomer(name);
-              renderApp(); // Refresh UI to remove spinner/update data
+              renderApp();
           }
       }));
 
@@ -1190,19 +1287,15 @@
           renderApp();
       }));
 
-      // Search Logic Listeners
       const searchInput = document.getElementById('manage-search-input');
       if(searchInput) {
           searchInput.addEventListener('input', (e) => {
               manageSearchTerm = e.target.value;
-              // Simple debouncing is ideal but direct render is fast enough here
               renderApp();
-              // Re-focus the input after render since re-render kills focus
               setTimeout(() => {
                   const input = document.getElementById('manage-search-input');
                   if(input) {
                       input.focus();
-                      // Move cursor to end
                       const val = input.value;
                       input.value = '';
                       input.value = val;
@@ -1219,7 +1312,6 @@
           });
       }
 
-      // Admin Manage User Buttons (Fixed Logic)
       document.querySelectorAll('[data-delete-user]').forEach(b => b.addEventListener('click', (e) => {
           if(confirm('คุณต้องการลบบัญชีนี้ใช่หรือไม่?')) deleteUser(e.currentTarget.dataset.deleteUser);
       }));
@@ -1228,21 +1320,17 @@
           renderApp();
       }));
 
-      // Edit Form
       const editForm = document.getElementById('edit-customer-form');
       if(editForm) {
           editForm.addEventListener('submit', async (e) => {
               e.preventDefault();
               
-              // Recalculate Next Payment Date Logic
               const customer = allRecords.find(r => r.id === editingCustomer);
               const newContractDate = document.getElementById('edit-contract-date').value;
               const newMonthlyPayment = parseFloat(document.getElementById('edit-monthly-payment').value);
               const newInstallments = parseInt(document.getElementById('edit-installments').value);
-              let nextPaymentDate = customer.next_payment_date; // Default to existing
+              let nextPaymentDate = customer.next_payment_date;
 
-              // Always recalculate based on new contract date + paid installments + 1
-              // This ensures consistency if the date is changed
               if (customer) {
                   const paid = customer.paid_installments || 0;
                   nextPaymentDate = addMonthsToDate(newContractDate, paid + 1);
@@ -1252,15 +1340,14 @@
                   customer_name: document.getElementById('edit-customer-name').value,
                   product: document.getElementById('edit-product').value,
                   product_price: parseFloat(document.getElementById('edit-product-price').value),
-                  monthly_payment: newMonthlyPayment, // Update
-                  installments: newInstallments, // Update
+                  monthly_payment: newMonthlyPayment,
+                  installments: newInstallments,
                   contract_date: newContractDate,
                   next_payment_date: nextPaymentDate 
               });
           });
           document.getElementById('cancel-edit-btn').addEventListener('click', hideModal);
           
-          // Updated Delete Logic with Confirmation
           document.getElementById('delete-customer-btn')?.addEventListener('click', async () => { 
               if(confirm('คุณต้องการลบข้อมูลลูกค้านี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
                   await deleteCustomer(editingCustomer);
@@ -1271,7 +1358,6 @@
           document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => { await deleteCustomer(confirmDeleteId); hideModal(); });
       }
 
-      // Admin Reset Form
       const adminResetForm = document.getElementById('admin-reset-form');
       if(adminResetForm) {
           adminResetForm.addEventListener('submit', async (e) => {
@@ -1281,12 +1367,10 @@
               await adminResetPassword(editingUser, newPass);
           });
           
-          // Added listener for cancel button on Admin Reset Form
           const cancelAdminReset = document.getElementById('cancel-admin-reset-btn');
           if(cancelAdminReset) cancelAdminReset.addEventListener('click', hideModal);
       }
 
-      // Settings
       const dm = document.getElementById('dark-mode-toggle');
       if(dm) dm.addEventListener('change', (e) => { if(e.target.checked) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); });
       const saveSet = document.getElementById('save-settings-btn');
@@ -1303,7 +1387,6 @@
           saveSet.innerHTML = 'บันทึกการตั้งค่า';
       });
 
-      // Admin Connection Settings Save
       const saveConn = document.getElementById('save-connection-btn');
       if(saveConn) saveConn.addEventListener('click', () => {
           const url = document.getElementById('setting-supabase-url').value;
@@ -1315,7 +1398,6 @@
           setTimeout(() => location.reload(), 1500);
       });
 
-      // Admin Connection Settings Reset
       const resetConn = document.getElementById('reset-connection-btn');
       if(resetConn) resetConn.addEventListener('click', () => {
           if(confirm('คุณต้องการรีเซ็ตค่าการเชื่อมต่อเป็นค่าเริ่มต้นหรือไม่?')) {
@@ -1326,7 +1408,6 @@
       });
     }
 
-    // Init
     async function init() {
       window.dataSdk.init(dataHandler); 
       checkLogin();
