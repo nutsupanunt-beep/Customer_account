@@ -993,12 +993,12 @@
                                           <td class="px-3 py-3 text-center">
                                               ${hasEditPermission ? `
                                               <div class="flex justify-center gap-2 items-center">
-                                                  <button data-pay="${c.id}" class="flex items-center justify-center w-8 h-8 rounded-full shadow-sm hover:shadow-md transition-all ${canPay?'':'payment-disabled'}" style="background: ${canPay?primaryColor:'#9ca3af'}; color: white;" ${canPay?'':'disabled'} title="ชำระเงิน">
-                                                      <img src="pay-icon.png" alt="Pay" class="w-4 h-4 object-contain filter drop-shadow-sm" onerror="this.outerHTML='💰'">
+                                                  <button data-pay="${c.id}" class="flex items-center justify-center w-10 h-10 rounded-full shadow-sm hover:shadow-md transition-all ${canPay?'':'payment-disabled'}" style="background: ${canPay?primaryColor:'#9ca3af'}; color: white;" ${canPay?'':'disabled'} title="ชำระเงิน">
+                                                      <img src="pay-icon.png" alt="Pay" class="w-6 h-6 object-contain filter drop-shadow-sm" onerror="this.outerHTML='<span class=\\'text-lg\\'>💰</span>'">
                                                   </button>
-                                                  <button data-edit="${c.id}" class="flex items-center justify-center w-8 h-8 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#4b5563':'#e5e7eb'}; color: ${textColor};" title="แก้ไข">✏️</button>
+                                                  <button data-edit="${c.id}" class="flex items-center justify-center w-10 h-10 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#4b5563':'#e5e7eb'}; color: ${textColor};" title="แก้ไข"><span class="text-lg">✏️</span></button>
                                               </div>
-                                              ` : `<span class="text-base font-bold" style="color: ${lenderColor};">${ownerName}</span>`}
+                                              ` : `<span class="px-3 py-1.5 text-sm rounded-full font-medium shadow-sm" style="background: ${lenderColor}15; color: ${lenderColor}; border: 1px solid ${lenderColor}30;">${ownerName}</span>`}
                                           </td>
                                       </tr>
                                       `;
@@ -1140,7 +1140,7 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
-        { version: "V.8.9 (Clean UI Styles)", date: "28/02/2026", changes: ["ลบกรอบสีพื้นหลังของชื่อผู้ให้บริการออกให้เหลือแต่ข้อความ", "ขยายขนาดตัวอักษรหัวข้อ 'ผู้ให้บริการ' และ 'ยอดรวม' ให้มองเห็นชัดเจนขึ้น"] },
+        { version: "V.9.0 (Bigger Icons)", date: "28/02/2026", changes: ["ขยายขนาดไอคอนปุ่มชำระเงินและปุ่มแก้ไขในตารางให้ใหญ่และกดง่ายขึ้น"] },
         { version: "V.8.8 (Summary UI Enhancement)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวอักษรยอดรวมที่ต้องชำระทั้งหมดให้ใหญ่ขึ้น", "เพิ่มหัวข้อคอลัมน์ 'ผู้ให้บริการ' และ 'ยอดรวม' เพื่อให้อ่านง่ายขึ้นในส่วนสรุปรายคน"] },
         { version: "V.8.7 (Mobile Color Fix)", date: "28/02/2026", changes: ["แก้ปัญหาแถบสีดำโผล่ทับข้อความเวลาเปิดดูข้อมูลลูกค้าในมือถือ"] },
         { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
