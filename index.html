@@ -3,6 +3,8 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- เพิ่ม Theme Color เพื่อให้ Status Bar มือถือสีกลืนกับแอป -->
+  <meta name="theme-color" content="#ffffff" id="meta-theme-color">
   <title>ระบบจัดการลูกค้า (Supabase)</title>
   
   <!-- ========================================== -->
@@ -267,7 +269,7 @@
     }
 
     function checkLogin() {
-      // V.8.5: เช็คจาก localStorage ก่อน (ถ้ากด remember me) ถ้าไม่มีค่อยเช็ค sessionStorage
+      // Check localStorage first (remember me), then sessionStorage
       let savedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
       if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -445,9 +447,8 @@
       return daysUntil <= daysBefore;
     }
 
-    // ฟังก์ชันสร้างสีจากชื่อผู้ให้บริการ (Lender)
     function getLenderColor(name, isDark) {
-        if (!name || name === '-') return isDark ? '#9ca3af' : '#6b7280'; // Gray fallback
+        if (!name || name === '-') return isDark ? '#9ca3af' : '#6b7280'; 
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -640,6 +641,16 @@
       app.style.color = textColor;
       app.className = 'h-full w-full flex flex-col overflow-hidden custom-text';
 
+      // Fix for background bleeding on mobile viewports
+      document.body.style.backgroundColor = bgColor;
+      
+      // Update theme color meta tag for mobile status bar
+      let metaThemeColor = document.getElementById('meta-theme-color');
+      if (metaThemeColor) {
+          // Use surface color so header blends with status bar
+          metaThemeColor.content = surfaceColor;
+      }
+
       const scrollContainer = app.querySelector('.overflow-auto');
       let savedScrollTop = 0;
       if (scrollContainer) {
@@ -652,7 +663,7 @@
         const hideScrollbar = ['add', 'settings'].includes(currentView) ? 'no-scrollbar' : '';
         app.innerHTML = `
           <!-- Mobile Header -->
-          <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface" style="color: ${textColor};">
+          <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface" style="color: ${textColor}; background: ${surfaceColor};">
             <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -763,7 +774,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.5 (Remember Me)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.6 (Mobile Display Fix)</p>
           </div>
         </div>
       `;
@@ -1120,6 +1131,7 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
         { version: "V.8.5 (Remember Me)", date: "28/02/2026", changes: ["เพิ่มปุ่ม 'เข้าสู่ระบบค้างไว้' ในหน้า Login", "เมื่อติ๊กถูก ระบบจะจำการล็อกอินแม้ปิดเว็บไปแล้ว"] },
         { version: "V.8.4 (Font Size Updates)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวหนังสือรายชื่อผู้ให้บริการสินเชื่อและยอดรวมในกล่องสรุปให้เห็นชัดเจนขึ้น"] },
         { version: "V.8.3 (Lender Colors)", date: "28/02/2026", changes: ["เพิ่มระบบสุ่มสีแยกตามชื่อผู้ให้บริการสินเชื่อ เพื่อให้อ่านง่ายและแยกแยะได้ชัดเจนขึ้น"] },
