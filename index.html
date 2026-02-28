@@ -774,7 +774,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.7 (Mobile Fix)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.8.8 (Summary UI Enhancement)</p>
           </div>
         </div>
       `;
@@ -853,8 +853,8 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4" style="border-color: ${dark?'#374151':'#e5e7eb'};">
                     <h3 class="text-lg font-semibold" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
                     <div class="text-left sm:text-right mt-2 sm:mt-0">
-                        <p class="text-xs opacity-60" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
-                        <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
+                        <p class="text-sm font-semibold opacity-80 mb-1" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
+                        <p class="text-3xl font-bold" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
                     </div>
                 </div>
                 
@@ -883,7 +883,7 @@
                   // Sort the breakdown list by lender name as well
                   const lenders = Object.keys(s.lenderTotals).sort((a, b) => a.localeCompare(b, 'th'));
 
-                  // V.8.4 Adjusting text sizes for summary red box area
+                  // V.8.8 Adjusting header and sizes for multiple lenders
                   if (isSpecialView) {
                       if (lenders.length === 1) {
                           const lenderColor = getLenderColor(lenders[0], dark);
@@ -894,20 +894,29 @@
                               </div>
                           `;
                       } else {
-                          breakdownHtml = lenders.map(lender => {
+                          breakdownHtml = `
+                              <div class="w-full flex flex-col items-end">
+                                  <div class="flex items-center justify-end gap-3 mb-2 w-full border-b pb-1" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'}60;">
+                                      <span class="text-sm font-semibold opacity-70" style="color: ${textColor};">ผู้ให้บริการ</span>
+                                      <span class="text-sm font-semibold opacity-70 w-24 text-right" style="color: ${textColor};">ยอดรวม</span>
+                                  </div>
+                          `;
+
+                          breakdownHtml += lenders.map(lender => {
                               const lenderColor = getLenderColor(lender, dark);
                               return `
-                              <div class="flex items-center justify-end gap-2 mb-2 w-full">
-                                  <span class="text-sm font-medium px-2 py-0.5 rounded" style="background: ${lenderColor}15; color: ${lenderColor}; border: 1px solid ${lenderColor}30;">ผู้ให้บริการ: ${lender}</span>
-                                  <span class="text-xl font-bold" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
+                              <div class="flex items-center justify-end gap-3 mb-2 w-full">
+                                  <span class="text-base font-bold" style="color: ${lenderColor};">${lender}</span>
+                                  <span class="text-xl font-bold w-24 text-right" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
                               </div>
                               `;
                           }).join('');
                           
                           breakdownHtml += `
-                              <div class="flex items-center justify-end gap-3 mt-3 pt-3 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                                  <span class="text-base font-semibold opacity-80 uppercase" style="color: ${textColor};">รวมทุกสัญญา</span>
-                                  <span class="text-2xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
+                                  <div class="flex items-center justify-end gap-3 mt-2 pt-2 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                                      <span class="text-base font-semibold opacity-80" style="color: ${textColor};">รวมทุกสัญญา</span>
+                                      <span class="text-2xl font-bold w-24 text-right" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
+                                  </div>
                               </div>
                           `;
                       }
@@ -920,9 +929,8 @@
                       `;
                   }
 
-                  // V.8.7 - Fix mobile dark mode background glitch by removing inline background color and hover backgrounds on header
                   let html = `
-                  <div class="border rounded-xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                  <div class="border rounded-xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md" style="border-color: ${dark?'#374151':'#e5e7eb'}; background: ${isExpanded ? (dark?'#1f2937':'#f9fafb') : 'transparent'};">
                     <div class="py-4 px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center cursor-pointer" onclick="window.toggleCustomerExpand('${s.name}')">
                         
                         <div class="flex items-center gap-6 mb-3 sm:mb-0 w-full sm:w-auto">
@@ -976,7 +984,7 @@
                                       const lenderColor = getLenderColor(ownerName, dark);
                                       
                                       return `
-                                      <tr class="border-b last:border-b-0" style="border-color: ${dark?'#374151':'#f3f4f6'};">
+                                      <tr class="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f3f4f6'};">
                                           <td class="px-3 py-3 font-medium" style="color: ${textColor};">${c.product}</td>
                                           <td class="px-3 py-3 opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
                                           <td class="px-3 py-3 font-semibold" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
@@ -990,7 +998,7 @@
                                                   </button>
                                                   <button data-edit="${c.id}" class="flex items-center justify-center w-8 h-8 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#4b5563':'#e5e7eb'}; color: ${textColor};" title="แก้ไข">✏️</button>
                                               </div>
-                                              ` : `<span class="px-3 py-1.5 text-sm rounded-full font-medium shadow-sm" style="background: ${lenderColor}15; color: ${lenderColor}; border: 1px solid ${lenderColor}30;">${ownerName}</span>`}
+                                              ` : `<span class="text-base font-bold" style="color: ${lenderColor};">${ownerName}</span>`}
                                           </td>
                                       </tr>
                                       `;
@@ -1132,6 +1140,8 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        { version: "V.8.9 (Clean UI Styles)", date: "28/02/2026", changes: ["ลบกรอบสีพื้นหลังของชื่อผู้ให้บริการออกให้เหลือแต่ข้อความ", "ขยายขนาดตัวอักษรหัวข้อ 'ผู้ให้บริการ' และ 'ยอดรวม' ให้มองเห็นชัดเจนขึ้น"] },
+        { version: "V.8.8 (Summary UI Enhancement)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวอักษรยอดรวมที่ต้องชำระทั้งหมดให้ใหญ่ขึ้น", "เพิ่มหัวข้อคอลัมน์ 'ผู้ให้บริการ' และ 'ยอดรวม' เพื่อให้อ่านง่ายขึ้นในส่วนสรุปรายคน"] },
         { version: "V.8.7 (Mobile Color Fix)", date: "28/02/2026", changes: ["แก้ปัญหาแถบสีดำโผล่ทับข้อความเวลาเปิดดูข้อมูลลูกค้าในมือถือ"] },
         { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
         { version: "V.8.5 (Remember Me)", date: "28/02/2026", changes: ["เพิ่มปุ่ม 'เข้าสู่ระบบค้างไว้' ในหน้า Login", "เมื่อติ๊กถูก ระบบจะจำการล็อกอินแม้ปิดเว็บไปแล้ว"] },
