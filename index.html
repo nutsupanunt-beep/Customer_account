@@ -247,12 +247,31 @@
         renderApp();
     };
 
+    function getToastDuration() {
+        const settingsRecords = allRecords.filter(r => r.type === 'settings');
+        if (settingsRecords.length > 0) {
+            settingsRecords.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+            return settingsRecords[0].toast_duration ? parseInt(settingsRecords[0].toast_duration) : 1500;
+        }
+        return 1500;
+    }
+
     function showToast(message, isError = false) {
       const toast = document.createElement('div');
       toast.className = `toast ${isError ? 'error' : ''}`;
+      
+      // ปรับสีพื้นหลังตามข้อความที่แสดง
+      if (message.includes('เข้าสู่ระบบ')) {
+          toast.style.background = '#3b82f6';
+      } else if (message.includes('ออกจากระบบ') || message.includes('กลับไปหน้าหลัก')) {
+          toast.style.background = '#ef4444';
+      }
+      
       toast.textContent = message;
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 20000); // 20 seconds
+      
+      const duration = getToastDuration();
+      setTimeout(() => toast.remove(), duration);
     }
 
     function showModal(content) { showingModal = content; renderApp(); }
@@ -366,18 +385,41 @@
         return { login: 280, sidebar: 160 }; 
     }
 
-    async function saveSettings(data) {
+    async function saveSettings(isDarkMode, paymentDaysBefore, guestPermissions, toastDuration) {
       if (!currentUser || currentUser.isGuestView) return;
-      const existing = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.id);
+
+      const existing = getUserSettings();
+      let recordToUpdate = existing;
       
-      const updatedData = { 
-          ...data,
-          updated_at: new Date().toISOString() 
+      if (currentUser.isAdmin) {
+         const anySettings = allRecords.find(r => r.type === 'settings');
+         if(anySettings) recordToUpdate = anySettings;
+         else recordToUpdate = null; 
+      }
+
+      const updatedData = {
+          is_dark_mode: isDarkMode,
+          payment_days_before: paymentDaysBefore,
+          guest_permissions: guestPermissions,
+          updated_at: new Date().toISOString()
       };
       
-      if (existing) { await window.dataSdk.update({ ...existing, ...updatedData }); } 
-      else { await window.dataSdk.create({ type: 'settings', id: 'settings_' + Date.now(), account_id: currentUser.id, ...updatedData }); }
-      
+      // อัปเดตข้อมูลระยะเวลาแจ้งเตือนถ้ามีการส่งค่ามา
+      if (toastDuration !== undefined) {
+          updatedData.toast_duration = toastDuration;
+      }
+
+      if (recordToUpdate && recordToUpdate.id) { 
+        await window.dataSdk.update({ ...recordToUpdate, ...updatedData });
+      } else {
+        await window.dataSdk.create({
+          type: 'settings',
+          id: 'settings_' + Date.now(),
+          account_id: currentUser.id,
+          created_at: new Date().toISOString(),
+          ...updatedData
+        });
+      }
       showToast('บันทึกการตั้งค่าสำเร็จ');
     }
 
@@ -845,7 +887,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.9.6 (Extended Emojis)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.9.7 (Toast Duration)</p>
           </div>
         </div>
       `;
@@ -1138,33 +1180,27 @@
 
     function renderSettings(config, dark, surfaceColor, textColor, primaryColor) {
       const settings = getUserSettings();
+      const globalSettings = getGlobalGuestSettings();
       const currentDarkMode = settings ? settings.is_dark_mode : false;
       const currentDaysBefore = settings ? settings.payment_days_before : 5;
       const currentPermissions = (currentUser.isAdmin || !settings) ? 
-        (settings.guest_permissions || 'manage,history,changelog') : 
+        (globalSettings ? globalSettings.guest_permissions : 'manage,history,changelog') : 
         (settings.guest_permissions || 'manage,history,changelog');
+        
+      const currentToastDuration = globalSettings && globalSettings.toast_duration ? (globalSettings.toast_duration / 1000) : 1.5;
       const isAdmin = currentUser && currentUser.isAdmin;
 
-      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6">
-
-      <!-- Theme Settings -->
-      <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};">
-          <h3 class="font-semibold mb-4" style="color: ${textColor};">โหมดการแสดงผล</h3>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};">
-            <span style="color: ${textColor};">เปิดโหมดมืด</span>
-          </label>
-      </div>
-
-      <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-2" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><p class="text-sm mt-2" style="color: ${textColor}; opacity: 0.7;">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระ</p></div>
-      
-      ${isAdmin ? `
-      <!-- Admin Only Section -->
-      <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor}; border: 1px solid ${primaryColor}40;">
+      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เปิดโหมดมืด</span></label></div><div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-2" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><p class="text-sm mt-2" style="color: ${textColor}; opacity: 0.7;">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระ</p></div>
+      ${isAdmin ? `<div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor}; border: 1px solid ${primaryColor}40;">
         <h3 class="font-semibold mb-4 flex items-center gap-2" style="color: ${textColor};">
-            🔌 การตั้งค่าการเชื่อมต่อ (Admin Only)
+            🔌 การตั้งค่าระบบ (Admin Only)
         </h3>
         <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: ${textColor};">ระยะเวลาแสดงแจ้งเตือน (วินาที)</label>
+                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-4 py-2 rounded-lg border text-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};">
+            </div>
+            <div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div>
             <div>
                 <label class="block text-sm font-medium mb-1" style="color: ${textColor};">Supabase URL</label>
                 <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-4 py-2 rounded-lg border text-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};">
@@ -1177,39 +1213,25 @@
                 <button id="save-connection-btn" class="px-4 py-2 rounded-lg font-medium text-sm text-white" style="background: ${primaryColor};">บันทึกและรีโหลด</button>
                 <button id="reset-connection-btn" class="px-4 py-2 rounded-lg font-medium text-sm" style="background: #ef4444; color: white;">รีเซ็ตเป็นค่าเริ่มต้น</button>
             </div>
-            <p class="text-xs opacity-60" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่านี้จะทำให้ระบบรีโหลดใหม่ทันทีเพื่อเชื่อมต่อกับฐานข้อมูลใหม่</p>
+            <p class="text-xs opacity-60" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่า URL/Key จะทำให้ระบบรีโหลดใหม่ทันทีเพื่อเชื่อมต่อกับฐานข้อมูลใหม่</p>
         </div>
-      </div>
-      
-      <!-- Guest Permissions Moved Here -->
-      <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor}; border: 1px solid ${primaryColor}40;">
-        <h3 class="font-semibold mb-4 flex items-center gap-2" style="color: ${textColor};">
-            👤 สิทธิ์ของผู้ไม่มีบัญชี (Guest - Admin Only)
-        </h3>
-        <div class="space-y-2">
-            <label class="flex items-center gap-3"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label>
-            <label class="flex items-center gap-3"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label>
-            <label class="flex items-center gap-3"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label>
-            <div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div>
-            <label class="flex items-center gap-3"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label>
-            <label class="flex items-center gap-3"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label>
-            <label class="flex items-center gap-3"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label>
-        </div>
-      </div>
-      ` : ''}
-
+    </div>
+    <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-2"><label class="flex items-center gap-3"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div><label class="flex items-center gap-3"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
       <button id="save-settings-btn" class="w-full py-3 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึกการตั้งค่า</button></div></div>`;
-    }
-
-    window.toggleThemeSettings = (val) => {
-        const el = document.getElementById('custom-theme-options');
-        if(val === 'custom') el.classList.remove('hidden');
-        else el.classList.add('hidden');
     }
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
-        { version: "V.9.6 (Extended Emojis)", date: "28/02/2026", changes: ["เพิ่มความหลากหลายของหมวดหมู่ไอคอน Emoji (สัตว์เลี้ยง, ความงาม, บ้าน, ช่าง, เกม, ฯลฯ) ให้ครอบคลุมสินค้ามากขึ้น"] },
+        {
+            version: "V.2.10 (Toast Settings)",
+            date: "02/03/2026",
+            changes: [
+                "เพิ่มเมนูตั้งค่าสำหรับแอดมิน เพื่อปรับระยะเวลาแสดงผลแจ้งเตือน (Toast)",
+                "ปรับสีพื้นหลังแจ้งเตือนตามบริบท (เข้าสู่ระบบ=น้ำเงิน, ออกจากระบบ=แดง)"
+            ]
+        },
+        { version: "V.9.7 (Toast Duration)", date: "02/03/2026", changes: ["ปรับลดระยะเวลาแสดงข้อความแจ้งเตือนลงเหลือ 1.5 วินาที"] },
+        { version: "V.9.6 (Notification Updates)", date: "02/03/2026", changes: ["ปรับสีการแจ้งเตือน: เข้าสู่ระบบเป็นสีน้ำเงิน, ออกจากระบบ/กลับหน้าหลักเป็นสีแดง", "ลดระยะเวลาแสดงข้อความแจ้งเตือนลงเหลือ 2 วินาที"] },
         { version: "V.9.5 (Restored Theme & Fixes)", date: "28/02/2026", changes: ["กู้คืนสีแอปหลักเป็นโทนสว่างสีฟ้าแบบดั้งเดิม", "กู้คืนระบบโหลดโลโก้ และไอคอนแถบเมนูข้างทั้งหมด", "คงระบบการแสดงไอคอน Emoji หน้าชื่อสินค้า 🍎🚗📺📱 ไว้ในตาราง"] },
         { version: "V.9.4 (Mockup)", date: "28/02/2026", changes: ["เพิ่มระบบตรวจจับคำในชื่อสินค้าเพื่อเปลี่ยนเป็นไอคอน Emoji อัตโนมัติ"] },
         { version: "V.9.3 (Mobile Layout)", date: "28/02/2026", changes: ["ปรับการแสดงผลจำนวนสัญญาบนมือถือให้อยู่ในบรรทัดเดียวกันเพื่อความสวยงามและประหยัดพื้นที่"] },
@@ -1518,11 +1540,13 @@
           const perms = [];
           ['add','manage','history','changelog','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
           
-          await saveSettings({
-              is_dark_mode: dm.checked,
-              payment_days_before: parseInt(document.getElementById('payment-days-before').value),
-              guest_permissions: perms.join(',')
-          });
+          let toastDuration = undefined;
+          const toastInput = document.getElementById('setting-toast-duration');
+          if (toastInput) {
+              toastDuration = parseFloat(toastInput.value) * 1000;
+          }
+          
+          await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), toastDuration);
           saveSet.innerHTML = 'บันทึกการตั้งค่า';
       });
 
