@@ -206,7 +206,7 @@
   <script>
     // V.9.5 กู้คืนธีมสีดั้งเดิมที่คุณคุ้นเคยกลับมา
     const defaultConfig = {
-      app_title: "ระบบจัดการลูกค้า",
+      app_title: "ARBANG FAST TRACK ASSET LOAN",
       menu_add_customer: "เพิ่มข้อมูลลูกค้า",
       menu_manage_customer: "จัดการรายการลูกค้า",
       menu_history: "ประวัติการทำรายการ",
@@ -925,7 +925,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.9.7 (Toast Duration)</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.0</p>
           </div>
         </div>
       `;
@@ -1261,7 +1261,15 @@
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
         {
-            version: "V.2.10 (Toast Settings)",
+            version: "V.10.0 (System Updates)",
+            date: "03/03/2026",
+            changes: [
+                "ปรับปรุงการนับเวอร์ชันให้รันต่อเนื่องเป็น 10.0",
+                "แก้ไขปัญหาเวอร์ชันที่แสดงผลไม่ตรงกันระหว่างแถบเมนูกับหน้าประวัติการอัปเดต"
+            ]
+        },
+        {
+            version: "V.9.8 (Toast Settings)",
             date: "02/03/2026",
             changes: [
                 "เพิ่มเมนูตั้งค่าสำหรับแอดมิน เพื่อปรับระยะเวลาแสดงผลแจ้งเตือน (Toast)",
