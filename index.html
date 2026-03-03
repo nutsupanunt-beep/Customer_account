@@ -588,8 +588,10 @@
       if (customer.product !== updates.product) changes.push(`สินค้า: ${customer.product} ➔ ${updates.product}`);
       if (parseFloat(customer.product_price || 0) !== parseFloat(updates.product_price || 0)) changes.push(`ราคาสินค้า: ฿${(customer.product_price||0).toLocaleString()} ➔ ฿${(updates.product_price||0).toLocaleString()}`);
       if (parseFloat(customer.monthly_payment || 0) !== parseFloat(updates.monthly_payment || 0)) changes.push(`ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()} ➔ ฿${(updates.monthly_payment||0).toLocaleString()}`);
-      if (parseInt(customer.installments || 0) !== parseInt(updates.installments || 0)) changes.push(`จำนวนงวด: ${customer.installments} ➔ ${updates.installments}`);
+      if (parseInt(customer.installments || 0) !== parseInt(updates.installments || 0)) changes.push(`จำนวนงวดรวม: ${customer.installments} ➔ ${updates.installments}`);
+      if (parseInt(customer.paid_installments || 0) !== parseInt(updates.paid_installments || 0)) changes.push(`งวดที่ชำระแล้ว: ${customer.paid_installments} ➔ ${updates.paid_installments}`);
       if (customer.contract_date !== updates.contract_date) changes.push(`วันที่ทำสัญญา: ${customer.contract_date} ➔ ${updates.contract_date}`);
+      if (customer.status !== updates.status) changes.push(`สถานะ: ${customer.status === 'active' ? 'กำลังผ่อน' : 'ผ่อนครบแล้ว'} ➔ ${updates.status === 'active' ? 'กำลังผ่อน' : 'ผ่อนครบแล้ว'}`);
 
       let details = `แก้ไขข้อมูลของ <b>${customer.customer_name}</b> (รายการ: ${customer.product})`;
       if (changes.length > 0) {
@@ -1264,7 +1266,11 @@
       }
       if (editingCustomer) {
         const customer = allRecords.find(r => r.id === editingCustomer); if (!customer) return '';
-        return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">จำนวนงวด</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+        return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+        <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">จำนวนงวดรวม</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชำระแล้ว (งวด)</label><input type="number" id="edit-paid-installments" value="${customer.paid_installments || 0}" min="0" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+        </div>
         <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
         <div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ยืนยันการลบ</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ลบข้อมูล</button>`}</form></div></div>`;
       }
@@ -1487,15 +1493,18 @@
               e.preventDefault();
               
               const customer = allRecords.find(r => r.id === editingCustomer);
+              if (!customer) return;
+
               const newContractDate = document.getElementById('edit-contract-date').value;
               const newMonthlyPayment = parseFloat(document.getElementById('edit-monthly-payment').value);
               const newInstallments = parseInt(document.getElementById('edit-installments').value);
-              let nextPaymentDate = customer.next_payment_date;
+              const newPaidInstallments = parseInt(document.getElementById('edit-paid-installments').value) || 0;
 
-              if (customer) {
-                  const paid = customer.paid_installments || 0;
-                  nextPaymentDate = addMonthsToDate(newContractDate, paid + 1);
-              }
+              // คำนวณวันที่ชำระงวดถัดไปใหม่ โดยนับจากวันที่ทำสัญญา + จำนวนงวดที่จ่ายไปแล้ว + 1
+              let nextPaymentDate = addMonthsToDate(newContractDate, newPaidInstallments + 1);
+
+              // ตรวจสอบสถานะว่าจ่ายครบหรือยัง
+              let newStatus = newPaidInstallments >= newInstallments ? 'completed' : 'active';
 
               await updateCustomer(editingCustomer, {
                   customer_name: document.getElementById('edit-customer-name').value,
@@ -1503,8 +1512,10 @@
                   product_price: parseFloat(document.getElementById('edit-product-price').value),
                   monthly_payment: newMonthlyPayment,
                   installments: newInstallments,
+                  paid_installments: newPaidInstallments,
                   contract_date: newContractDate,
-                  next_payment_date: nextPaymentDate 
+                  next_payment_date: nextPaymentDate,
+                  status: newStatus 
               });
           });
           document.getElementById('cancel-edit-btn').addEventListener('click', hideModal);
