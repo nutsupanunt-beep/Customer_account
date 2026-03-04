@@ -625,7 +625,7 @@
       };
       const result = await window.dataSdk.create(newCustomer);
       if (result.isOk) {
-        await addHistory('เพิ่มข้อมูล', `เพิ่มข้อมูลลูกค้า <b>${customerData.customerName}</b><br><span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs"><b>รายละเอียด:</b><br>• สินค้า: ${customerData.product}<br>• ราคา: ฿${(customerData.productPrice||0).toLocaleString()}</span>`);
+        await addHistory('เพิ่มข้อมูล', `เพิ่มข้อมูลลูกค้า <b>${customerData.customerName}</b><br><span class="block mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"><b>รายละเอียด:</b><br>• สินค้า: ${customerData.product}<br>• ราคา: ฿${(customerData.productPrice||0).toLocaleString()}</span>`);
         saveAutocompleteData(customerData); showToast('เพิ่มข้อมูลลูกค้าสำเร็จ');
       } else showToast('เกิดข้อผิดพลาด: ' + result.error.message, true);
     }
@@ -645,9 +645,9 @@
 
       let details = `แก้ไขข้อมูลของ <b>${customer.customer_name}</b> (รายการ: ${customer.product})`;
       if (changes.length > 0) {
-          details += `<span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300"><b>รายการที่ถูกปรับเปลี่ยน:</b><br>• ${changes.join('<br>• ')}</span>`;
+          details += `<span class="block mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300"><b>รายการที่ถูกปรับเปลี่ยน:</b><br>• ${changes.join('<br>• ')}</span>`;
       } else {
-          details += `<span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300">ไม่มีการเปลี่ยนค่าใดๆ</span>`;
+          details += `<span class="block mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">ไม่มีการเปลี่ยนค่าใดๆ</span>`;
       }
 
       const result = await window.dataSdk.update({ ...customer, ...updates, updated_at: new Date().toISOString() });
@@ -705,7 +705,7 @@
       const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
       const result = await window.dataSdk.delete(customer);
       if (result.isOk) { 
-          await addHistory('ลบข้อมูล', `ลบข้อมูลของ <b>${customer.customer_name}</b><br><span class="block mt-1.5 p-2 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs"><b>รายละเอียดที่ถูกลบ:</b><br>• สินค้า: ${customer.product}<br>• ราคา: ฿${(customer.product_price||0).toLocaleString()}<br>• ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()}</span>`); 
+          await addHistory('ลบข้อมูล', `ลบข้อมูลของ <b>${customer.customer_name}</b><br><span class="block mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"><b>รายละเอียดที่ถูกลบ:</b><br>• สินค้า: ${customer.product}<br>• ราคา: ฿${(customer.product_price||0).toLocaleString()}<br>• ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()}</span>`); 
           showToast('ลบข้อมูลสำเร็จ'); 
           confirmDeleteId = null; 
       } 
@@ -1193,37 +1193,46 @@
                 ${history.length === 0 ? `<div class="pl-8 text-sm opacity-60" style="color: ${textColor};">ไม่พบประวัติการทำรายการ</div>` : ''}
                 ${history.map((h, idx) => {
                     let actionColor = primaryColor;
-                    if(h.history_action.includes('เพิ่ม')) actionColor = '#2563eb'; // Blue
-                    else if(h.history_action.includes('แก้ไข')) actionColor = '#d97706'; // Dark Yellow
-                    else if(h.history_action.includes('ลบ')) actionColor = '#dc2626'; // Red
-                    else if(h.history_action.includes('ครบ') || h.history_action.includes('ปิด')) actionColor = '#16a34a'; // Green
+                    let actionBgLight = dark ? surfaceColor : '#ffffff';
+                    
+                    if(h.history_action.includes('เพิ่ม')) { actionColor = '#28A745'; actionBgLight = '#E8F5E9'; }
+                    else if(h.history_action.includes('แก้ไข')) { actionColor = '#007BFF'; actionBgLight = '#E3F2FD'; }
+                    else if(h.history_action.includes('ชำระเงินครบ') || h.history_action.includes('ปิด')) { actionColor = '#1B5E20'; actionBgLight = '#C8E6C9'; }
+                    else if(h.history_action.includes('ชำระเงิน')) { actionColor = '#FF9800'; actionBgLight = '#FFF3E0'; }
+                    else if(h.history_action.includes('ลบ')) { actionColor = '#DC3545'; actionBgLight = '#FFEBEE'; }
+                    
+                    let cardBg = dark ? surfaceColor : actionBgLight;
+                    let borderColor = dark ? '#374151' : actionColor + '30';
+                    
+                    // ปรับขนาดของข้อความเดิมในประวัติ (ที่ถูกเซฟเป็น HTML เล็กๆ) ให้ใหญ่ขึ้น
+                    let updatedDetails = h.history_details.replace(/text-xs/g, 'text-sm').replace(/p-2/g, 'p-3').replace(/mt-1\.5/g, 'mt-3');
                     
                     return `
                     <div class="relative pl-8 md:pl-10">
                         <!-- Dot -->
                         <span class="absolute -left-[9px] top-4 w-4 h-4 rounded-full border-4" 
-                            style="background-color: ${actionColor}; border-color: ${dark ? '#111827' : '#f3f4f6'};"></span>
+                            style="background-color: ${actionColor}; border-color: ${dark ? '#111827' : cardBg};"></span>
                         
                         <!-- Content Card -->
                         <div class="p-5 rounded-xl shadow-sm border mb-6 relative group transition-all hover:-translate-y-1" 
-                            style="background: ${surfaceColor}; border-color: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">
+                            style="background: ${cardBg}; border-color: ${borderColor}; color: ${textColor};">
                             
                             <!-- Arrow -->
                             <div class="absolute w-3 h-3 rotate-45 -left-[7px] top-6 border-l border-b" 
-                                style="background: ${surfaceColor}; border-color: ${dark ? '#374151' : '#e5e7eb'};"></div>
+                                style="background: ${cardBg}; border-color: ${borderColor};"></div>
 
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                                <h3 class="text-lg font-bold" style="color: ${actionColor};">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+                                <h3 class="text-xl font-bold" style="color: ${actionColor};">
                                     ${h.history_action}
                                 </h3>
-                                <span class="text-xs font-mono px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 opacity-70 mt-1 sm:mt-0 w-fit">
+                                <span class="text-sm font-mono px-3 py-1 rounded opacity-80 mt-2 sm:mt-0 w-fit" style="background: ${dark ? '#374151' : '#ffffff'}; border: 1px solid ${dark ? '#4b5563' : '#e5e7eb'};">
                                     ${new Date(h.history_date).toLocaleString('th-TH')}
                                 </span>
                             </div>
                             
-                            <p class="text-sm opacity-80 leading-relaxed">
-                                ${h.history_details}
-                            </p>
+                            <div class="text-base opacity-90 leading-relaxed">
+                                ${updatedDetails}
+                            </div>
                         </div>
                     </div>
                 `}).join('')}
