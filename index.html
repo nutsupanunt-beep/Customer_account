@@ -1435,11 +1435,11 @@
             return `
             <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" style="border-color: ${dark ? '#374151' : '#e5e7eb'};" onclick="window.showStatementDetails('${name}')">
                 <div class="flex-1">
-                    <span class="font-medium" style="color: ${textColor};">ลูกค้า: ${name}</span>
+                    <span class="font-normal" style="color: ${textColor};">ลูกค้า: ${name}</span>
                 </div>
                 <div class="text-right flex flex-col">
-                    <span class="font-bold text-sm" style="color: ${primaryColor};">ยอดเข้า: ฿${cData.amount.toLocaleString()}</span>
-                    <span class="font-bold text-base" style="color: #10b981;">กำไร: ฿${Math.round(cData.profit).toLocaleString()} <span class="text-xs opacity-80">(${custProfitPercent}%)</span></span>
+                    <span class="font-normal text-sm" style="color: ${primaryColor};">ยอดเข้า: ฿${cData.amount.toLocaleString()}</span>
+                    <span class="font-normal text-base" style="color: #10b981;">กำไร: ฿${Math.round(cData.profit).toLocaleString()} <span class="text-xs opacity-80">(${custProfitPercent}%)</span></span>
                 </div>
                 <span class="ml-3 text-xs opacity-50" style="color: ${textColor};">▶</span>
             </div>
@@ -1471,14 +1471,14 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 p-4 md:p-6 rounded-xl shadow-md custom-surface" style="background: ${surfaceColor}; height: 400px;">
-                    <h3 class="text-lg font-bold mb-4" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
+                    <h3 class="text-lg font-normal mb-4" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
                     <div style="height: 320px; width: 100%;">
                         <canvas id="statementChart"></canvas>
                     </div>
                 </div>
 
                 <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface flex flex-col h-[400px]" style="background: ${surfaceColor};">
-                    <h3 class="text-lg font-bold mb-4 border-b pb-2 flex justify-between items-center" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e5e7eb'};">
+                    <h3 class="text-lg font-normal mb-4 border-b pb-2 flex justify-between items-center" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e5e7eb'};">
                         <span>กำไรแยกตามลูกค้า</span>
                         <span class="text-xs font-normal opacity-60 px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">${customers.length} คน</span>
                     </h3>
@@ -1654,7 +1654,7 @@
         <div class="modal-overlay" onclick="hideModal()">
             <div class="modal-content custom-surface" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center mb-4 border-b pb-2" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                    <h3 class="text-xl font-bold" style="color: ${textColor};">รายละเอียด: ${statementDetailCustomer}</h3>
+                    <h3 class="text-xl font-normal" style="color: ${textColor};">รายละเอียด: ${statementDetailCustomer}</h3>
                     <button onclick="hideModal()" class="text-gray-500 hover:text-gray-700 text-xl font-bold px-2">&times;</button>
                 </div>
                 <p class="text-sm opacity-70 mb-4" style="color: ${textColor};">ประจำ${periodText}</p>
@@ -1667,11 +1667,11 @@
                             <div class="flex justify-between items-start">
                                 <div class="flex items-center gap-2">
                                     <span class="text-lg">${getProductIcon(item.product)}</span>
-                                    <span class="font-medium" style="color: ${textColor};">${item.product}</span>
+                                    <span class="font-normal" style="color: ${textColor};">${item.product}</span>
                                 </div>
                                 <div class="flex flex-col items-end">
-                                    <span class="font-bold text-sm" style="color: ${primaryColor};">จ่ายเข้า ฿${item.amount.toLocaleString()}</span>
-                                    <span class="font-bold text-sm" style="color: #10b981;">(กำไร ฿${Math.round(item.profit).toLocaleString()} • ${itemPercent}%)</span>
+                                    <span class="font-normal text-sm" style="color: ${primaryColor};">จ่ายเข้า ฿${item.amount.toLocaleString()}</span>
+                                    <span class="font-normal text-sm" style="color: #10b981;">(กำไร ฿${Math.round(item.profit).toLocaleString()} • ${itemPercent}%)</span>
                                 </div>
                             </div>
                             <div class="text-xs opacity-60 text-right" style="color: ${textColor}; mt-1">
@@ -1682,8 +1682,8 @@
                     }).join('')}
                 </div>
                 <div class="mt-4 pt-3 border-t flex justify-between items-center" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                    <span class="font-bold" style="color: ${textColor};">กำไรรวมลูกค้ารายนี้</span>
-                    <span class="text-xl font-black" style="color: #10b981;">฿${Math.round(totalCustProfit).toLocaleString()} <span class="text-sm opacity-80">(${totalCustPercent}%)</span></span>
+                    <span class="font-normal" style="color: ${textColor};">กำไรรวมลูกค้ารายนี้</span>
+                    <span class="text-xl font-normal" style="color: #10b981;">฿${Math.round(totalCustProfit).toLocaleString()} <span class="text-sm opacity-80">(${totalCustPercent}%)</span></span>
                 </div>
             </div>
         </div>
