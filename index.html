@@ -1193,16 +1193,15 @@
                 ${history.length === 0 ? `<div class="pl-8 text-sm opacity-60" style="color: ${textColor};">ไม่พบประวัติการทำรายการ</div>` : ''}
                 ${history.map((h, idx) => {
                     let actionColor = primaryColor;
-                    let actionBgLight = dark ? surfaceColor : '#ffffff';
                     
-                    if(h.history_action.includes('เพิ่ม')) { actionColor = '#28A745'; actionBgLight = '#E8F5E9'; }
-                    else if(h.history_action.includes('แก้ไข')) { actionColor = '#007BFF'; actionBgLight = '#E3F2FD'; }
-                    else if(h.history_action.includes('ชำระเงินครบ') || h.history_action.includes('ปิด')) { actionColor = '#1B5E20'; actionBgLight = '#C8E6C9'; }
-                    else if(h.history_action.includes('ชำระเงิน')) { actionColor = '#FF9800'; actionBgLight = '#FFF3E0'; }
-                    else if(h.history_action.includes('ลบ')) { actionColor = '#DC3545'; actionBgLight = '#FFEBEE'; }
+                    if(h.history_action.includes('เพิ่ม')) { actionColor = '#28A745'; }
+                    else if(h.history_action.includes('แก้ไข')) { actionColor = '#007BFF'; }
+                    else if(h.history_action.includes('ชำระเงินครบ') || h.history_action.includes('ปิด')) { actionColor = '#1B5E20'; }
+                    else if(h.history_action.includes('ชำระเงิน')) { actionColor = '#FF9800'; }
+                    else if(h.history_action.includes('ลบ')) { actionColor = '#DC3545'; }
                     
-                    let cardBg = dark ? surfaceColor : actionBgLight;
-                    let borderColor = dark ? '#374151' : actionColor + '30';
+                    let cardBg = dark ? surfaceColor : '#ffffff';
+                    let borderColor = dark ? '#374151' : '#e5e7eb';
                     
                     // ปรับขนาดของข้อความเดิมในประวัติ (ที่ถูกเซฟเป็น HTML เล็กๆ) ให้ใหญ่ขึ้น
                     let updatedDetails = h.history_details.replace(/text-xs/g, 'text-sm').replace(/p-2/g, 'p-3').replace(/mt-1\.5/g, 'mt-3');
@@ -1225,7 +1224,7 @@
                                 <h3 class="text-xl font-bold" style="color: ${actionColor};">
                                     ${h.history_action}
                                 </h3>
-                                <span class="text-sm font-mono px-3 py-1 rounded opacity-80 mt-2 sm:mt-0 w-fit" style="background: ${dark ? '#374151' : '#ffffff'}; border: 1px solid ${dark ? '#4b5563' : '#e5e7eb'};">
+                                <span class="text-sm font-mono px-3 py-1 rounded opacity-80 mt-2 sm:mt-0 w-fit" style="background: ${dark ? '#374151' : '#f9fafb'}; border: 1px solid ${dark ? '#4b5563' : '#e5e7eb'};">
                                     ${new Date(h.history_date).toLocaleString('th-TH')}
                                 </span>
                             </div>
