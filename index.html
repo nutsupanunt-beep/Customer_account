@@ -234,8 +234,7 @@
     let manageSearchTerm = '';
     let expandedCustomerName = null;
     
-    // ตัวแปรสำหรับข้อมูลเดินบัญชี
-    let stmtPeriod = 'monthly';
+    // ตัวแปรสำหรับข้อมูลเดินบัญชี (อัปเดตเป็นรายปีเท่านั้น)
     let stmtSelectedDate = new Date();
     let statementChart = null;
     let statementDetailCustomer = null; // เก็บชื่อลูกค้าที่กำลังดูรายละเอียดการโอนเงิน
@@ -641,6 +640,7 @@
       if (parseInt(customer.installments || 0) !== parseInt(updates.installments || 0)) changes.push(`จำนวนงวดรวม: ${customer.installments} ➔ ${updates.installments}`);
       if (parseInt(customer.paid_installments || 0) !== parseInt(updates.paid_installments || 0)) changes.push(`งวดที่ชำระแล้ว: ${customer.paid_installments} ➔ ${updates.paid_installments}`);
       if (customer.contract_date !== updates.contract_date) changes.push(`วันที่ทำสัญญา: ${customer.contract_date} ➔ ${updates.contract_date}`);
+      if (customer.next_payment_date !== updates.next_payment_date) changes.push(`วันที่ชำระงวดถัดไป: ${new Date(customer.next_payment_date).toLocaleDateString('th-TH')} ➔ ${new Date(updates.next_payment_date).toLocaleDateString('th-TH')}`);
       if (customer.status !== updates.status) changes.push(`สถานะ: ${customer.status === 'active' ? 'กำลังผ่อน' : 'ผ่อนครบแล้ว'} ➔ ${updates.status === 'active' ? 'กำลังผ่อน' : 'ผ่อนครบแล้ว'}`);
 
       let details = `แก้ไขข้อมูลของ <b>${customer.customer_name}</b> (รายการ: ${customer.product})`;
@@ -940,7 +940,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.1</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.5</p>
           </div>
         </div>
       `;
@@ -1243,6 +1243,7 @@
     // ฟังก์ชันสกัดข้อมูลยอดเงินจากประวัติ เพื่อนำมาจัดทำข้อมูลเดินบัญชี
     function getPaymentData() {
         const history = getHistoryRecords(); // อิงตามสิทธิ์ผู้ใช้งานปัจจุบัน
+        const allCustomers = allRecords.filter(r => r.type === 'customer'); // ดึงข้อมูลลูกค้าเพื่อมาคำนวณต้นทุน
         const payments = [];
         // Regex หาชื่อลูกค้า สินค้า และ จำนวนเงินจากข้อความ
         // รูปแบบข้อความประวัติ: "พี่เอก ชำระเงินค่า พัดลม งวดที่ 1 ราคา 100 บาท สำเร็จ..."
@@ -1253,11 +1254,26 @@
                 const match = h.history_details.match(regex);
                 
                 if (match) {
+                    const name = match[1].trim();
+                    const product = match[2].trim();
+                    const amount = parseFloat(match[3].replace(/,/g, ''));
+                    
+                    // คำนวณค่าส่วนต่าง (กำไร) = ค่างวดที่จ่าย - (ราคาทุนสินค้า / จำนวนงวดทั้งหมด)
+                    let profit = 0;
+                    const cust = allCustomers.find(c => c.customer_name === name && c.product === product);
+                    if (cust && cust.product_price && cust.installments) {
+                        const principalPerMonth = cust.product_price / cust.installments;
+                        profit = amount - principalPerMonth;
+                    }
+                    // กันเหนียว กรณีคำนวณแล้วติดลบหรือผิดพลาด
+                    if (isNaN(profit) || profit < 0) profit = 0;
+
                     payments.push({
                         date: new Date(h.history_date),
-                        name: match[1].trim(),
-                        product: match[2].trim(),
-                        amount: parseFloat(match[3].replace(/,/g, '')),
+                        name: name,
+                        product: product,
+                        amount: amount,
+                        profit: profit, // เก็บค่าส่วนต่างที่คำนวณได้
                         raw: h
                     });
                 } else {
@@ -1270,6 +1286,7 @@
                             name: nameMatch[1].trim(),
                             product: 'ไม่ระบุ',
                             amount: parseFloat(amountMatch[1].replace(/,/g, '')),
+                            profit: 0,
                             raw: h
                         });
                     }
@@ -1279,54 +1296,38 @@
         return payments;
     }
 
-    // รวมยอดเงินตามระยะเวลาที่เลือก (วัน/เดือน/ปี)
+    // รวมยอดเงินแบบรายปี
     function getAggregatedStatementData() {
         const payments = getPaymentData();
         let filtered = [];
-        let chartLabels = [];
-        let chartData = [];
+        let chartLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        let chartDataAmount = new Array(12).fill(0); // กราฟยอดเงินเข้า
+        let chartDataProfit = new Array(12).fill(0); // กราฟกำไร
         let summaryByCustomer = {};
-        let total = 0;
+        let totalAmount = 0;
+        let totalProfit = 0;
 
         const year = stmtSelectedDate.getFullYear();
-        const month = stmtSelectedDate.getMonth();
-        const date = stmtSelectedDate.getDate();
 
-        if (stmtPeriod === 'daily') {
-            filtered = payments.filter(p => p.date.getFullYear() === year && p.date.getMonth() === month && p.date.getDate() === date);
-        } else if (stmtPeriod === 'monthly') {
-            filtered = payments.filter(p => p.date.getFullYear() === year && p.date.getMonth() === month);
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            chartLabels = Array.from({length: daysInMonth}, (_, i) => (i + 1).toString());
-            chartData = new Array(daysInMonth).fill(0);
-        } else if (stmtPeriod === 'yearly') {
-            filtered = payments.filter(p => p.date.getFullYear() === year);
-            chartLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            chartData = new Array(12).fill(0);
-        }
+        filtered = payments.filter(p => p.date.getFullYear() === year);
 
         filtered.forEach(p => {
-            total += p.amount;
-            if (!summaryByCustomer[p.name]) summaryByCustomer[p.name] = 0;
-            summaryByCustomer[p.name] += p.amount;
+            totalAmount += p.amount;
+            totalProfit += p.profit;
 
-            // เอาเงินใส่กราฟ
-            if (stmtPeriod === 'monthly') {
-                chartData[p.date.getDate() - 1] += p.amount;
-            } else if (stmtPeriod === 'yearly') {
-                chartData[p.date.getMonth()] += p.amount;
-            }
+            if (!summaryByCustomer[p.name]) summaryByCustomer[p.name] = { amount: 0, profit: 0 };
+            summaryByCustomer[p.name].amount += p.amount;
+            summaryByCustomer[p.name].profit += p.profit;
+
+            chartDataAmount[p.date.getMonth()] += p.amount;
+            chartDataProfit[p.date.getMonth()] += p.profit;
         });
 
-        if (stmtPeriod === 'daily') {
-            chartLabels = Object.keys(summaryByCustomer);
-            chartData = chartLabels.map(name => summaryByCustomer[name]);
-        }
-
-        return { total, summaryByCustomer, chartLabels, chartData, filtered, allPayments: payments };
+        return { totalAmount, totalProfit, summaryByCustomer, chartLabels, chartDataAmount, chartDataProfit, filtered, allPayments: payments };
     }
 
-    function initStatementChart(labels, data, primaryColor, textColor) {
+    // ปรับสไตล์กราฟเป็นแท่งคู่ ดูเรียบง่าย คลีน และไม่หนา
+    function initStatementChart(labels, dataAmount, dataProfit, primaryColor, textColor, isDark) {
         const ctx = document.getElementById('statementChart');
         if (!ctx) return;
 
@@ -1338,22 +1339,65 @@
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'ยอดเงินเข้า (บาท)',
-                    data: data,
-                    backgroundColor: primaryColor + '99',
-                    borderColor: primaryColor,
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
+                datasets: [
+                    {
+                        label: 'ยอดเงินเข้ารวม (บาท)',
+                        data: dataAmount,
+                        backgroundColor: primaryColor + '99', // สีหลักแบบโปร่งแสง
+                        borderColor: primaryColor,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'กำไร/ส่วนต่าง (บาท)',
+                        data: dataProfit,
+                        backgroundColor: '#10b98199', // สีเขียวแบบโปร่งแสง
+                        borderColor: '#10b981',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: { 
+                    legend: { 
+                        display: true, 
+                        labels: { color: textColor, font: { family: 'Sarabun', weight: 'normal' }, usePointStyle: true, boxWidth: 10 } 
+                    },
+                    tooltip: {
+                        backgroundColor: isDark ? '#374151' : '#ffffff',
+                        titleColor: textColor,
+                        bodyColor: textColor,
+                        borderColor: isDark ? '#4b5563' : '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: true,
+                        boxPadding: 4,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) { label += '฿' + context.parsed.y.toLocaleString(); }
+                                return label;
+                            }
+                        }
+                    }
+                },
                 scales: {
-                    y: { beginAtZero: true, ticks: { color: textColor, callback: function(val) { return '฿' + val.toLocaleString() } }, grid: { color: textColor + '20' } },
-                    x: { ticks: { color: textColor }, grid: { display: false } }
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { color: textColor, font: { weight: 'normal' }, callback: function(val) { return '฿' + val.toLocaleString() } }, 
+                        grid: { display: true, color: isDark ? '#374151' : '#e5e7eb', drawBorder: false } 
+                    },
+                    x: { 
+                        ticks: { color: textColor, font: { weight: 'normal' } }, 
+                        grid: { display: false, drawBorder: false } 
+                    }
+                },
+                layout: {
+                    padding: { top: 20 }
                 }
             }
         });
@@ -1363,63 +1407,71 @@
         const data = getAggregatedStatementData();
 
         const yyyy = stmtSelectedDate.getFullYear();
-        const mm = String(stmtSelectedDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(stmtSelectedDate.getDate()).padStart(2, '0');
         let datePickerHtml = '';
 
-        if (stmtPeriod === 'daily') {
-            datePickerHtml = `<input type="date" id="stmt-date-picker" value="${yyyy}-${mm}-${dd}" class="px-4 py-2 rounded-lg border text-sm focus:ring-2 outline-none transition-all cursor-pointer" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">`;
-        } else if (stmtPeriod === 'monthly') {
-            datePickerHtml = `<input type="month" id="stmt-month-picker" value="${yyyy}-${mm}" class="px-4 py-2 rounded-lg border text-sm focus:ring-2 outline-none transition-all cursor-pointer" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">`;
-        } else {
-            // หาปีต่ำสุดและสูงสุดที่มีในข้อมูลจริง
-            let minYear = new Date().getFullYear();
-            let maxYear = minYear;
-            if (data.allPayments.length > 0) {
-                minYear = Math.min(...data.allPayments.map(p => p.date.getFullYear()));
-                maxYear = Math.max(...data.allPayments.map(p => p.date.getFullYear()));
-            }
-            maxYear = Math.max(new Date().getFullYear(), maxYear); // อย่างน้อยต้องมีปีปัจจุบัน
-
-            let options = '';
-            for(let i = minYear; i <= maxYear; i++) {
-                options += `<option value="${i}" ${i === yyyy ? 'selected' : ''}>ปี ${i + 543}</option>`;
-            }
-            datePickerHtml = `<select id="stmt-year-picker" class="px-4 py-2 rounded-lg border text-sm focus:ring-2 outline-none transition-all cursor-pointer" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">${options}</select>`;
+        // หาปีต่ำสุดและสูงสุดที่มีในข้อมูลจริง
+        let minYear = new Date().getFullYear();
+        let maxYear = minYear;
+        if (data.allPayments.length > 0) {
+            minYear = Math.min(...data.allPayments.map(p => p.date.getFullYear()));
+            maxYear = Math.max(...data.allPayments.map(p => p.date.getFullYear()));
         }
+        maxYear = Math.max(new Date().getFullYear(), maxYear); // อย่างน้อยต้องมีปีปัจจุบัน
 
-        const customers = Object.keys(data.summaryByCustomer).sort((a,b) => data.summaryByCustomer[b] - data.summaryByCustomer[a]);
-        const breakdownHtml = customers.map(name => `
+        let options = '';
+        for(let i = minYear; i <= maxYear; i++) {
+            options += `<option value="${i}" ${i === yyyy ? 'selected' : ''}>ปี ${i + 543}</option>`;
+        }
+        datePickerHtml = `<select id="stmt-year-picker" class="px-4 py-2 rounded-lg border text-base font-bold focus:ring-2 outline-none transition-all cursor-pointer shadow-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${primaryColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">${options}</select>`;
+
+        // คำนวณเปอร์เซ็นต์กำไรรวม
+        const totalProfitPercent = data.totalAmount > 0 ? ((data.totalProfit / data.totalAmount) * 100).toFixed(1) : 0;
+
+        const customers = Object.keys(data.summaryByCustomer).sort((a,b) => data.summaryByCustomer[b].profit - data.summaryByCustomer[a].profit);
+        const breakdownHtml = customers.map(name => {
+            const cData = data.summaryByCustomer[name];
+            // คำนวณเปอร์เซ็นต์กำไรรายคน
+            const custProfitPercent = cData.amount > 0 ? ((cData.profit / cData.amount) * 100).toFixed(1) : 0;
+            return `
             <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" style="border-color: ${dark ? '#374151' : '#e5e7eb'};" onclick="window.showStatementDetails('${name}')">
-                <span class="font-medium flex-1" style="color: ${textColor};">ลูกค้า: ${name}</span>
-                <span class="font-bold whitespace-nowrap" style="color: #10b981;">฿${data.summaryByCustomer[name].toLocaleString()}</span>
-                <span class="ml-2 text-xs opacity-50" style="color: ${textColor};">▶</span>
+                <div class="flex-1">
+                    <span class="font-medium" style="color: ${textColor};">ลูกค้า: ${name}</span>
+                </div>
+                <div class="text-right flex flex-col">
+                    <span class="font-bold text-sm" style="color: ${primaryColor};">ยอดเข้า: ฿${cData.amount.toLocaleString()}</span>
+                    <span class="font-bold text-base" style="color: #10b981;">กำไร: ฿${Math.round(cData.profit).toLocaleString()} <span class="text-xs opacity-80">(${custProfitPercent}%)</span></span>
+                </div>
+                <span class="ml-3 text-xs opacity-50" style="color: ${textColor};">▶</span>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         return `
         <div class="p-4 md:p-8 max-w-6xl mx-auto fade-in">
-            <h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_statement || 'ข้อมูลเดินบัญชี'}</h2>
-
-            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
-                <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-auto">
-                    <button data-stmt-period="daily" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${stmtPeriod === 'daily' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}" style="${stmtPeriod === 'daily' ? `background: ${surfaceColor}; color: ${primaryColor};` : `color: ${textColor};`}">รายวัน</button>
-                    <button data-stmt-period="monthly" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${stmtPeriod === 'monthly' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}" style="${stmtPeriod === 'monthly' ? `background: ${surfaceColor}; color: ${primaryColor};` : `color: ${textColor};`}">รายเดือน</button>
-                    <button data-stmt-period="yearly" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${stmtPeriod === 'yearly' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}" style="${stmtPeriod === 'yearly' ? `background: ${surfaceColor}; color: ${primaryColor};` : `color: ${textColor};`}">รายปี</button>
-                </div>
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
+                <h2 class="text-2xl font-bold" style="color: ${textColor};">${config.menu_statement || 'ข้อมูลเดินบัญชี'}</h2>
                 <div class="w-full sm:w-auto flex justify-end">
                     ${datePickerHtml}
                 </div>
             </div>
 
-            <div class="p-6 rounded-xl shadow-md mb-6 flex flex-col items-center justify-center border-l-4" style="background: ${surfaceColor}; border-left-color: #10b981;">
-                <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">ยอดรวมเงินเข้า (${stmtPeriod === 'daily' ? 'รายวัน' : stmtPeriod === 'monthly' ? 'รายเดือน' : 'รายปี'})</p>
-                <h3 class="text-4xl md:text-5xl font-black tracking-tight" style="color: #10b981;">฿${data.total.toLocaleString()}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="p-5 md:p-6 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: ${primaryColor};">
+                    <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">ยอดรวมเงินเข้าทั้งหมด (ปี ${yyyy+543})</p>
+                    <h3 class="text-3xl md:text-4xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
+                </div>
+                <div class="p-5 md:p-6 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: #10b981;">
+                    <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">กำไร/ส่วนต่างสุทธิ (ปี ${yyyy+543})</p>
+                    <h3 class="text-3xl md:text-4xl font-black tracking-tight flex items-baseline gap-2" style="color: #10b981;">
+                        ฿${Math.round(data.totalProfit).toLocaleString()}
+                        <span class="text-lg md:text-xl font-bold opacity-80">(${totalProfitPercent}%)</span>
+                    </h3>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 p-4 md:p-6 rounded-xl shadow-md custom-surface" style="background: ${surfaceColor}; height: 400px;">
-                    <h3 class="text-lg font-bold mb-4" style="color: ${textColor};">กราฟสรุปยอด</h3>
+                    <h3 class="text-lg font-bold mb-4" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
                     <div style="height: 320px; width: 100%;">
                         <canvas id="statementChart"></canvas>
                     </div>
@@ -1427,11 +1479,11 @@
 
                 <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface flex flex-col h-[400px]" style="background: ${surfaceColor};">
                     <h3 class="text-lg font-bold mb-4 border-b pb-2 flex justify-between items-center" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e5e7eb'};">
-                        <span>แยกตามลูกค้า</span>
+                        <span>กำไรแยกตามลูกค้า</span>
                         <span class="text-xs font-normal opacity-60 px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">${customers.length} คน</span>
                     </h3>
                     <div class="flex-1 overflow-y-auto no-scrollbar pr-2 -mx-2 px-2">
-                        ${customers.length > 0 ? breakdownHtml : `<div class="h-full w-full flex items-center justify-center"><p class="text-center opacity-50" style="color: ${textColor};">ไม่มียอดเงินเข้าในช่วงเวลานี้</p></div>`}
+                        ${customers.length > 0 ? breakdownHtml : `<div class="h-full w-full flex items-center justify-center"><p class="text-center opacity-50" style="color: ${textColor};">ไม่มียอดเงินเข้าในปีนี้</p></div>`}
                     </div>
                 </div>
             </div>
@@ -1483,6 +1535,42 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        {
+            version: "V.10.5 (Clean Dual Bar Chart)",
+            date: "04/03/2026",
+            changes: [
+                "ปรับรูปแบบกราฟแท่งเดินบัญชีกลับมาเป็นกราฟแท่งคู่ (Dual Bar Chart) ที่ดูเรียบและคลีนขึ้น",
+                "ปรับตัวอักษรและป้ายกำกับของกราฟไม่ให้หนาเกินไป"
+            ]
+        },
+        {
+            version: "V.10.4 (Cartoon Chart & % Profit)",
+            date: "04/03/2026",
+            changes: [
+                "ปรับปรุงกราฟสรุปยอดให้เป็นแนวการ์ตูนดูง่ายขึ้น (กราฟแท่งเงินเข้ารวม + กราฟเส้นสำหรับกำไร)",
+                "เพิ่มการแสดงผล 'เปอร์เซ็นต์กำไร (%)' ควบคู่กับยอดกำไรในหน้าสรุปเดินบัญชี",
+                "เพิ่มเปอร์เซ็นต์กำไรในป๊อปอัปรายละเอียดของลูกค้ารายคน"
+            ]
+        },
+        {
+            version: "V.10.3 (Profit & Commission Tracking)",
+            date: "04/03/2026",
+            changes: [
+                "เพิ่มระบบคำนวณ 'กำไร/ค่าส่วนต่าง' โดยหักลบต้นทุนสินค้าออกจากยอดผ่อนชำระอัตโนมัติ",
+                "ปรับปรุงหน้าข้อมูลเดินบัญชีให้แสดงยอดเงินเข้า ควบคู่กับยอดกำไรที่ได้รับ",
+                "เพิ่มกราฟแท่งแบบคู่ (Dual Bar Chart) เปรียบเทียบเงินเข้ากับกำไรในแต่ละเดือน",
+                "ปรับปรุงรายละเอียดลูกค้ารายคน ให้แสดงค่าคอมมิชชั่นแยกตามสินค้าที่ชำระ"
+            ]
+        },
+        {
+            version: "V.10.2 (Yearly Statement Only)",
+            date: "04/03/2026",
+            changes: [
+                "ปรับหน้ารายการเดินบัญชีให้แสดงผลเฉพาะ 'รายปี' ตามที่ผู้ใช้ต้องการ",
+                "แก้ไขปัญหาประวัติการอัปเดตแอปไม่เปลี่ยนแปลงหลังจากอัปเดตระบบ",
+                "เพิ่มบันทึกการเปลี่ยน 'งวดถัดไป' ลงในประวัติการแก้ไขข้อมูลลูกค้า"
+            ]
+        },
         {
             version: "V.10.1 (Account Statement)",
             date: "04/03/2026",
@@ -1556,10 +1644,11 @@
         const data = getAggregatedStatementData();
         const items = data.filtered.filter(p => p.name === statementDetailCustomer);
         
-        let periodText = '';
-        if (stmtPeriod === 'daily') periodText = stmtSelectedDate.toLocaleDateString('th-TH');
-        else if (stmtPeriod === 'monthly') periodText = stmtSelectedDate.toLocaleDateString('th-TH', {month:'long', year:'numeric'});
-        else if (stmtPeriod === 'yearly') periodText = `ปี ${stmtSelectedDate.getFullYear() + 543}`;
+        let periodText = `ปี ${stmtSelectedDate.getFullYear() + 543}`;
+        
+        const totalCustAmount = items.reduce((s,i) => s + i.amount, 0);
+        const totalCustProfit = items.reduce((s,i) => s + i.profit, 0);
+        const totalCustPercent = totalCustAmount > 0 ? ((totalCustProfit / totalCustAmount) * 100).toFixed(1) : 0;
 
         return `
         <div class="modal-overlay" onclick="hideModal()">
@@ -1571,24 +1660,30 @@
                 <p class="text-sm opacity-70 mb-4" style="color: ${textColor};">ประจำ${periodText}</p>
                 <div class="space-y-3 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
                     ${items.length === 0 ? `<p class="text-center opacity-50 py-4" style="color: ${textColor};">ไม่มีข้อมูล</p>` : ''}
-                    ${items.map(item => `
+                    ${items.map(item => {
+                        const itemPercent = item.amount > 0 ? ((item.profit / item.amount) * 100).toFixed(1) : 0;
+                        return `
                         <div class="p-3 rounded-lg border flex flex-col gap-2" style="background: ${dark ? '#374151' : '#f9fafb'}; border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
                             <div class="flex justify-between items-start">
                                 <div class="flex items-center gap-2">
                                     <span class="text-lg">${getProductIcon(item.product)}</span>
                                     <span class="font-medium" style="color: ${textColor};">${item.product}</span>
                                 </div>
-                                <span class="font-bold" style="color: #10b981;">฿${item.amount.toLocaleString()}</span>
+                                <div class="flex flex-col items-end">
+                                    <span class="font-bold text-sm" style="color: ${primaryColor};">จ่ายเข้า ฿${item.amount.toLocaleString()}</span>
+                                    <span class="font-bold text-sm" style="color: #10b981;">(กำไร ฿${Math.round(item.profit).toLocaleString()} • ${itemPercent}%)</span>
+                                </div>
                             </div>
-                            <div class="text-xs opacity-60 text-right" style="color: ${textColor};">
+                            <div class="text-xs opacity-60 text-right" style="color: ${textColor}; mt-1">
                                 ${item.date.toLocaleString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'})} น.
                             </div>
                         </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
                 <div class="mt-4 pt-3 border-t flex justify-between items-center" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                    <span class="font-bold" style="color: ${textColor};">รวมทั้งหมด</span>
-                    <span class="text-xl font-black" style="color: ${primaryColor};">฿${items.reduce((s,i) => s + i.amount, 0).toLocaleString()}</span>
+                    <span class="font-bold" style="color: ${textColor};">กำไรรวมลูกค้ารายนี้</span>
+                    <span class="text-xl font-black" style="color: #10b981;">฿${Math.round(totalCustProfit).toLocaleString()} <span class="text-sm opacity-80">(${totalCustPercent}%)</span></span>
                 </div>
             </div>
         </div>
@@ -1901,26 +1996,6 @@
           }
       });
 
-      // Statement Event Listeners
-      document.querySelectorAll('[data-stmt-period]').forEach(b => b.addEventListener('click', (e) => {
-          stmtPeriod = e.currentTarget.dataset.stmtPeriod;
-          renderApp();
-      }));
-
-      const stmtDateP = document.getElementById('stmt-date-picker');
-      if(stmtDateP) stmtDateP.addEventListener('change', (e) => { 
-          if(e.target.value) { stmtSelectedDate = new Date(e.target.value); renderApp(); } 
-      });
-
-      const stmtMonthP = document.getElementById('stmt-month-picker');
-      if(stmtMonthP) stmtMonthP.addEventListener('change', (e) => {
-          if(e.target.value) {
-              const [y, m] = e.target.value.split('-');
-              stmtSelectedDate = new Date(y, m - 1, 1);
-              renderApp();
-          }
-      });
-
       const stmtYearP = document.getElementById('stmt-year-picker');
       if(stmtYearP) stmtYearP.addEventListener('change', (e) => {
           if(e.target.value) {
@@ -1936,7 +2011,7 @@
           const txtColor = dark ? '#f9fafb' : config.text_color;
           const data = getAggregatedStatementData();
           setTimeout(() => {
-              initStatementChart(data.chartLabels, data.chartData, '#10b981', txtColor);
+              initStatementChart(data.chartLabels, data.chartDataAmount, data.chartDataProfit, config.primary_color, txtColor, dark);
           }, 50); // ดีเลย์เล็กน้อยเพื่อให้ Element <canvas> โหลดเสร็จก่อน
       }
     }
