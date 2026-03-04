@@ -24,6 +24,8 @@
 
   <!-- Import Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Import Chart.js สำหรับทำกราฟไดนามิก -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Supabase Data SDK Implementation -->
   <script>
@@ -210,6 +212,7 @@
       menu_add_customer: "เพิ่มข้อมูลลูกค้า",
       menu_manage_customer: "จัดการรายการลูกค้า",
       menu_history: "ประวัติการทำรายการ",
+      menu_statement: "ข้อมูลเดินบัญชี",
       menu_settings: "การตั้งค่า",
       menu_account: "บัญชีผู้ใช้",
       menu_changelog: "ประวัติการอัปเดต",
@@ -230,6 +233,12 @@
     let isMobileSidebarOpen = false;
     let manageSearchTerm = '';
     let expandedCustomerName = null;
+    
+    // ตัวแปรสำหรับข้อมูลเดินบัญชี
+    let stmtPeriod = 'monthly';
+    let stmtSelectedDate = new Date();
+    let statementChart = null;
+    let statementDetailCustomer = null; // เก็บชื่อลูกค้าที่กำลังดูรายละเอียดการโอนเงิน
 
     const dataHandler = {
       onDataChanged(data) {
@@ -244,6 +253,11 @@
         } else {
             expandedCustomerName = name; 
         }
+        renderApp();
+    };
+
+    window.showStatementDetails = function(name) {
+        statementDetailCustomer = name;
         renderApp();
     };
 
@@ -275,7 +289,7 @@
     }
 
     function showModal(content) { showingModal = content; renderApp(); }
-    function hideModal() { showingModal = null; editingUser = null; editingCustomer = null; confirmDeleteId = null; renderApp(); }
+    function hideModal() { showingModal = null; editingUser = null; editingCustomer = null; confirmDeleteId = null; statementDetailCustomer = null; renderApp(); }
     function toggleMobileSidebar() { isMobileSidebarOpen = !isMobileSidebarOpen; renderApp(); }
 
     function hashPassword(password) {
@@ -360,7 +374,7 @@
       const defaultSettings = { 
           is_dark_mode: false, 
           payment_days_before: 5, 
-          guest_permissions: currentUser.isAdmin ? 'add,manage,history,settings,edit,changelog' : 'manage,history,changelog',
+          guest_permissions: currentUser.isAdmin ? 'add,manage,history,statement,settings,edit,changelog' : 'manage,history,statement,changelog',
       };
 
       if (currentUser.isGuestView) {
@@ -436,7 +450,7 @@
           if (adminSettings && adminSettings.guest_permissions) {
               return adminSettings.guest_permissions.includes(view);
           }
-          return 'manage,history,changelog'.includes(view);
+          return 'manage,history,statement,changelog'.includes(view);
       }
       
       return true;
@@ -894,11 +908,12 @@
         { id: 'add', label: config.menu_add_customer, icon: '➕' },
         { id: 'manage', label: config.menu_manage_customer, icon: '📋' },
         { id: 'history', label: config.menu_history, icon: '📜' },
+        { id: 'statement', label: config.menu_statement || 'ข้อมูลเดินบัญชี', icon: '📊' },
         { id: 'settings', label: config.menu_settings, icon: '⚙️' },
         { id: 'changelog', label: config.menu_changelog, icon: '🔄' },
         { id: 'account', label: config.menu_account, icon: '👤' }
       ];
-      if (currentUser && currentUser.isAdmin) views.splice(5, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
+      if (currentUser && currentUser.isAdmin) views.splice(6, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
 
       const baseClasses = "w-64 p-6 shadow-lg flex flex-col z-40 transition-transform duration-300 ease-in-out h-full overflow-x-hidden custom-sidebar";
       const mobileClasses = `absolute top-0 left-0 bottom-0 transform ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`;
@@ -925,7 +940,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.0</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.1</p>
           </div>
         </div>
       `;
@@ -937,11 +952,12 @@
       if(currentView === 'add') html = renderAddCustomer(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'manage') html = renderManageCustomers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor);
       else if(currentView === 'history') html = renderHistory(config, dark, surfaceColor, textColor, primaryColor);
+      else if(currentView === 'statement') html = renderStatement(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'settings') html = renderSettings(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'changelog') html = renderChangelog(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'manage_users') html = renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor);
       else if(currentView === 'account') html = renderAccount(config, dark, surfaceColor, textColor, primaryColor);
-      if (showingModal || editingCustomer || editingUser) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
+      if (showingModal || editingCustomer || editingUser || statementDetailCustomer) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
       return html;
     }
 
@@ -1216,6 +1232,205 @@
       `;
     }
 
+    // ฟังก์ชันสกัดข้อมูลยอดเงินจากประวัติ เพื่อนำมาจัดทำข้อมูลเดินบัญชี
+    function getPaymentData() {
+        const history = getHistoryRecords(); // อิงตามสิทธิ์ผู้ใช้งานปัจจุบัน
+        const payments = [];
+        // Regex หาชื่อลูกค้า สินค้า และ จำนวนเงินจากข้อความ
+        // รูปแบบข้อความประวัติ: "พี่เอก ชำระเงินค่า พัดลม งวดที่ 1 ราคา 100 บาท สำเร็จ..."
+        const regex = /^(.+?) ชำระเงินค่า (.+?) งวดที่ \d+ ราคา ([\d,]+(\.\d{1,2})?) บาท/;
+
+        history.forEach(h => {
+            if (h.history_action === 'ชำระเงิน' || h.history_action === 'ชำระเงินครบ') {
+                const match = h.history_details.match(regex);
+                
+                if (match) {
+                    payments.push({
+                        date: new Date(h.history_date),
+                        name: match[1].trim(),
+                        product: match[2].trim(),
+                        amount: parseFloat(match[3].replace(/,/g, '')),
+                        raw: h
+                    });
+                } else {
+                    // Fallback เผื่อเจอประวัติรูปแบบเก่าที่ไม่มีชื่อสินค้า
+                    const nameMatch = h.history_details.match(/^(.+?) ชำระเงินค่า/);
+                    const amountMatch = h.history_details.match(/ราคา ([\d,]+(\.\d{1,2})?) บาท/);
+                    if (nameMatch && amountMatch) {
+                         payments.push({
+                            date: new Date(h.history_date),
+                            name: nameMatch[1].trim(),
+                            product: 'ไม่ระบุ',
+                            amount: parseFloat(amountMatch[1].replace(/,/g, '')),
+                            raw: h
+                        });
+                    }
+                }
+            }
+        });
+        return payments;
+    }
+
+    // รวมยอดเงินตามระยะเวลาที่เลือก (วัน/เดือน/ปี)
+    function getAggregatedStatementData() {
+        const payments = getPaymentData();
+        let filtered = [];
+        let chartLabels = [];
+        let chartData = [];
+        let summaryByCustomer = {};
+        let total = 0;
+
+        const year = stmtSelectedDate.getFullYear();
+        const month = stmtSelectedDate.getMonth();
+        const date = stmtSelectedDate.getDate();
+
+        if (stmtPeriod === 'daily') {
+            filtered = payments.filter(p => p.date.getFullYear() === year && p.date.getMonth() === month && p.date.getDate() === date);
+        } else if (stmtPeriod === 'monthly') {
+            filtered = payments.filter(p => p.date.getFullYear() === year && p.date.getMonth() === month);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            chartLabels = Array.from({length: daysInMonth}, (_, i) => (i + 1).toString());
+            chartData = new Array(daysInMonth).fill(0);
+        } else if (stmtPeriod === 'yearly') {
+            filtered = payments.filter(p => p.date.getFullYear() === year);
+            chartLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            chartData = new Array(12).fill(0);
+        }
+
+        filtered.forEach(p => {
+            total += p.amount;
+            if (!summaryByCustomer[p.name]) summaryByCustomer[p.name] = 0;
+            summaryByCustomer[p.name] += p.amount;
+
+            // เอาเงินใส่กราฟ
+            if (stmtPeriod === 'monthly') {
+                chartData[p.date.getDate() - 1] += p.amount;
+            } else if (stmtPeriod === 'yearly') {
+                chartData[p.date.getMonth()] += p.amount;
+            }
+        });
+
+        if (stmtPeriod === 'daily') {
+            chartLabels = Object.keys(summaryByCustomer);
+            chartData = chartLabels.map(name => summaryByCustomer[name]);
+        }
+
+        return { total, summaryByCustomer, chartLabels, chartData, filtered, allPayments: payments };
+    }
+
+    function initStatementChart(labels, data, primaryColor, textColor) {
+        const ctx = document.getElementById('statementChart');
+        if (!ctx) return;
+
+        if (statementChart) {
+            statementChart.destroy();
+        }
+
+        statementChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ยอดเงินเข้า (บาท)',
+                    data: data,
+                    backgroundColor: primaryColor + '99',
+                    borderColor: primaryColor,
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: textColor, callback: function(val) { return '฿' + val.toLocaleString() } }, grid: { color: textColor + '20' } },
+                    x: { ticks: { color: textColor }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderStatement(config, dark, surfaceColor, textColor, primaryColor) {
+        const data = getAggregatedStatementData();
+
+        const yyyy = stmtSelectedDate.getFullYear();
+        const mm = String(stmtSelectedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(stmtSelectedDate.getDate()).padStart(2, '0');
+        let datePickerHtml = '';
+
+        if (stmtPeriod === 'daily') {
+            datePickerHtml = `<input type="date" id="stmt-date-picker" value="${yyyy}-${mm}-${dd}" class="px-4 py-2 rounded-lg border text-sm focus:ring-2 outline-none transition-all cursor-pointer" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">`;
+        } else if (stmtPeriod === 'monthly') {
+            datePickerHtml = `<input type="month" id="stmt-month-picker" value="${yyyy}-${mm}" class="px-4 py-2 rounded-lg border text-sm focus:ring-2 outline-none transition-all cursor-pointer" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">`;
+        } else {
+            // หาปีต่ำสุดและสูงสุดที่มีในข้อมูลจริง
+            let minYear = new Date().getFullYear();
+            let maxYear = minYear;
+            if (data.allPayments.length > 0) {
+                minYear = Math.min(...data.allPayments.map(p => p.date.getFullYear()));
+                maxYear = Math.max(...data.allPayments.map(p => p.date.getFullYear()));
+            }
+            maxYear = Math.max(new Date().getFullYear(), maxYear); // อย่างน้อยต้องมีปีปัจจุบัน
+
+            let options = '';
+            for(let i = minYear; i <= maxYear; i++) {
+                options += `<option value="${i}" ${i === yyyy ? 'selected' : ''}>ปี ${i + 543}</option>`;
+            }
+            datePickerHtml = `<select id="stmt-year-picker" class="px-4 py-2 rounded-lg border text-sm focus:ring-2 outline-none transition-all cursor-pointer" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">${options}</select>`;
+        }
+
+        const customers = Object.keys(data.summaryByCustomer).sort((a,b) => data.summaryByCustomer[b] - data.summaryByCustomer[a]);
+        const breakdownHtml = customers.map(name => `
+            <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" style="border-color: ${dark ? '#374151' : '#e5e7eb'};" onclick="window.showStatementDetails('${name}')">
+                <span class="font-medium flex-1" style="color: ${textColor};">ลูกค้า: ${name}</span>
+                <span class="font-bold whitespace-nowrap" style="color: #10b981;">฿${data.summaryByCustomer[name].toLocaleString()}</span>
+                <span class="ml-2 text-xs opacity-50" style="color: ${textColor};">▶</span>
+            </div>
+        `).join('');
+
+        return `
+        <div class="p-4 md:p-8 max-w-6xl mx-auto fade-in">
+            <h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_statement || 'ข้อมูลเดินบัญชี'}</h2>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+                <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-auto">
+                    <button data-stmt-period="daily" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${stmtPeriod === 'daily' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}" style="${stmtPeriod === 'daily' ? `background: ${surfaceColor}; color: ${primaryColor};` : `color: ${textColor};`}">รายวัน</button>
+                    <button data-stmt-period="monthly" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${stmtPeriod === 'monthly' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}" style="${stmtPeriod === 'monthly' ? `background: ${surfaceColor}; color: ${primaryColor};` : `color: ${textColor};`}">รายเดือน</button>
+                    <button data-stmt-period="yearly" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors ${stmtPeriod === 'yearly' ? 'shadow-sm' : 'opacity-70 hover:opacity-100'}" style="${stmtPeriod === 'yearly' ? `background: ${surfaceColor}; color: ${primaryColor};` : `color: ${textColor};`}">รายปี</button>
+                </div>
+                <div class="w-full sm:w-auto flex justify-end">
+                    ${datePickerHtml}
+                </div>
+            </div>
+
+            <div class="p-6 rounded-xl shadow-md mb-6 flex flex-col items-center justify-center border-l-4" style="background: ${surfaceColor}; border-left-color: #10b981;">
+                <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">ยอดรวมเงินเข้า (${stmtPeriod === 'daily' ? 'รายวัน' : stmtPeriod === 'monthly' ? 'รายเดือน' : 'รายปี'})</p>
+                <h3 class="text-4xl md:text-5xl font-black tracking-tight" style="color: #10b981;">฿${data.total.toLocaleString()}</h3>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 p-4 md:p-6 rounded-xl shadow-md custom-surface" style="background: ${surfaceColor}; height: 400px;">
+                    <h3 class="text-lg font-bold mb-4" style="color: ${textColor};">กราฟสรุปยอด</h3>
+                    <div style="height: 320px; width: 100%;">
+                        <canvas id="statementChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface flex flex-col h-[400px]" style="background: ${surfaceColor};">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2 flex justify-between items-center" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e5e7eb'};">
+                        <span>แยกตามลูกค้า</span>
+                        <span class="text-xs font-normal opacity-60 px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">${customers.length} คน</span>
+                    </h3>
+                    <div class="flex-1 overflow-y-auto no-scrollbar pr-2 -mx-2 px-2">
+                        ${customers.length > 0 ? breakdownHtml : `<div class="h-full w-full flex items-center justify-center"><p class="text-center opacity-50" style="color: ${textColor};">ไม่มียอดเงินเข้าในช่วงเวลานี้</p></div>`}
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
     function renderSettings(config, dark, surfaceColor, textColor, primaryColor) {
       const settings = getUserSettings();
       const globalSettings = getGlobalGuestSettings();
@@ -1254,12 +1469,23 @@
             <p class="text-xs opacity-60" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่า URL/Key จะทำให้ระบบรีโหลดใหม่ทันทีเพื่อเชื่อมต่อกับฐานข้อมูลใหม่</p>
         </div>
     </div>
-    <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-2"><label class="flex items-center gap-3"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div><label class="flex items-center gap-3"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
+    <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-2"><label class="flex items-center gap-3"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-statement" ${currentPermissions.includes('statement') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าข้อมูลเดินบัญชี</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div><label class="flex items-center gap-3"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
       <button id="save-settings-btn" class="w-full py-3 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึกการตั้งค่า</button></div></div>`;
     }
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        {
+            version: "V.10.1 (Account Statement)",
+            date: "04/03/2026",
+            changes: [
+                "เพิ่มเมนู 'ข้อมูลเดินบัญชี' นำข้อมูลชำระเงินที่สำเร็จมาคำนวณและสรุปยอด",
+                "ดูกราฟเงินเข้า รายวัน / รายเดือน / รายปี",
+                "เพิ่มรายการแยกยอดเงินเข้าตามรายชื่อลูกค้าอัตโนมัติ (สามารถคลิกดูรายละเอียดสินค้าได้)",
+                "ปรับปีในระบบให้แสดงเฉพาะปีที่มีข้อมูลทำรายการจริง",
+                "ดูได้เฉพาะข้อมูลของบัญชีผู้ใช้ตนเองเท่านั้น (Admin ดูได้ทั้งหมด)"
+            ]
+        },
         {
             version: "V.10.0 (System Updates)",
             date: "03/03/2026",
@@ -1317,6 +1543,48 @@
         </div>
         <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
         <div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ยืนยันการลบ</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ลบข้อมูล</button>`}</form></div></div>`;
+      }
+      if (statementDetailCustomer) {
+        const data = getAggregatedStatementData();
+        const items = data.filtered.filter(p => p.name === statementDetailCustomer);
+        
+        let periodText = '';
+        if (stmtPeriod === 'daily') periodText = stmtSelectedDate.toLocaleDateString('th-TH');
+        else if (stmtPeriod === 'monthly') periodText = stmtSelectedDate.toLocaleDateString('th-TH', {month:'long', year:'numeric'});
+        else if (stmtPeriod === 'yearly') periodText = `ปี ${stmtSelectedDate.getFullYear() + 543}`;
+
+        return `
+        <div class="modal-overlay" onclick="hideModal()">
+            <div class="modal-content custom-surface" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center mb-4 border-b pb-2" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                    <h3 class="text-xl font-bold" style="color: ${textColor};">รายละเอียด: ${statementDetailCustomer}</h3>
+                    <button onclick="hideModal()" class="text-gray-500 hover:text-gray-700 text-xl font-bold px-2">&times;</button>
+                </div>
+                <p class="text-sm opacity-70 mb-4" style="color: ${textColor};">ประจำ${periodText}</p>
+                <div class="space-y-3 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                    ${items.length === 0 ? `<p class="text-center opacity-50 py-4" style="color: ${textColor};">ไม่มีข้อมูล</p>` : ''}
+                    ${items.map(item => `
+                        <div class="p-3 rounded-lg border flex flex-col gap-2" style="background: ${dark ? '#374151' : '#f9fafb'}; border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg">${getProductIcon(item.product)}</span>
+                                    <span class="font-medium" style="color: ${textColor};">${item.product}</span>
+                                </div>
+                                <span class="font-bold" style="color: #10b981;">฿${item.amount.toLocaleString()}</span>
+                            </div>
+                            <div class="text-xs opacity-60 text-right" style="color: ${textColor};">
+                                ${item.date.toLocaleString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'})} น.
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="mt-4 pt-3 border-t flex justify-between items-center" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                    <span class="font-bold" style="color: ${textColor};">รวมทั้งหมด</span>
+                    <span class="text-xl font-black" style="color: ${primaryColor};">฿${items.reduce((s,i) => s + i.amount, 0).toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+        `;
       }
       return '';
     }
@@ -1593,7 +1861,7 @@
       if(saveSet) saveSet.addEventListener('click', async () => {
           saveSet.innerHTML = '<div class="spinner"></div>';
           const perms = [];
-          ['add','manage','history','changelog','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
+          ['add','manage','history','statement','changelog','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
           
           let toastDuration = undefined;
           const toastInput = document.getElementById('setting-toast-duration');
@@ -1624,6 +1892,45 @@
               setTimeout(() => location.reload(), 1500);
           }
       });
+
+      // Statement Event Listeners
+      document.querySelectorAll('[data-stmt-period]').forEach(b => b.addEventListener('click', (e) => {
+          stmtPeriod = e.currentTarget.dataset.stmtPeriod;
+          renderApp();
+      }));
+
+      const stmtDateP = document.getElementById('stmt-date-picker');
+      if(stmtDateP) stmtDateP.addEventListener('change', (e) => { 
+          if(e.target.value) { stmtSelectedDate = new Date(e.target.value); renderApp(); } 
+      });
+
+      const stmtMonthP = document.getElementById('stmt-month-picker');
+      if(stmtMonthP) stmtMonthP.addEventListener('change', (e) => {
+          if(e.target.value) {
+              const [y, m] = e.target.value.split('-');
+              stmtSelectedDate = new Date(y, m - 1, 1);
+              renderApp();
+          }
+      });
+
+      const stmtYearP = document.getElementById('stmt-year-picker');
+      if(stmtYearP) stmtYearP.addEventListener('change', (e) => {
+          if(e.target.value) {
+              stmtSelectedDate = new Date(e.target.value, 0, 1);
+              renderApp();
+          }
+      });
+
+      // Initialize Chart if on statement view
+      if (currentView === 'statement') {
+          const config = window.elementSdk?.config || defaultConfig;
+          const dark = isDarkMode();
+          const txtColor = dark ? '#f9fafb' : config.text_color;
+          const data = getAggregatedStatementData();
+          setTimeout(() => {
+              initStatementChart(data.chartLabels, data.chartData, '#10b981', txtColor);
+          }, 50); // ดีเลย์เล็กน้อยเพื่อให้ Element <canvas> โหลดเสร็จก่อน
+      }
     }
 
     async function init() {
