@@ -235,7 +235,6 @@
     // ตัวแปรสำหรับข้อมูลเดินบัญชี (อัปเดตเป็นรายปีเท่านั้น)
     let stmtSelectedDate = new Date();
     let statementChart = null;
-    let statementDetailCustomer = null; // เก็บชื่อลูกค้าที่กำลังดูรายละเอียดการโอนเงิน
 
     const dataHandler = {
       onDataChanged(data) {
@@ -250,11 +249,6 @@
         } else {
             expandedCustomerName = name; 
         }
-        renderApp();
-    };
-
-    window.showStatementDetails = function(name) {
-        statementDetailCustomer = name;
         renderApp();
     };
 
@@ -286,7 +280,7 @@
     }
 
     function showModal(content) { showingModal = content; renderApp(); }
-    function hideModal() { showingModal = null; editingUser = null; editingCustomer = null; confirmDeleteId = null; statementDetailCustomer = null; renderApp(); }
+    function hideModal() { showingModal = null; editingUser = null; editingCustomer = null; confirmDeleteId = null; renderApp(); }
     function toggleMobileSidebar() { isMobileSidebarOpen = !isMobileSidebarOpen; renderApp(); }
 
     function hashPassword(password) {
@@ -617,7 +611,7 @@
         const remaining = customer.installments - newPaid;
         const details = `${customer.customer_name} ชำระเงินค่า ${customer.product} งวดที่ ${newPaid} ราคา ${customer.monthly_payment.toLocaleString()} บาท สำเร็จ จำนวนงวดที่เหลืออีก ${remaining} งวด`;
         await addHistory(isComplete ? 'ชำระเงินครบ' : 'ชำระเงิน', details); 
-        showToast(isComplete ? 'ชำระเงินครบแล้ว' : 'บันทึกการชำระเงินสำเร็จ'); 
+        showToast(isComplete ? 'ชำระเงินครบแล้ว' : 'บันึกการชำระเงินสำเร็จ'); 
       }
     }
 
@@ -978,7 +972,6 @@
                 ${summary.map(s=>{
                   const customerItems = customers.filter(c => c.customer_name === s.name);
                   
-                  // NEW V.8.2: Sort customer items alphabetically by lender name (account owner's username)
                   customerItems.sort((a, b) => {
                       let ownerA = '-';
                       const userA = allRecords.find(r => r.type === 'user' && r.id === a.account_id);
@@ -995,10 +988,8 @@
                   const isExpanded = expandedCustomerName === s.name;
                   
                   let breakdownHtml = '';
-                  // Sort the breakdown list by lender name as well
                   const lenders = Object.keys(s.lenderTotals).sort((a, b) => a.localeCompare(b, 'th'));
 
-                  // V.8.9 Unified summary UI
                   if (isSpecialView) {
                       breakdownHtml = `
                           <div class="w-full flex flex-col items-end">
@@ -1018,7 +1009,6 @@
                           `;
                       }).join('');
                       
-                      // แสดงยอดรวมเฉพาะกรณีที่มีผู้ให้บริการหลายคนเพื่อไม่ให้ข้อมูลซ้ำซ้อน
                       if (lenders.length > 1) {
                           breakdownHtml += `
                                   <div class="flex items-center justify-end gap-3 mt-2 pt-2 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
@@ -1077,7 +1067,6 @@
                                       <th class="px-3 py-2 text-left font-semibold">ค่างวด</th>
                                       <th class="px-3 py-2 text-left font-semibold">งวดทั้งหมด</th>
                                       <th class="px-3 py-2 text-left font-semibold">งวดถัดไป</th>
-                                      <!-- For guests, this column will show the account owner instead of manage buttons -->
                                       <th class="px-3 py-2 text-center font-semibold">${canEditData() ? 'จัดการ' : 'ผู้ให้บริการ'}</th>
                                   </tr>
                               </thead>
@@ -1095,7 +1084,6 @@
                                       return `
                                       <tr class="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f3f4f6'};">
                                           <td class="px-3 py-3 font-medium flex items-center gap-2" style="color: ${textColor};">
-                                              <!-- V.9.6 Render Emoji Icon here -->
                                               <span class="text-xl">${getProductIcon(c.product)}</span>
                                               <span>${c.product}</span>
                                           </td>
@@ -1189,12 +1177,11 @@
       `;
     }
 
-    // ฟังก์ชันสกัดข้อมูลยอดเงินจากประวัติ เพื่อนำมาจัดทำข้อมูลเดินบัญชี
+    // ฟังก์ชันสกัดข้อมูลยอดเงินจากประวัติ เพื่อนำมาจัดทำข้อมูลเดินบัญชีแบบใหม่
     function getPaymentData() {
-        const history = getHistoryRecords(); // อิงตามสิทธิ์ผู้ใช้งานปัจจุบัน
-        const allCustomers = allRecords.filter(r => r.type === 'customer'); // ดึงข้อมูลลูกค้าเพื่อมาคำนวณต้นทุน
+        const history = getHistoryRecords(); 
+        const allCustomers = allRecords.filter(r => r.type === 'customer'); 
         const payments = [];
-        // Regex หาชื่อลูกค้า สินค้า และ จำนวนเงินจากข้อความ
         const regex = /^(.+?) ชำระเงินค่า (.+?) งวดที่ \d+ ราคา ([\d,]+(\.\d{1,2})?) บาท/;
 
         history.forEach(h => {
@@ -1206,17 +1193,17 @@
                     const product = match[2].trim();
                     const amount = parseFloat(match[3].replace(/,/g, ''));
                     
-                    // คำนวณค่าต้นทุน และกำไร
                     let cost = 0;
-                    let profit = 0;
+                    let profit = amount;
+                    let totalInstallments = '?';
+                    
                     const cust = allCustomers.find(c => c.customer_name === name && c.product === product);
                     if (cust && cust.product_price && cust.installments) {
                         cost = cust.product_price / cust.installments;
                         profit = amount - cost;
+                        totalInstallments = cust.installments;
                     }
-
-                    if (isNaN(cost) || cost < 0) cost = 0;
-                    if (isNaN(profit) || profit < 0) profit = 0; // ในกรณีที่หาข้อมูลไม่เจอ ให้กำไรเป็น 0
+                    if (isNaN(profit)) { profit = amount; cost = 0; }
 
                     payments.push({
                         date: new Date(h.history_date),
@@ -1225,10 +1212,10 @@
                         amount: amount,
                         cost: cost,
                         profit: profit,
+                        totalInstallments: totalInstallments,
                         raw: h
                     });
                 } else {
-                    // Fallback เผื่อเจอประวัติรูปแบบเก่าที่ไม่มีชื่อสินค้า
                     const nameMatch = h.history_details.match(/^(.+?) ชำระเงินค่า/);
                     const amountMatch = h.history_details.match(/ราคา ([\d,]+(\.\d{1,2})?) บาท/);
                     if (nameMatch && amountMatch) {
@@ -1238,7 +1225,8 @@
                             product: 'ไม่ระบุ',
                             amount: parseFloat(amountMatch[1].replace(/,/g, '')),
                             cost: 0,
-                            profit: 0,
+                            profit: parseFloat(amountMatch[1].replace(/,/g, '')),
+                            totalInstallments: '?',
                             raw: h
                         });
                     }
@@ -1251,37 +1239,46 @@
     // รวมยอดเงินแบบรายปี
     function getAggregatedStatementData() {
         const payments = getPaymentData();
-        let filtered = [];
+        const year = stmtSelectedDate.getFullYear();
+        let filtered = payments.filter(p => p.date.getFullYear() === year);
+
         let chartLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
         let chartDataAmount = new Array(12).fill(0); 
         let chartDataProfit = new Array(12).fill(0); 
+        
         let summaryByCustomer = {};
         let totalAmount = 0;
-        let totalCost = 0;
         let totalProfit = 0;
-
-        const year = stmtSelectedDate.getFullYear();
-
-        filtered = payments.filter(p => p.date.getFullYear() === year);
+        let totalCost = 0;
 
         filtered.forEach(p => {
             totalAmount += p.amount;
-            totalCost += p.cost;
             totalProfit += p.profit;
+            totalCost += p.cost;
 
-            if (!summaryByCustomer[p.name]) summaryByCustomer[p.name] = { amount: 0, cost: 0, profit: 0 };
+            if (!summaryByCustomer[p.name]) {
+                summaryByCustomer[p.name] = { amount: 0, profit: 0, cost: 0, products: {} };
+            }
             summaryByCustomer[p.name].amount += p.amount;
-            summaryByCustomer[p.name].cost += p.cost;
             summaryByCustomer[p.name].profit += p.profit;
+            summaryByCustomer[p.name].cost += p.cost;
+
+            if (!summaryByCustomer[p.name].products[p.product]) {
+                summaryByCustomer[p.name].products[p.product] = { amount: 0, profit: 0, cost: 0, count: 0 };
+            }
+            summaryByCustomer[p.name].products[p.product].amount += p.amount;
+            summaryByCustomer[p.name].products[p.product].profit += p.profit;
+            summaryByCustomer[p.name].products[p.product].cost += p.cost;
+            summaryByCustomer[p.name].products[p.product].count += 1;
 
             chartDataAmount[p.date.getMonth()] += p.amount;
             chartDataProfit[p.date.getMonth()] += p.profit;
         });
 
-        return { totalAmount, totalCost, totalProfit, summaryByCustomer, chartLabels, chartDataAmount, chartDataProfit, filtered, allPayments: payments };
+        return { totalAmount, totalProfit, totalCost, summaryByCustomer, chartLabels, chartDataAmount, chartDataProfit, filtered, allPayments: payments };
     }
 
-    // ปรับสไตล์กราฟเป็นแท่งคู่ ดูเรียบง่าย คลีน และไม่หนา (ซ่อนกำไรถ้าเป็น Guest)
+    // ปรับสไตล์กราฟให้ดูเรียบง่าย และซ่อนกราฟกำไรถ้าเป็น Guest
     function initStatementChart(labels, dataAmount, dataProfit, primaryColor, textColor, isDark, isGuest) {
         const ctx = document.getElementById('statementChart');
         if (!ctx) return;
@@ -1292,21 +1289,21 @@
 
         let datasets = [
             {
-                label: 'ยอดชำระเงินรวม (บาท)',
+                label: 'ยอดเงินเข้ารวม (บาท)',
                 data: dataAmount,
-                backgroundColor: primaryColor + '99', // สีหลักแบบโปร่งแสง
+                backgroundColor: primaryColor + '99', 
                 borderColor: primaryColor,
                 borderWidth: 1,
                 borderRadius: 4
             }
         ];
 
-        // ถ้าไม่ใช่ Guest ให้แสดงกราฟกำไรด้วย
+        // ถ้าไม่ใช่ Guest ให้เห็นแท่งกำไรด้วย
         if (!isGuest) {
             datasets.push({
                 label: 'กำไร/ส่วนต่าง (บาท)',
                 data: dataProfit,
-                backgroundColor: '#10b98199', // สีเขียวแบบโปร่งแสง
+                backgroundColor: '#10b98199', 
                 borderColor: '#10b981',
                 borderWidth: 1,
                 borderRadius: 4
@@ -1367,18 +1364,16 @@
     function renderStatement(config, dark, surfaceColor, textColor, primaryColor) {
         const data = getAggregatedStatementData();
         const isGuest = currentUser && currentUser.isGuestView;
-
         const yyyy = stmtSelectedDate.getFullYear();
         let datePickerHtml = '';
 
-        // หาปีต่ำสุดและสูงสุดที่มีในข้อมูลจริง
         let minYear = new Date().getFullYear();
         let maxYear = minYear;
         if (data.allPayments.length > 0) {
             minYear = Math.min(...data.allPayments.map(p => p.date.getFullYear()));
             maxYear = Math.max(...data.allPayments.map(p => p.date.getFullYear()));
         }
-        maxYear = Math.max(new Date().getFullYear(), maxYear); // อย่างน้อยต้องมีปีปัจจุบัน
+        maxYear = Math.max(new Date().getFullYear(), maxYear); 
 
         let options = '';
         for(let i = minYear; i <= maxYear; i++) {
@@ -1386,72 +1381,102 @@
         }
         datePickerHtml = `<select id="stmt-year-picker" class="px-4 py-2 rounded-lg border text-base font-bold focus:ring-2 outline-none transition-all cursor-pointer shadow-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${primaryColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">${options}</select>`;
 
-        // คำนวณเปอร์เซ็นต์กำไรรวม
-        const totalProfitPercent = data.totalAmount > 0 ? ((data.totalProfit / data.totalAmount) * 100).toFixed(1) : 0;
-
-        // จัดการแสดงผล 3 กล่อง หรือ 1 กล่อง ตามสิทธิ์ผู้ใช้งาน
-        let summaryBoxesHtml = '';
+        // สร้างกรอบสรุปยอดด้านบน (Top Boxes)
+        let topBoxesHtml = '';
         if (isGuest) {
-            summaryBoxesHtml = `
-            <div class="p-5 md:p-6 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: ${primaryColor}; width: 100%;">
-                <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">ยอดชำระเงินรวมของคุณ (ปี ${yyyy+543})</p>
-                <h3 class="text-3xl md:text-4xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
+            // โหมดลูกค้า: เห็นแค่ยอดชำระเงินรวมกล่องเดียว
+            topBoxesHtml = `
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <div class="flex-1 p-5 md:p-6 rounded-xl shadow-md border-l-4 custom-surface" style="background: ${surfaceColor}; border-left-color: ${primaryColor};">
+                    <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">ยอดชำระเงินรวมของคุณ (ปี ${yyyy+543})</p>
+                    <h3 class="text-3xl md:text-4xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
+                </div>
             </div>
             `;
         } else {
-            summaryBoxesHtml = `
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                <div class="p-5 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: ${primaryColor};">
-                    <p class="text-xs font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">ยอดเงินเข้ารวม (ปี ${yyyy+543})</p>
-                    <h3 class="text-2xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
+            // โหมดเจ้าของร้าน: เห็นครบ 3 กล่อง (เงินเข้า, ต้นทุน, กำไร)
+            topBoxesHtml = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="p-5 rounded-xl shadow-sm border-l-4 custom-surface" style="background: ${surfaceColor}; border-left-color: ${primaryColor}; border: 1px solid ${dark?'#374151':'#e5e7eb'};">
+                    <p class="text-xs font-bold opacity-70 mb-1" style="color: ${textColor};">📥 ยอดเงินเข้ารวม (ปี ${yyyy+543})</p>
+                    <h3 class="text-2xl font-black" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
                 </div>
-                <div class="p-5 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: #f59e0b;">
-                    <p class="text-xs font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">หักต้นทุนสินค้า</p>
-                    <h3 class="text-2xl font-black tracking-tight" style="color: #f59e0b;">฿${Math.round(data.totalCost).toLocaleString()}</h3>
+                <div class="p-5 rounded-xl shadow-sm border-l-4 custom-surface" style="background: ${surfaceColor}; border-left-color: #f59e0b; border: 1px solid ${dark?'#374151':'#e5e7eb'};">
+                    <p class="text-xs font-bold opacity-70 mb-1" style="color: ${textColor};">📦 หักต้นทุนสินค้ารวม</p>
+                    <h3 class="text-2xl font-black" style="color: #f59e0b;">฿${Math.round(data.totalCost).toLocaleString()}</h3>
                 </div>
-                <div class="p-5 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: #10b981;">
-                    <p class="text-xs font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">กำไรสุทธิ</p>
-                    <h3 class="text-2xl font-black tracking-tight flex items-baseline gap-2" style="color: #10b981;">
-                        ฿${Math.round(data.totalProfit).toLocaleString()}
-                        <span class="text-sm font-bold opacity-80">(${totalProfitPercent}%)</span>
-                    </h3>
+                <div class="p-5 rounded-xl shadow-sm border-l-4 custom-surface" style="background: ${surfaceColor}; border-left-color: #10b981; border: 1px solid ${dark?'#374151':'#e5e7eb'};">
+                    <p class="text-xs font-bold opacity-70 mb-1" style="color: ${textColor};">📈 กำไรสุทธิรวม</p>
+                    <h3 class="text-2xl font-black" style="color: #10b981;">฿${Math.round(data.totalProfit).toLocaleString()}</h3>
                 </div>
             </div>
             `;
         }
 
-        const customers = Object.keys(data.summaryByCustomer).sort((a,b) => data.summaryByCustomer[b].profit - data.summaryByCustomer[a].profit);
-        const breakdownHtml = customers.map(name => {
+        // สร้างรายการแยกรายชื่อลูกค้า
+        const customersList = Object.keys(data.summaryByCustomer).sort((a,b) => data.summaryByCustomer[b].amount - data.summaryByCustomer[a].amount);
+        let breakdownHtml = customersList.map(name => {
             const cData = data.summaryByCustomer[name];
-            const custProfitPercent = cData.amount > 0 ? ((cData.profit / cData.amount) * 100).toFixed(1) : 0;
             
-            // ถ้าเป็น Guest ให้แสดงแค่ยอดรวม ไม่แสดงกำไร
+            // ส่วนหัวของลูกค้า
+            let custHeaderHtml = '';
             if (isGuest) {
-                return `
-                <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" style="border-color: ${dark ? '#374151' : '#e5e7eb'};" onclick="window.showStatementDetails('${name}')">
-                    <div class="flex-1">
-                        <span class="font-normal" style="color: ${textColor};">ลูกค้า: ${name}</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="font-bold text-base" style="color: ${primaryColor};">฿${cData.amount.toLocaleString()}</span>
-                    </div>
-                    <span class="ml-3 text-xs opacity-50" style="color: ${textColor};">▶</span>
-                </div>
-                `;
+                custHeaderHtml = `
+                <div class="p-4 flex justify-between items-center" style="background: ${dark?'#374151':'#f3f4f6'}; border-bottom: 1px solid ${dark?'#4b5563':'#e5e7eb'};">
+                    <span class="font-bold text-base" style="color: ${textColor};">👤 ลูกค้า: ${name}</span>
+                    <span class="font-bold text-base" style="color: ${primaryColor};">ยอดรวมปีนี้: ฿${cData.amount.toLocaleString()}</span>
+                </div>`;
             } else {
-                return `
-                <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" style="border-color: ${dark ? '#374151' : '#e5e7eb'};" onclick="window.showStatementDetails('${name}')">
-                    <div class="flex-1">
-                        <span class="font-normal" style="color: ${textColor};">ลูกค้า: ${name}</span>
-                    </div>
-                    <div class="text-right flex flex-col">
-                        <span class="font-normal text-sm" style="color: ${primaryColor};">ยอดเข้า: ฿${cData.amount.toLocaleString()}</span>
-                        <span class="font-normal text-base" style="color: #10b981;">กำไร: ฿${Math.round(cData.profit).toLocaleString()} <span class="text-xs opacity-80">(${custProfitPercent}%)</span></span>
-                    </div>
-                    <span class="ml-3 text-xs opacity-50" style="color: ${textColor};">▶</span>
-                </div>
-                `;
+                let profitColor = cData.profit >= 0 ? '#10b981' : '#ef4444';
+                let profitSign = cData.profit >= 0 ? '+' : '';
+                custHeaderHtml = `
+                <div class="p-4 flex justify-between items-center" style="background: ${dark?'#374151':'#f3f4f6'}; border-bottom: 1px solid ${dark?'#4b5563':'#e5e7eb'};">
+                    <span class="font-bold text-base" style="color: ${textColor};">👤 ลูกค้า: ${name}</span>
+                    <span class="font-bold text-base" style="color: ${profitColor};">กำไรรวม: ${profitSign} ฿${Math.round(cData.profit).toLocaleString()}</span>
+                </div>`;
             }
+
+            // ส่วนรายการสินค้าของลูกค้ารายนั้น
+            let productsHtml = Object.keys(cData.products).map(prodName => {
+                const prod = cData.products[prodName];
+                const samplePayment = data.allPayments.find(p => p.name === name && p.product === prodName);
+                const totalInst = samplePayment ? samplePayment.totalInstallments : '?';
+
+                if (isGuest) {
+                    return `
+                    <div class="p-4 border-b last:border-b-0 flex justify-between items-center" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                        <div>
+                            <div class="font-bold text-sm mb-1" style="color: ${textColor};">${getProductIcon(prodName)} ${prodName} <span class="font-normal text-xs px-2 py-0.5 rounded ml-2" style="background: ${dark?'#4b5563':'#f3f4f6'}; color: ${textColor}; opacity: 0.8;">ชำระในรอบปีนี้ ${prod.count} งวด</span></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs opacity-70" style="color: ${textColor};">ยอดชำระแล้ว</div>
+                            <div class="font-bold text-base" style="color: ${primaryColor};">฿${prod.amount.toLocaleString()}</div>
+                        </div>
+                    </div>`;
+                } else {
+                    let pColor = prod.profit >= 0 ? '#10b981' : '#ef4444';
+                    let pSign = prod.profit >= 0 ? '+' : '';
+                    let pLabel = prod.profit >= 0 ? 'กำไร/ส่วนต่าง' : 'ยังขาดทุน';
+                    return `
+                    <div class="p-4 border-b last:border-b-0 flex justify-between items-center flex-wrap gap-2" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                        <div class="w-full sm:w-auto">
+                            <div class="font-bold text-sm mb-1" style="color: ${textColor};">${getProductIcon(prodName)} ${prodName} <span class="font-normal text-xs px-2 py-0.5 rounded ml-2" style="background: ${dark?'#4b5563':'#f3f4f6'}; color: ${textColor}; opacity: 0.8;">ชำระในรอบปีนี้ ${prod.count} งวด</span></div>
+                            <div class="text-xs opacity-70" style="color: ${textColor};">ยอดเงินเข้า: ฿${prod.amount.toLocaleString()} &nbsp;|&nbsp; หักต้นทุน: ฿${Math.round(prod.cost).toLocaleString()}</div>
+                        </div>
+                        <div class="text-left sm:text-right w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0" style="border-color: ${dark?'#374151':'#e5e7eb'};">
+                            <div class="text-xs opacity-70" style="color: ${textColor};">${pLabel}</div>
+                            <div class="font-bold text-base" style="color: ${pColor};">${pSign} ฿${Math.round(prod.profit).toLocaleString()}</div>
+                        </div>
+                    </div>`;
+                }
+            }).join('');
+
+            return `
+            <div class="mb-6 rounded-xl overflow-hidden shadow-sm" style="border: 1px solid ${dark?'#4b5563':'#e5e7eb'}; background: ${surfaceColor};">
+                ${custHeaderHtml}
+                <div>${productsHtml}</div>
+            </div>
+            `;
         }).join('');
 
         return `
@@ -1463,27 +1488,21 @@
                 </div>
             </div>
 
-            <div class="flex gap-4 mb-6">
-                ${summaryBoxesHtml}
+            <!-- กล่องสรุปยอด -->
+            ${topBoxesHtml}
+
+            <!-- กราฟสรุปยอด -->
+            <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface mb-8" style="background: ${surfaceColor};">
+                <h3 class="text-lg font-normal mb-4" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="statementChart"></canvas>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 p-4 md:p-6 rounded-xl shadow-md custom-surface" style="background: ${surfaceColor}; height: 400px;">
-                    <h3 class="text-lg font-normal mb-4" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
-                    <div style="height: 320px; width: 100%;">
-                        <canvas id="statementChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface flex flex-col h-[400px]" style="background: ${surfaceColor};">
-                    <h3 class="text-lg font-bold mb-4 border-b pb-2 flex justify-between items-center" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e5e7eb'};">
-                        <span>แยกตามลูกค้า</span>
-                        <span class="text-xs font-normal opacity-60 px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">${customers.length} คน</span>
-                    </h3>
-                    <div class="flex-1 overflow-y-auto no-scrollbar pr-2 -mx-2 px-2">
-                        ${customers.length > 0 ? breakdownHtml : `<div class="h-full w-full flex items-center justify-center"><p class="text-center opacity-50" style="color: ${textColor};">ไม่มียอดเงินเข้าในปีนี้</p></div>`}
-                    </div>
-                </div>
+            <!-- รายการแยกตามลูกค้า -->
+            <div class="mt-4">
+                <h3 class="text-xl font-bold mb-4" style="color: ${textColor};">รายละเอียดแบ่งตามลูกค้า</h3>
+                ${customersList.length > 0 ? breakdownHtml : `<div class="p-8 text-center opacity-50 border rounded-xl" style="border-color: ${dark?'#374151':'#e5e7eb'}; color: ${textColor};">ไม่มียอดเงินเข้าในปีนี้</div>`}
             </div>
         </div>
         `;
@@ -1534,12 +1553,12 @@
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
         {
-            version: "V.10.6 (Guest Privacy Update)",
-            date: "24/08/2026",
+            version: "V.10.6 (Advanced Statement View)",
+            date: "04/03/2026",
             changes: [
-                "ปรับปรุงระบบคำนวณข้อมูลเดินบัญชีให้แยก 3 กรอบ (เงินเข้า, หักทุน, กำไร)",
-                "ซ่อนข้อมูล 'ต้นทุนและกำไร' อัตโนมัติเมื่อลูกค้าเข้าใช้งานผ่าน Guest View",
-                "ซ่อนกราฟแท่งแสดงกำไรในฝั่ง Guest View"
+                "ปรับปรุงหน้าข้อมูลเดินบัญชี แสดงผลสรุปยอดเงินเข้า ต้นทุน และกำไรสุทธิ ไว้ด้านบนอย่างชัดเจน",
+                "ปรับเปลี่ยนการแสดงผลรายการลูกค้า โดยกางลิสต์รายการสินค้าออกให้อัตโนมัติ (ยกเลิกหน้าต่างป๊อปอัป)",
+                "เพิ่มการแยกสิทธิ์ Guest: ซ่อนข้อมูลต้นทุนและกำไร 100% ให้ลูกค้าเห็นเฉพาะยอดชำระเงิน"
             ]
         },
         {
@@ -1646,77 +1665,6 @@
         </div>
         <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
         <div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ยืนยันการลบ</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ลบข้อมูล</button>`}</form></div></div>`;
-      }
-      if (statementDetailCustomer) {
-        const data = getAggregatedStatementData();
-        const items = data.filtered.filter(p => p.name === statementDetailCustomer);
-        const isGuest = currentUser && currentUser.isGuestView;
-        
-        let periodText = `ปี ${stmtSelectedDate.getFullYear() + 543}`;
-        
-        const totalCustAmount = items.reduce((s,i) => s + i.amount, 0);
-        const totalCustProfit = items.reduce((s,i) => s + i.profit, 0);
-        const totalCustPercent = totalCustAmount > 0 ? ((totalCustProfit / totalCustAmount) * 100).toFixed(1) : 0;
-
-        return `
-        <div class="modal-overlay" onclick="hideModal()">
-            <div class="modal-content custom-surface" onclick="event.stopPropagation()">
-                <div class="flex justify-between items-center mb-4 border-b pb-2" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                    <h3 class="text-xl font-normal" style="color: ${textColor};">รายละเอียด: ${statementDetailCustomer}</h3>
-                    <button onclick="hideModal()" class="text-gray-500 hover:text-gray-700 text-xl font-bold px-2">&times;</button>
-                </div>
-                <p class="text-sm opacity-70 mb-4" style="color: ${textColor};">ประจำ${periodText}</p>
-                <div class="space-y-3 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
-                    ${items.length === 0 ? `<p class="text-center opacity-50 py-4" style="color: ${textColor};">ไม่มีข้อมูล</p>` : ''}
-                    ${items.map(item => {
-                        const itemPercent = item.amount > 0 ? ((item.profit / item.amount) * 100).toFixed(1) : 0;
-                        if (isGuest) {
-                            return `
-                            <div class="p-3 rounded-lg border flex flex-col gap-2" style="background: ${dark ? '#374151' : '#f9fafb'}; border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                                <div class="flex justify-between items-center">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-lg">${getProductIcon(item.product)}</span>
-                                        <span class="font-normal" style="color: ${textColor};">${item.product}</span>
-                                    </div>
-                                    <span class="font-bold text-base" style="color: ${primaryColor};">฿${item.amount.toLocaleString()}</span>
-                                </div>
-                                <div class="text-xs opacity-60 text-right" style="color: ${textColor}; mt-1">
-                                    ${item.date.toLocaleString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'})} น.
-                                </div>
-                            </div>
-                            `;
-                        } else {
-                            return `
-                            <div class="p-3 rounded-lg border flex flex-col gap-2" style="background: ${dark ? '#374151' : '#f9fafb'}; border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                                <div class="flex justify-between items-start">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-lg">${getProductIcon(item.product)}</span>
-                                        <span class="font-normal" style="color: ${textColor};">${item.product}</span>
-                                    </div>
-                                    <div class="flex flex-col items-end">
-                                        <span class="font-normal text-sm" style="color: ${primaryColor};">จ่ายเข้า ฿${item.amount.toLocaleString()}</span>
-                                        <span class="font-normal text-sm" style="color: #10b981;">(กำไร ฿${Math.round(item.profit).toLocaleString()} • ${itemPercent}%)</span>
-                                    </div>
-                                </div>
-                                <div class="text-xs opacity-60 text-right" style="color: ${textColor}; mt-1">
-                                    ${item.date.toLocaleString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'})} น.
-                                </div>
-                            </div>
-                            `;
-                        }
-                    }).join('')}
-                </div>
-                <div class="mt-4 pt-3 border-t flex justify-between items-center" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                    <span class="font-normal" style="color: ${textColor};">รวมทั้งหมด</span>
-                    ${isGuest ? 
-                      `<span class="text-xl font-normal" style="color: ${primaryColor};">฿${Math.round(totalCustAmount).toLocaleString()}</span>` 
-                      : 
-                      `<span class="text-xl font-normal" style="color: #10b981;">฿${Math.round(totalCustProfit).toLocaleString()} <span class="text-sm opacity-80">(${totalCustPercent}%)</span></span>`
-                    }
-                </div>
-            </div>
-        </div>
-        `;
       }
       return '';
     }
@@ -2043,11 +1991,11 @@
           const config = window.elementSdk?.config || defaultConfig;
           const dark = isDarkMode();
           const txtColor = dark ? '#f9fafb' : config.text_color;
-          const data = getAggregatedStatementData();
           const isGuest = currentUser && currentUser.isGuestView;
+          const data = getAggregatedStatementData();
           setTimeout(() => {
               initStatementChart(data.chartLabels, data.chartDataAmount, data.chartDataProfit, config.primary_color, txtColor, dark, isGuest);
-          }, 50); // ดีเลย์เล็กน้อยเพื่อให้ Element <canvas> โหลดเสร็จก่อน
+          }, 50); 
       }
     }
 
@@ -2062,4 +2010,3 @@
   </script>
  </body>
 </html>
-
