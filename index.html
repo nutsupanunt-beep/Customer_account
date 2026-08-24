@@ -232,7 +232,7 @@
     let manageSearchTerm = '';
     let expandedCustomerName = null;
     
-    // ตัวแปรสำหรับข้อมูลเดินบัญชี (อัปเดตเป็นรายปีเท่านั้น)
+    // ตัวแปรสำหรับข้อมูลเดินบัญชี
     let stmtSelectedDate = new Date();
     let statementChart = null;
 
@@ -611,7 +611,7 @@
         const remaining = customer.installments - newPaid;
         const details = `${customer.customer_name} ชำระเงินค่า ${customer.product} งวดที่ ${newPaid} ราคา ${customer.monthly_payment.toLocaleString()} บาท สำเร็จ จำนวนงวดที่เหลืออีก ${remaining} งวด`;
         await addHistory(isComplete ? 'ชำระเงินครบ' : 'ชำระเงิน', details); 
-        showToast(isComplete ? 'ชำระเงินครบแล้ว' : 'บันึกการชำระเงินสำเร็จ'); 
+        showToast(isComplete ? 'ชำระเงินครบแล้ว' : 'บันทึกการชำระเงินสำเร็จ'); 
       }
     }
 
@@ -882,7 +882,7 @@
             <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.6</p>
+            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.7</p>
           </div>
         </div>
       `;
@@ -899,7 +899,10 @@
       else if(currentView === 'changelog') html = renderChangelog(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'manage_users') html = renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor);
       else if(currentView === 'account') html = renderAccount(config, dark, surfaceColor, textColor, primaryColor);
-      if (showingModal || editingCustomer || editingUser || statementDetailCustomer) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
+      
+      // ✅ ลบคำสั่ง statementDetailCustomer ออกจากเงื่อนไขนี้แล้ว เพื่อป้องกัน Error ตอนโหลด
+      if (showingModal || editingCustomer || editingUser) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
+      
       return html;
     }
 
@@ -1552,6 +1555,13 @@
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        {
+            version: "V.10.7 (Hotfix)",
+            date: "24/08/2026",
+            changes: [
+                "แก้ไขบั๊กหน้าจอโหลดค้าง (statementDetailCustomer is not defined) จากการถอดระบบป๊อปอัปเก่าออกไม่สมบูรณ์"
+            ]
+        },
         {
             version: "V.10.6 (Advanced Statement View)",
             date: "04/03/2026",
