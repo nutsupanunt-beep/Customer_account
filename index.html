@@ -19,10 +19,18 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.1";
+    const CURRENT_VERSION = "V.11.2";
     
-    // บันทึกประวัติการอัปเดตไว้ตรงนี้ที่เดียว ใช้ได้ทั้งหน้า Changelog และหน้าต่าง What's New
     const APP_CHANGELOG = [
+        {
+            version: "V.11.2",
+            date: "10/09/2026",
+            changes: [
+                "ปรับปรุงระบบตรวจจับอัปเดต (Live Update) ให้ทะลวง Cache ของบราวเซอร์มือถือได้ 100%",
+                "แก้ไขบั๊กป๊อปอัป 'มีอะไรใหม่' ไม่เด้งในมือถือ โดยเปลี่ยนระบบเวลาให้สัมพันธ์กับการวาดหน้าจอ (Render Cycle)",
+                "เพิ่มความเสถียรเมื่อเปิดแอปผ่านแอปพลิเคชันแชท (LINE/Messenger)"
+            ]
+        },
         {
             version: "V.11.1",
             date: "09/09/2026",
@@ -54,11 +62,6 @@
                 "เพิ่มกราฟแท่งแนวนอน (Top 5 Customers) และกราฟโดนัท (Cost vs Profit Ratio)",
                 "แก้ไขบั๊กยอดเงินแสดงผลเป็น NaN ด้วยการเพิ่มฟังก์ชัน Math.round() ปัดเศษทศนิยมต้นทุน"
             ]
-        },
-        {
-            version: "V.10.8",
-            date: "09/09/2026",
-            changes: ["อัปเกรดหน้าจอหลักทั้งหมดเข้าสู่ดีไซน์ 'Premium Fintech' ดูหรูหราน่าเชื่อถือ"]
         }
     ];
 
@@ -269,79 +272,81 @@
     let doughnutChartInstance = null;
 
     // ==========================================
-    // 🟢 ระบบจัดการการแจ้งเตือนและการอัปเดต
+    // 🟢 ระบบจัดการการแจ้งเตือนและการอัปเดต (อัปเดต V.11.2)
     // ==========================================
-
     let whatsNewTimerInterval = null;
 
     function checkAndShowWhatsNew() {
-        const lastSeen = localStorage.getItem('app_last_seen_version');
-        if (lastSeen !== CURRENT_VERSION) {
-            const currentLog = APP_CHANGELOG.find(l => l.version === CURRENT_VERSION) || APP_CHANGELOG[0];
-            
-            const modalId = 'whats-new-modal';
-            if(document.getElementById(modalId)) return;
+        try {
+            const lastSeen = localStorage.getItem('app_last_seen_version');
+            if (lastSeen !== CURRENT_VERSION) {
+                const currentLog = APP_CHANGELOG.find(l => l.version === CURRENT_VERSION) || APP_CHANGELOG[0];
+                
+                const modalId = 'whats-new-modal';
+                if(document.getElementById(modalId)) return;
 
-            const div = document.createElement('div');
-            div.id = modalId;
-            div.className = 'modal-overlay fade-in';
-            div.style.zIndex = '10000'; // ให้อยู่บนสุดเสมอ
-            
-            div.innerHTML = `
-            <div class="modal-content relative flex flex-col items-center p-8 text-center" style="max-width: 500px; border-radius: 20px;">
-                <!-- Icon วงกลม i เหมือนในรูป -->
-                <div class="w-24 h-24 rounded-full border-[3px] flex items-center justify-center mb-6" style="border-color: #0ea5e9;">
-                    <span class="text-6xl font-light relative" style="color: #0ea5e9; top: -2px;">i</span>
+                const div = document.createElement('div');
+                div.id = modalId;
+                div.className = 'modal-overlay fade-in';
+                div.style.zIndex = '10000'; 
+                
+                div.innerHTML = `
+                <div class="modal-content relative flex flex-col items-center p-8 text-center" style="max-width: 500px; border-radius: 20px;">
+                    <div class="w-24 h-24 rounded-full border-[3px] flex items-center justify-center mb-6" style="border-color: #0ea5e9;">
+                        <span class="text-6xl font-light relative" style="color: #0ea5e9; top: -2px;">i</span>
+                    </div>
+                    
+                    <h3 class="text-3xl font-black mb-6 text-gray-800 tracking-tight">มีอะไรใหม่ ${CURRENT_VERSION}?</h3>
+                    
+                    <ul class="text-left w-full space-y-3 mb-8 text-gray-600 font-medium text-base list-disc list-inside px-2">
+                        ${currentLog.changes.map(c => `<li>${c}</li>`).join('')}
+                    </ul>
+                    
+                    <button id="whats-new-btn" onclick="closeWhatsNew()" class="w-40 py-3 rounded-xl font-bold text-white shadow-md transition-all active:scale-95 text-lg uppercase tracking-wider" style="background: #0ea5e9;">OK (5s)</button>
                 </div>
-                
-                <h3 class="text-3xl font-black mb-6 text-gray-800 tracking-tight">มีอะไรใหม่ ${CURRENT_VERSION}?</h3>
-                
-                <ul class="text-left w-full space-y-3 mb-8 text-gray-600 font-medium text-base list-disc list-inside px-2">
-                    ${currentLog.changes.map(c => `<li>${c}</li>`).join('')}
-                </ul>
-                
-                <button id="whats-new-btn" onclick="closeWhatsNew()" class="w-40 py-3 rounded-xl font-bold text-white shadow-md transition-all active:scale-95 text-lg uppercase tracking-wider" style="background: #0ea5e9;">OK (5s)</button>
-            </div>
-            `;
-            document.body.appendChild(div);
+                `;
+                document.body.appendChild(div);
 
-            let timeLeft = 5;
-            const btn = document.getElementById('whats-new-btn');
-            
-            whatsNewTimerInterval = setInterval(() => {
-                timeLeft--;
-                if (timeLeft <= 0) {
-                    clearInterval(whatsNewTimerInterval);
-                    closeWhatsNew();
-                } else {
-                    if(btn) btn.innerText = `OK (${timeLeft}s)`;
-                }
-            }, 1000);
+                let timeLeft = 5;
+                const btn = document.getElementById('whats-new-btn');
+                
+                whatsNewTimerInterval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(whatsNewTimerInterval);
+                        closeWhatsNew();
+                    } else {
+                        if(btn) btn.innerText = `OK (${timeLeft}s)`;
+                    }
+                }, 1000);
+            }
+        } catch(e) {
+            console.warn("Storage access restricted", e);
         }
     }
 
     window.closeWhatsNew = function() {
         if(whatsNewTimerInterval) clearInterval(whatsNewTimerInterval);
-        localStorage.setItem('app_last_seen_version', CURRENT_VERSION);
+        try { localStorage.setItem('app_last_seen_version', CURRENT_VERSION); } catch(e) {}
         const m = document.getElementById('whats-new-modal');
         if(m) m.remove();
     };
 
     function startUpdateChecker() {
-        // เช็คการอัปเดตแบบเงียบๆ ทุก 1 นาที
         setInterval(async () => {
             try {
-                // เติม ?t=... เพื่อป้องกันการแคชของเบราว์เซอร์
-                const response = await fetch(window.location.href.split('#')[0] + '?t=' + new Date().getTime());
+                // 🔴 บังคับข้าม Cache ของมือถือ 100% ด้วย { cache: 'no-store' } และ URL Object
+                let fetchUrl = new URL(window.location.href.split('#')[0]);
+                fetchUrl.searchParams.set('nocache', new Date().getTime());
+                
+                const response = await fetch(fetchUrl.toString(), { cache: 'no-store' });
                 const htmlText = await response.text();
-                // หาบรรทัด const CURRENT_VERSION = "V.xxx"; ในโค้ดบนเซิร์ฟเวอร์
+                
                 const match = htmlText.match(/const CURRENT_VERSION\s*=\s*['"]([^'"]+)['"]/);
                 if (match && match[1] && match[1] !== CURRENT_VERSION) {
                     showUpdateAvailableModal(match[1]);
                 }
-            } catch(e) {
-                // ข้ามการแจ้งเตือนหากไม่มีเน็ตหรือมี Error อื่นๆ (ไม่ให้แอปหลักพัง)
-            }
+            } catch(e) {}
         }, 60000); 
     }
 
@@ -1666,6 +1671,110 @@
         `;
     }
 
+    function renderSettings(config, dark, surfaceColor, textColor, primaryColor) {
+      const settings = getUserSettings();
+      const globalSettings = getGlobalGuestSettings();
+      const currentDarkMode = settings ? settings.is_dark_mode : false;
+      const currentDaysBefore = settings ? settings.payment_days_before : 5;
+      const currentPermissions = (currentUser.isAdmin || !settings) ? 
+        (globalSettings ? globalSettings.guest_permissions : 'manage,history,statement') : 
+        (settings.guest_permissions || 'manage,history,statement');
+        
+      const currentToastDuration = globalSettings && globalSettings.toast_duration ? (globalSettings.toast_duration / 1000) : 1.5;
+      const isAdmin = currentUser && currentUser.isAdmin;
+
+      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-6 h-6 rounded border-gray-300" style="accent-color: ${primaryColor};"><span class="font-semibold text-lg" style="color: ${textColor};">เปิดโหมดมืด (Dark Mode)</span></label></div><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-3 font-semibold" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-5 py-3 rounded-xl border font-bold text-lg" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"><p class="text-sm mt-3 font-medium opacity-60" style="color: ${textColor};">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระตามจำนวนวันที่ตั้งไว้</p></div>
+      ${isAdmin ? `<div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}40; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};">
+        <h3 class="font-black text-lg mb-6 flex items-center gap-3 uppercase tracking-wider" style="color: ${textColor};">
+            🔌 การตั้งค่าระบบ (Admin Only)
+        </h3>
+        <div class="space-y-5">
+            <div>
+                <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">ระยะเวลาแสดงแจ้งเตือน (วินาที)</label>
+                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-5 py-3 rounded-xl border font-semibold" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
+            </div>
+            <div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div>
+            <div>
+                <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase URL</label>
+                <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
+            </div>
+            <div>
+                <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase Key (Anon/Public)</label>
+                <input type="password" id="setting-supabase-key" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <button id="save-connection-btn" class="flex-1 py-3 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor};">บันทึกและรีโหลด</button>
+                <button id="reset-connection-btn" class="flex-1 py-3 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all" style="background: #ef4444;">รีเซ็ตเป็นค่าเริ่มต้น</button>
+            </div>
+            <p class="text-xs font-bold opacity-50 uppercase tracking-widest mt-2" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่า URL/Key จะทำให้ระบบรีโหลดใหม่ทันที</p>
+        </div>
+    </div>
+    <div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-4"><label class="flex items-center gap-4"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-statement" ${currentPermissions.includes('statement') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าข้อมูลเดินบัญชี</span></label><div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div><label class="flex items-center gap-4"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
+      <button id="save-settings-btn" class="w-full py-4 rounded-xl font-black text-lg transition-all hover:shadow-lg active:scale-[0.98] uppercase tracking-wide mt-4" style="background: ${primaryColor}; color: white; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);">บันทึกการตั้งค่า</button></div></div>`;
+    }
+
+    function renderAccount(config, dark, surfaceColor, textColor, primaryColor) {
+      const role = currentUser.isAdmin ? 'Admin' : (currentUser.isGuestView ? 'Guest' : 'User');
+      let permissionText = '';
+      if (currentUser.isAdmin) permissionText = `<ul class="list-disc list-inside space-y-2 text-base font-medium opacity-80 mt-4"><li>✅ เข้าถึงทุกเมนูและทุกฟังก์ชัน</li><li>✅ จัดการข้อมูลลูกค้าของทุกคน</li><li>✅ ลบและแก้ไขบัญชีผู้ใช้งานอื่น</li><li>✅ ตั้งค่าการเชื่อมต่อฐานข้อมูล</li></ul>`;
+      else if (currentUser.isGuestView) permissionText = `<ul class="list-disc list-inside space-y-2 text-base font-medium opacity-80 mt-4"><li>✅ ดูรายการลูกค้าทั้งหมด</li><li>❌ ไม่สามารถเพิ่มข้อมูลใหม่</li><li>❌ ไม่สามารถแก้ไขหรือลบข้อมูล</li><li>❌ ไม่สามารถเข้าถึงการตั้งค่า</li></ul>`;
+      else permissionText = `<ul class="list-disc list-inside space-y-2 text-base font-medium opacity-80 mt-4"><li>✅ เพิ่มข้อมูลลูกค้าใหม่</li><li>✅ จัดการ (แก้ไข/ลบ/ชำระเงิน) ลูกค้าของตนเอง</li><li>✅ ดูประวัติการทำรายการของตนเอง</li><li>❌ ไม่สามารถเห็นข้อมูลของผู้อื่น</li></ul>`;
+
+      return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_account}</h2><div class="p-8 md:p-10 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><div class="flex items-center gap-6 mb-8 pb-8 border-b" style="border-color: ${dark?'#374151':'#f1f5f9'};"><div class="w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-inner border border-white/50" style="background: ${primaryColor}20; color: ${primaryColor};">👤</div><div><p class="text-3xl font-black tracking-tight mb-1" style="color: ${textColor};">${currentUser.username}</p><p class="text-sm font-bold uppercase tracking-widest opacity-60" style="color: ${textColor};">${currentUser.isAdmin ? 'ผู้ดูแลระบบสูงสุด (Super Admin)' : (currentUser.isGuestView ? 'โหมดผู้เยี่ยมชม' : 'บัญชีผู้ใช้')}</p></div></div><div class="space-y-6"><div class="p-6 rounded-2xl border shadow-sm" style="background: ${dark ? '#1f2937' : '#f8fafc'}; border-color: ${dark?'#374151':'#e2e8f0'};"><p class="text-xs font-bold uppercase tracking-widest opacity-50 mb-4" style="color: ${textColor};">สถิติการใช้งาน</p><div class="grid grid-cols-2 gap-4"><div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"><p class="text-2xl font-black text-blue-500">${getActiveCustomers().length}</p><p class="text-xs font-bold uppercase tracking-wider opacity-60 mt-1" style="color: ${textColor};">ลูกค้าทั้งหมด</p></div><div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"><p class="text-2xl font-black text-green-500">${getCompletedCustomers().length}</p><p class="text-xs font-bold uppercase tracking-wider opacity-60 mt-1" style="color: ${textColor};">ชำระครบแล้ว</p></div></div></div><div class="mt-6 p-6 rounded-2xl border border-opacity-20" style="border-color: ${textColor};"><h3 class="font-bold text-lg uppercase tracking-wider">สิทธิ์การใช้งาน (${role})</h3>${permissionText}</div></div></div></div>`;
+    }
+
+    function renderModal(config, dark, surfaceColor, textColor, primaryColor) {
+      if (editingUser) {
+          const user = allRecords.find(r => r.id === editingUser); if(!user) return '';
+          return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-6"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div class="flex gap-4 pt-2"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
+      }
+      if (editingCustomer) {
+        const customer = allRecords.find(r => r.id === editingCustomer); if (!customer) return '';
+        return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 600px;"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-5"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+        <div class="grid grid-cols-2 gap-5">
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">จำนวนงวดรวม</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชำระแล้ว (งวด)</label><input type="number" id="edit-paid-installments" value="${customer.paid_installments || 0}" min="0" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+        </div>
+        <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+        <div class="flex gap-4 pt-4"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ยืนยันการลบถาวร</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ลบข้อมูล</button>`}</form></div></div>`;
+      }
+      
+      if (showingModal === 'changelog') {
+          let logsHtml = APP_CHANGELOG.map((log, index) => `
+              <div class="p-6 rounded-2xl shadow-sm relative overflow-hidden mb-5" style="background: ${dark?'#1f2937':'#f8fafc'}; border: 1px solid ${dark?'#374151':'#e2e8f0'};">
+                  <div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#4b5563' : '#cbd5e1')}"></div>
+                  <div class="flex justify-between items-start mb-4 pl-4">
+                      <div>
+                          <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#f1f5f9')}; border: 1px solid ${index === 0 ? primaryColor + '50' : (dark?'#4b5563':'#e2e8f0')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span>
+                          <span class="ml-3 text-xs font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">${log.date}</span>
+                      </div>
+                  </div>
+                  <ul class="list-disc list-inside space-y-2 pl-4 text-sm font-medium opacity-80" style="color: ${textColor};">
+                      ${log.changes.map(c => `<li>${c}</li>`).join('')}
+                  </ul>
+              </div>
+          `).join('');
+
+          return `
+          <div class="modal-overlay" onclick="hideModal()">
+              <div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 650px;" onclick="event.stopPropagation()">
+                  <div class="flex justify-between items-center mb-6 border-b pb-4" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
+                      <div>
+                          <h3 class="text-2xl font-black tracking-tight" style="color: ${textColor};">ประวัติการอัปเดต</h3>
+                          <p class="text-xs font-bold uppercase tracking-widest opacity-50 mt-1" style="color: ${textColor};">Changelog & Release Notes</p>
+                      </div>
+                      <button onclick="hideModal()" class="text-gray-400 hover:text-gray-800 transition-colors text-2xl font-bold px-2">&times;</button>
+                  </div>
+                  <div class="max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                      ${logsHtml}
+                  </div>
+              </div>
+          </div>
+          `;
+      }
+      return '';
+    }
+
     function attachEventListeners() {
       const mobileMenuBtn = document.getElementById('mobile-menu-btn');
       if(mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileSidebar);
@@ -2001,8 +2110,8 @@
       window.elementSdk.init({ defaultConfig, onConfigChange: () => renderApp() });
       renderApp();
       
-      // 🟢 เริ่มทำงานระบบแจ้งเตือนอัปเดต
-      setTimeout(checkAndShowWhatsNew, 800); // ดีเลย์เล็กน้อยให้หน้าเว็บโหลดเสร็จก่อนค่อยโชว์
+      // 🔴 เพิ่มเวลาหน่วงเป็น 1.5 วินาที เพื่อให้มือถือโหลด UI และข้อมูลเสร็จสมบูรณ์ก่อน
+      setTimeout(checkAndShowWhatsNew, 1500); 
       startUpdateChecker();
     }
 
