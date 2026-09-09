@@ -16,7 +16,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
-    // Configuration
     const savedConfig = JSON.parse(localStorage.getItem('app_supabase_config') || '{}');
     var defaultSupabaseUrl = 'https://rmdlpaofydzbuzuozofs.supabase.co';
     var defaultSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtZGxwYW9meWR6YnV6dW96b2ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NzMwMjIsImV4cCI6MjA4NDA0OTAyMn0.JoWZ4m0TrQMgIX5kJEILv6nJbdc9hB-H82DDWPG09A4';
@@ -190,7 +189,6 @@
       </div>
   </div>
   <script>
-    // Configuration
     const defaultConfig = {
       app_title: "ARBANG FAST TRACK ASSET LOAN",
       menu_add_customer: "เพิ่มข้อมูลลูกค้า",
@@ -200,7 +198,7 @@
       menu_settings: "การตั้งค่า",
       menu_account: "บัญชีผู้ใช้",
       menu_changelog: "ประวัติการอัปเดต",
-      primary_color: "#3b82f6",     // Original Blue
+      primary_color: "#3b82f6",     
       secondary_color: "#1f2937",   
       text_color: "#0f172a",        
       background_color: "#f8fafc",  
@@ -209,7 +207,7 @@
 
     let allRecords = [];
     let currentUser = null;
-    let currentView = 'manage'; // Default view
+    let currentView = 'manage'; 
     let editingCustomer = null;
     let editingUser = null;
     let confirmDeleteId = null;
@@ -218,10 +216,9 @@
     let manageSearchTerm = '';
     let expandedCustomerName = null;
     
-    // ตัวแปรสำหรับข้อมูลเดินบัญชี
     let stmtSelectedDate = new Date();
-    let statementChart = null;
-    let statementDetailCustomer = null;
+    let topChartInstance = null;
+    let doughnutChartInstance = null;
 
     const dataHandler = {
       onDataChanged(data) {
@@ -236,11 +233,6 @@
         } else {
             expandedCustomerName = name; 
         }
-        renderApp();
-    };
-
-    window.showStatementDetails = function(name) {
-        statementDetailCustomer = name;
         renderApp();
     };
 
@@ -271,7 +263,7 @@
     }
 
     function showModal(content) { showingModal = content; renderApp(); }
-    function hideModal() { showingModal = null; editingUser = null; editingCustomer = null; confirmDeleteId = null; statementDetailCustomer = null; renderApp(); }
+    function hideModal() { showingModal = null; editingUser = null; editingCustomer = null; confirmDeleteId = null; renderApp(); }
     function toggleMobileSidebar() { isMobileSidebarOpen = !isMobileSidebarOpen; renderApp(); }
 
     function hashPassword(password) {
@@ -723,9 +715,9 @@
       if (dark) document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');
 
-      let bgColor = dark ? '#111827' : '#f8fafc'; // Fintech light background
+      let bgColor = dark ? '#111827' : '#f8fafc'; 
       let surfaceColor = dark ? '#1f2937' : '#ffffff';
-      let textColor = dark ? '#f9fafb' : '#0f172a'; // Deeper text color
+      let textColor = dark ? '#f9fafb' : '#0f172a'; 
       let sidebarBg = surfaceColor; 
       
       app.style.background = bgColor;
@@ -875,7 +867,7 @@
             <button id="logout-btn" class="w-full px-4 py-3 rounded-xl font-bold transition-all hover:shadow-lg active:scale-95" style="background: #ef4444; color: white; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-5 opacity-40 font-semibold uppercase tracking-wider" style="color: ${textColor};">Version V.10.8</p>
+            <p class="text-xs text-center mt-5 opacity-40 font-semibold uppercase tracking-wider" style="color: ${textColor};">Version V.10.9</p>
           </div>
         </div>
       `;
@@ -901,6 +893,7 @@
       return `<div class="p-4 md:p-8"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-2xl shadow-xl transition-all" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};"><table class="w-full min-w-[600px]"><thead style="background: ${dark ? '#374151' : '#f8fafc'}; border-bottom: 1px solid ${dark?'#4b5563':'#e2e8f0'};"><tr><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ลำดับ</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">วันที่สมัคร</th><th class="px-6 py-4 text-center text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark ? '#374151' : '#f1f5f9'};"><td class="px-6 py-4 font-medium" style="color: ${textColor};">${idx + 1}</td><td class="px-6 py-4 font-bold text-base" style="color: ${textColor};">${u.username}</td><td class="px-6 py-4 font-medium opacity-80" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-6 py-4 text-center"><div class="flex justify-center gap-3"><button type="button" class="btn-reset-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-id="${u.id}" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button type="button" class="btn-delete-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-id="${u.id}" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
     }
 
+    // 🔴 แก้ปัญหาการทับซ้อนในหน้า เพิ่มข้อมูลลูกค้า
     function renderAddCustomer(config, dark, surfaceColor, textColor, primaryColor) {
       const autocomplete = getAutocompleteData();
       return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_add_customer}</h2><div class="p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};"><form id="add-customer-form" class="space-y-6">
@@ -908,13 +901,44 @@
             <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="customer-name" value="" required list="list-customer-name" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-customer-name">${autocomplete.names.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
             <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">สินค้า</label><input type="text" id="product" value="" required list="list-product" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-product">${autocomplete.products.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
             <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="product-price" value="" required list="list-product-price" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-product-price">${autocomplete.prices.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ดอกเบี้ย %</label><input type="number" id="interest-rate" value="" required step="0.01" list="list-interest-rate" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-interest-rate">${autocomplete.interests.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ดอกเบี้ย % (รวม)</label><input type="number" id="interest-rate" value="" required step="0.01" list="list-interest-rate" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-interest-rate">${autocomplete.interests.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
             <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">งวดผ่อน</label><input type="number" id="installments" value="" required list="list-installments" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-installments">${autocomplete.installments.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
             <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ค่าบิล</label><input type="number" id="bill-fee" value="" min="0" list="list-bill-fee" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-bill-fee">${autocomplete.fees.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
             <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">รวมจ่ายต่องวด</label><input type="number" id="bill-amount-input" value="" readonly class="w-full px-5 py-3 rounded-xl border opacity-60 cursor-not-allowed font-bold" style="background: ${dark ? '#1f2937' : '#f1f5f9'}; border-color: ${dark ? '#374151' : '#e2e8f0'}; color: ${textColor};" tabindex="-1"></div>
             <div id="contract-date-wrapper"><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="contract-date" value="${new Date().toISOString().split('T')[0]}" required class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"></div>
             
-            <div class="col-span-full mt-4"><div class="p-6 md:p-8 rounded-2xl shadow-inner border" style="background: ${dark ? '#111827' : '#f8fafc'}; border-color: ${dark ? '#374151' : '#e2e8f0'};"><label class="block text-base font-black uppercase tracking-wider mb-5 border-b pb-3 opacity-80" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e2e8f0'};">สรุปยอดผ่อนชำระ</label><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="text-center md:text-left"><p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-wide" style="color: ${textColor};">ค่างวดต่อเดือน (คำนวณ)</p><input type="text" id="bill-amount-display" readonly class="text-4xl md:text-5xl font-black bg-transparent border-none p-0 focus:ring-0 w-full md:w-auto text-center md:text-left tracking-tight" style="color: ${primaryColor};" placeholder="฿0"></div><div id="calculation-details" class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4 text-center hidden"><div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm"><p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">เงินต้น</p><span id="detail-principal" class="font-black text-xl" style="color: ${textColor};">0</span></div><div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm"><p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">ดอกเบี้ยรวม</p><span id="detail-interest" class="font-black text-xl text-red-500">0</span></div><div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm"><p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">ยอดรวมทั้งหมด</p><span id="detail-total" class="font-black text-xl text-[#10b981]">0</span></div></div></div></div></div>
+            <div class="col-span-full mt-4">
+                <div class="p-6 md:p-8 rounded-2xl shadow-inner border" style="background: ${dark ? '#111827' : '#f8fafc'}; border-color: ${dark ? '#374151' : '#e2e8f0'};">
+                    <label class="block text-base font-black uppercase tracking-wider mb-5 border-b pb-3 opacity-80" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e2e8f0'};">สรุปยอดผ่อนชำระ</label>
+                    
+                    <!-- เปลี่ยนเป็น flex-col จัดเรียงแนวตั้งบนลงล่าง เพื่อกันการทับซ้อน -->
+                    <div class="flex flex-col gap-6">
+                        
+                        <!-- 1. ค่างวดตัวใหญ่ -->
+                        <div class="w-full text-center md:text-left">
+                            <p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-wide" style="color: ${textColor};">ค่างวดต่อเดือน (คำนวณ)</p>
+                            <input type="text" id="bill-amount-display" readonly class="text-4xl md:text-5xl font-black bg-transparent border-none p-0 focus:ring-0 w-full text-center md:text-left tracking-tight" style="color: ${primaryColor};" placeholder="฿0">
+                        </div>
+                        
+                        <!-- 2. กล่องแยกรายละเอียด 3 กล่องเรียงแนวนอน -->
+                        <div id="calculation-details" class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 text-center hidden">
+                            <div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm">
+                                <p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">เงินต้น</p>
+                                <span id="detail-principal" class="font-black text-xl" style="color: ${textColor};">0</span>
+                            </div>
+                            <div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm">
+                                <p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">ดอกเบี้ยรวม</p>
+                                <span id="detail-interest" class="font-black text-xl text-red-500">0</span>
+                            </div>
+                            <div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm">
+                                <p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">ยอดรวมทั้งหมด</p>
+                                <span id="detail-total" class="font-black text-xl text-[#10b981]">0</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
         </div>
         <button type="submit" id="save-customer-btn" class="w-full py-4 rounded-xl font-black text-lg transition-all hover:shadow-lg active:scale-[0.98] mt-8 uppercase tracking-wide" style="background: ${primaryColor}; color: white; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);">บันทึกข้อมูลลูกค้า</button>
       </form></div></div>`;
@@ -952,7 +976,6 @@
         </div>
 
         <div class="mb-6">
-            <!-- Fintech Summary Box -->
             <div class="p-6 md:p-8 rounded-2xl shadow-xl transition-all mb-8" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.4)'}; border-top: 4px solid ${primaryColor};">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                     <div>
@@ -1027,7 +1050,6 @@
                       `;
                   }
 
-                  // Fintech Card Style
                   let html = `
                   <div class="rounded-2xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl group" style="border: 1px solid ${dark?'#374151':'#f1f5f9'}; background: ${dark?'#1f2937':'#ffffff'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};">
                     <div class="py-6 px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center cursor-pointer" onclick="window.toggleCustomerExpand('${s.name}')">
@@ -1142,15 +1164,12 @@
                     
                     return `
                     <div class="relative pl-10 md:pl-12">
-                        <!-- Dot -->
                         <span class="absolute -left-[11px] top-5 w-5 h-5 rounded-full border-[5px]" 
                             style="background-color: ${actionColor}; border-color: ${dark ? '#111827' : '#f8fafc'}; box-shadow: 0 0 0 1px ${actionColor}40;"></span>
                         
-                        <!-- Content Card -->
                         <div class="p-6 md:p-8 rounded-2xl shadow-lg border relative group transition-all hover:-translate-y-1 hover:shadow-xl" 
                             style="background: ${cardBg}; border-color: ${dark?'#374151':'#f1f5f9'}; color: ${textColor}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 20px 25px -5px rgba(203,213,225,0.3)'};">
                             
-                            <!-- Arrow -->
                             <div class="absolute w-4 h-4 rotate-45 -left-[9px] top-5 border-l border-b" 
                                 style="background: ${cardBg}; border-color: ${dark?'#374151':'#f1f5f9'};"></div>
 
@@ -1174,8 +1193,10 @@
       `;
     }
 
+    // 🔴 แก้บั๊ก NaN: สกัดข้อมูลและคำนวณต้นทุน/กำไรให้เป็นตัวเลขที่ถูกต้อง (และปัดเศษ)
     function getPaymentData() {
         const history = getHistoryRecords(); 
+        const allCustomers = allRecords.filter(r => r.type === 'customer');
         const payments = [];
         const regex = /^(.+?) ชำระเงินค่า (.+?) งวดที่ \d+ ราคา ([\d,]+(\.\d{1,2})?) บาท/;
 
@@ -1184,23 +1205,45 @@
                 const match = h.history_details.match(regex);
                 
                 if (match) {
+                    const name = match[1].trim();
+                    const product = match[2].trim();
+                    const amountStr = match[3].replace(/,/g, '');
+                    const amount = parseFloat(amountStr);
+                    
+                    let cost = 0;
+                    let profit = amount;
+                    
+                    const cust = allCustomers.find(c => c.customer_name === name && c.product === product);
+                    
+                    if (cust && cust.product_price && cust.installments && parseInt(cust.installments) > 0) {
+                        // ปัดเศษต้นทุนตามที่ขอ
+                        cost = Math.round(parseFloat(cust.product_price) / parseInt(cust.installments));
+                        profit = amount - cost;
+                    }
+                    
+                    if (isNaN(cost) || cost < 0) cost = 0;
+                    if (isNaN(profit)) profit = amount;
+
                     payments.push({
                         date: new Date(h.history_date),
-                        name: match[1].trim(),
-                        product: match[2].trim(),
-                        amount: parseFloat(match[3].replace(/,/g, '')),
-                        raw: h
+                        name: name,
+                        product: product,
+                        amount: amount,
+                        cost: cost,
+                        profit: profit
                     });
                 } else {
                     const nameMatch = h.history_details.match(/^(.+?) ชำระเงินค่า/);
                     const amountMatch = h.history_details.match(/ราคา ([\d,]+(\.\d{1,2})?) บาท/);
                     if (nameMatch && amountMatch) {
+                         const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
                          payments.push({
                             date: new Date(h.history_date),
                             name: nameMatch[1].trim(),
                             product: 'ไม่ระบุ',
-                            amount: parseFloat(amountMatch[1].replace(/,/g, '')),
-                            raw: h
+                            amount: isNaN(amount) ? 0 : amount,
+                            cost: 0,
+                            profit: isNaN(amount) ? 0 : amount
                         });
                     }
                 }
@@ -1211,122 +1254,148 @@
 
     function getAggregatedStatementData() {
         const payments = getPaymentData();
-        let filtered = [];
-        let chartLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-        let chartDataAmount = new Array(12).fill(0); 
-        let chartDataProfit = new Array(12).fill(0); 
+        const year = stmtSelectedDate.getFullYear();
+        let filtered = payments.filter(p => p.date.getFullYear() === year);
+
         let summaryByCustomer = {};
         let totalAmount = 0;
         let totalProfit = 0;
-
-        const year = stmtSelectedDate.getFullYear();
-
-        filtered = payments.filter(p => p.date.getFullYear() === year);
+        let totalCost = 0;
 
         filtered.forEach(p => {
             totalAmount += p.amount;
             totalProfit += p.profit;
+            totalCost += p.cost;
 
-            if (!summaryByCustomer[p.name]) summaryByCustomer[p.name] = { amount: 0, profit: 0 };
+            if (!summaryByCustomer[p.name]) {
+                summaryByCustomer[p.name] = { amount: 0, profit: 0, cost: 0 };
+            }
             summaryByCustomer[p.name].amount += p.amount;
             summaryByCustomer[p.name].profit += p.profit;
-
-            chartDataAmount[p.date.getMonth()] += p.amount;
-            chartDataProfit[p.date.getMonth()] += p.profit;
+            summaryByCustomer[p.name].cost += p.cost;
         });
 
-        return { totalAmount, totalProfit, summaryByCustomer, chartLabels, chartDataAmount, chartDataProfit, filtered, allPayments: payments };
+        // หากำไรและต้นทุนรวมเพื่อนำไปทำกราฟโดนัท
+        let donutData = [totalCost, totalProfit];
+
+        // หา Top 5 ลูกค้า
+        let top5 = Object.keys(summaryByCustomer)
+            .map(name => ({ name, amount: summaryByCustomer[name].amount, profit: summaryByCustomer[name].profit }))
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 5);
+
+        return { 
+            totalAmount, 
+            totalProfit, 
+            totalCost, 
+            summaryByCustomer, 
+            donutData,
+            top5,
+            recentPayments: filtered.sort((a,b) => b.date - a.date).slice(0, 20) // โชว์ 20 รายการล่าสุด
+        };
     }
 
-    function initStatementChart(labels, dataAmount, dataProfit, primaryColor, textColor, isDark) {
-        const ctx = document.getElementById('statementChart');
-        if (!ctx) return;
+    // 🔴 โค้ดสร้างกราฟ 2 ตัว (Horizontal Bar และ Doughnut)
+    function initDashboardCharts(data, primaryColor, textColor, isDark, isGuest) {
+        // ทำลายกราฟเก่าถ้ามี
+        if (topChartInstance) topChartInstance.destroy();
+        if (doughnutChartInstance) doughnutChartInstance.destroy();
 
-        if (statementChart) {
-            statementChart.destroy();
-        }
+        // 1. กราฟแท่งแนวนอน (Top 5 Customers)
+        const ctxTop = document.getElementById('topCustomersChart');
+        if (ctxTop && data.top5.length > 0) {
+            let labels = data.top5.map(c => c.name);
+            let amounts = data.top5.map(c => c.amount);
 
-        statementChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'ยอดเงินเข้ารวม (บาท)',
-                        data: dataAmount,
-                        backgroundColor: primaryColor + '99', 
+            topChartInstance = new Chart(ctxTop, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดเงินเข้า (บาท)',
+                        data: amounts,
+                        backgroundColor: primaryColor + '99',
                         borderColor: primaryColor,
                         borderWidth: 1,
                         borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // ทำให้กราฟเป็นแนวนอน
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                            titleColor: textColor,
+                            bodyColor: textColor,
+                            borderColor: isDark ? '#4b5563' : '#f1f5f9',
+                            borderWidth: 1,
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) { return ' ฿' + context.parsed.x.toLocaleString(); }
+                            }
+                        }
                     },
-                    {
-                        label: 'กำไร/ส่วนต่าง (บาท)',
-                        data: dataProfit,
-                        backgroundColor: '#10b98199', 
-                        borderColor: '#10b981',
-                        borderWidth: 1,
-                        borderRadius: 6
+                    scales: {
+                        x: { ticks: { color: textColor, font: { weight: 'bold' } }, grid: { color: isDark ? '#374151' : '#e2e8f0' } },
+                        y: { ticks: { color: textColor, font: { weight: 'bold' } }, grid: { display: false } }
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { 
-                    legend: { 
-                        display: true, 
-                        labels: { color: textColor, font: { family: 'Sarabun', weight: 'bold' }, usePointStyle: true, boxWidth: 10 } 
-                    },
-                    tooltip: {
-                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
-                        titleColor: textColor,
-                        bodyColor: textColor,
-                        borderColor: isDark ? '#4b5563' : '#f1f5f9',
-                        borderWidth: 1,
-                        padding: 12,
-                        displayColors: true,
-                        boxPadding: 6,
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 },
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) { label += ': '; }
-                                if (context.parsed.y !== null) { label += '฿' + context.parsed.y.toLocaleString(); }
-                                return label;
+                }
+            });
+        }
+
+        // 2. กราฟโดนัท (Cost vs Profit) - ซ่อนถ้าเป็น Guest
+        const ctxDonut = document.getElementById('profitRatioChart');
+        if (ctxDonut && !isGuest && (data.donutData[0] > 0 || data.donutData[1] > 0)) {
+            doughnutChartInstance = new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ต้นทุนสินค้า (Cost)', 'กำไร (Profit)'],
+                    datasets: [{
+                        data: data.donutData,
+                        backgroundColor: ['#f59e0b', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%', // ทำให้โดนัทมีรูตรงกลางกว้างขึ้น
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: textColor, font: { family: 'Sarabun', weight: 'bold' }, usePointStyle: true, padding: 20 }
+                        },
+                        tooltip: {
+                            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                            titleColor: textColor,
+                            bodyColor: textColor,
+                            borderColor: isDark ? '#4b5563' : '#f1f5f9',
+                            borderWidth: 1,
+                            padding: 12,
+                            callbacks: {
+                                label: function(context) { return ' ฿' + context.parsed.toLocaleString(); }
                             }
                         }
                     }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true, 
-                        ticks: { color: textColor, font: { weight: 'bold' }, callback: function(val) { return '฿' + val.toLocaleString() } }, 
-                        grid: { display: true, color: isDark ? '#374151' : '#e2e8f0', drawBorder: false } 
-                    },
-                    x: { 
-                        ticks: { color: textColor, font: { weight: 'bold' } }, 
-                        grid: { display: false, drawBorder: false } 
-                    }
-                },
-                layout: {
-                    padding: { top: 20 }
                 }
-            }
-        });
+            });
+        }
     }
 
     function renderStatement(config, dark, surfaceColor, textColor, primaryColor) {
         const data = getAggregatedStatementData();
-
+        const isGuest = currentUser && currentUser.isGuestView;
         const yyyy = stmtSelectedDate.getFullYear();
-        let datePickerHtml = '';
 
         let minYear = new Date().getFullYear();
         let maxYear = minYear;
-        if (data.allPayments.length > 0) {
-            minYear = Math.min(...data.allPayments.map(p => p.date.getFullYear()));
-            maxYear = Math.max(...data.allPayments.map(p => p.date.getFullYear()));
+        if (getPaymentData().length > 0) {
+            minYear = Math.min(...getPaymentData().map(p => p.date.getFullYear()));
+            maxYear = Math.max(...getPaymentData().map(p => p.date.getFullYear()));
         }
         maxYear = Math.max(new Date().getFullYear(), maxYear); 
 
@@ -1334,72 +1403,138 @@
         for(let i = minYear; i <= maxYear; i++) {
             options += `<option value="${i}" ${i === yyyy ? 'selected' : ''}>ปี ${i + 543}</option>`;
         }
-        datePickerHtml = `<select id="stmt-year-picker" class="px-5 py-3 rounded-xl border text-sm font-bold uppercase tracking-wider focus:ring-4 outline-none transition-all cursor-pointer shadow-sm" style="background: ${surfaceColor}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">${options}</select>`;
+        let datePickerHtml = `<select id="stmt-year-picker" class="px-5 py-3 rounded-xl border text-sm font-bold uppercase tracking-wider focus:ring-4 outline-none transition-all cursor-pointer shadow-sm" style="background: ${surfaceColor}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">${options}</select>`;
 
         const totalProfitPercent = data.totalAmount > 0 ? ((data.totalProfit / data.totalAmount) * 100).toFixed(1) : 0;
 
-        const customers = Object.keys(data.summaryByCustomer).sort((a,b) => data.summaryByCustomer[b].profit - data.summaryByCustomer[a].profit);
-        const breakdownHtml = customers.map(name => {
-            const cData = data.summaryByCustomer[name];
-            const custProfitPercent = cData.amount > 0 ? ((cData.profit / cData.amount) * 100).toFixed(1) : 0;
-            return `
-            <div class="flex justify-between items-center p-5 border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group" style="border-color: ${dark ? '#374151' : '#f1f5f9'};" onclick="window.showStatementDetails('${name}')">
-                <div class="flex-1">
-                    <span class="font-bold text-lg group-hover:text-blue-500 transition-colors" style="color: ${textColor};">👤 ลูกค้า: ${name}</span>
+        // 🔴 1. สร้างการ์ด 3 กล่องด้านบน (ตามรูปที่ 2)
+        let topBoxesHtml = '';
+        if (isGuest) {
+            topBoxesHtml = `
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <div class="flex-1 p-6 md:p-8 rounded-2xl shadow-xl border-t-[6px] custom-surface transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: ${primaryColor}; border-left: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
+                    <p class="text-sm font-bold opacity-60 uppercase tracking-widest mb-2" style="color: ${textColor};">ยอดชำระเงินรวม (ปี ${yyyy+543})</p>
+                    <h3 class="text-4xl md:text-5xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
                 </div>
-                <div class="text-right flex flex-col">
-                    <span class="font-bold text-sm opacity-80" style="color: ${textColor};">ยอดเข้า: ฿${cData.amount.toLocaleString()}</span>
-                    <span class="font-black text-lg" style="color: #10b981;">กำไร: ฿${Math.round(cData.profit).toLocaleString()} <span class="text-xs opacity-80 font-bold">(${custProfitPercent}%)</span></span>
+            </div>`;
+        } else {
+            topBoxesHtml = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="p-6 rounded-2xl shadow-md border-t-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: ${primaryColor}; border-left: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
+                    <p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-widest" style="color: ${textColor};">ยอดรวมเงินเข้าทั้งหมด</p>
+                    <h3 class="text-3xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
                 </div>
-                <span class="ml-4 text-sm opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" style="color: ${textColor};">▶</span>
-            </div>
+                <div class="p-6 rounded-2xl shadow-md border-t-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: #f59e0b; border-left: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
+                    <p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-widest" style="color: ${textColor};">หักต้นทุนสินค้า (Cost)</p>
+                    <h3 class="text-3xl font-black tracking-tight" style="color: #f59e0b;">฿${Math.round(data.totalCost).toLocaleString()}</h3>
+                </div>
+                <div class="p-6 rounded-2xl shadow-md border-t-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: #10b981; border-left: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
+                    <p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-widest" style="color: ${textColor};">กำไร/ส่วนต่างสุทธิ</p>
+                    <h3 class="text-3xl font-black tracking-tight flex items-baseline gap-2" style="color: #10b981;">
+                        ฿${Math.round(data.totalProfit).toLocaleString()}
+                        <span class="text-lg font-bold opacity-80">(${totalProfitPercent}%)</span>
+                    </h3>
+                </div>
+            </div>`;
+        }
+
+        // 🔴 2. สร้างโครงกราฟตรงกลาง
+        let middleSectionHtml = '';
+        if (isGuest) {
+            middleSectionHtml = `
+            <div class="p-6 md:p-8 rounded-2xl shadow-xl mb-8" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
+                <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider" style="color: ${textColor};">🚨 5 อันดับการผ่อนชำระสูงสุด</h3>
+                <div style="height: 300px; width: 100%;">
+                    ${data.top5.length > 0 ? `<canvas id="topCustomersChart"></canvas>` : `<div class="h-full flex items-center justify-center font-bold opacity-40">ไม่มีข้อมูล</div>`}
+                </div>
+            </div>`;
+        } else {
+            middleSectionHtml = `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- กราฟแท่งซ้าย -->
+                <div class="lg:col-span-2 p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
+                    <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">🚨 5 อันดับลูกค้าที่ยอดชำระสูงสุด</h3>
+                    <div style="height: 300px; width: 100%;">
+                        ${data.top5.length > 0 ? `<canvas id="topCustomersChart"></canvas>` : `<div class="h-full flex items-center justify-center font-bold opacity-40">ไม่มีข้อมูล</div>`}
+                    </div>
+                </div>
+                <!-- กราฟโดนัทขวา -->
+                <div class="p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
+                    <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">⏱️ สัดส่วนต้นทุน vs กำไร</h3>
+                    <div style="height: 300px; width: 100%; position: relative;">
+                        ${(data.totalCost > 0 || data.totalProfit > 0) ? `<canvas id="profitRatioChart"></canvas>` : `<div class="h-full flex items-center justify-center font-bold opacity-40">ไม่มีข้อมูล</div>`}
+                        
+                        <!-- ข้อความตรงกลางโดนัท -->
+                        ${(data.totalCost > 0 || data.totalProfit > 0) ? `
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-30px]">
+                            <span class="text-3xl font-black" style="color: #10b981;">${totalProfitPercent}%</span>
+                            <span class="text-xs font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">กำไร</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // 🔴 3. สร้างตารางรายงานด้านล่าง
+        let tableHeader = `
+            <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider opacity-60">วันที่</th>
+            <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider opacity-60">ลูกค้า</th>
+            <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider opacity-60">สินค้า</th>
+            <th class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider opacity-60">ยอดเข้า (฿)</th>
+        `;
+        if (!isGuest) {
+            tableHeader += `
+            <th class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider opacity-60 text-orange-500">ต้นทุน (฿)</th>
+            <th class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider opacity-60 text-green-500">กำไร (฿)</th>`;
+        }
+
+        let tableRows = data.recentPayments.map(p => {
+            let rowHtml = `
+            <tr class="border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f1f5f9'};">
+                <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">${p.date.toLocaleDateString('th-TH')}</td>
+                <td class="px-4 py-4 font-bold" style="color: ${textColor};">${p.name}</td>
+                <td class="px-4 py-4 font-medium" style="color: ${textColor};"><span class="mr-2">${getProductIcon(p.product)}</span>${p.product}</td>
+                <td class="px-4 py-4 font-black text-right" style="color: ${primaryColor};">${p.amount.toLocaleString()}</td>
             `;
+            if (!isGuest) {
+                rowHtml += `
+                <td class="px-4 py-4 font-bold text-right" style="color: #f59e0b;">${Math.round(p.cost).toLocaleString()}</td>
+                <td class="px-4 py-4 font-black text-right" style="color: #10b981;">${p.profit >= 0 ? '+' : ''}${Math.round(p.profit).toLocaleString()}</td>`;
+            }
+            rowHtml += `</tr>`;
+            return rowHtml;
         }).join('');
 
+        let bottomTableHtml = `
+        <div class="p-6 md:p-8 rounded-2xl shadow-xl overflow-hidden" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
+            <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">📋 รายการรับชำระล่าสุด (Recent Logs)</h3>
+            <div class="overflow-x-auto no-scrollbar">
+                <table class="w-full min-w-[700px]">
+                    <thead style="border-bottom: 2px solid ${dark?'#374151':'#e2e8f0'}; color: ${textColor};">
+                        <tr>${tableHeader}</tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows.length > 0 ? tableRows : `<tr><td colspan="${isGuest?4:6}" class="text-center py-8 opacity-50 font-bold">ไม่มีข้อมูล</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+
         return `
-        <div class="p-4 md:p-8 max-w-6xl mx-auto fade-in">
-            <div class="flex flex-col sm:flex-row gap-5 justify-between items-start sm:items-center mb-8">
+        <div class="p-4 md:p-8 max-w-7xl mx-auto fade-in">
+            <div class="flex flex-col sm:flex-row gap-5 justify-between items-start sm:items-center mb-8 border-b pb-6" style="border-color: ${dark ? '#374151' : '#e2e8f0'};">
                 <div>
-                    <h2 class="text-2xl font-black tracking-tight" style="color: ${textColor};">${config.menu_statement || 'ข้อมูลเดินบัญชี'}</h2>
-                    <p class="text-sm font-bold opacity-50 uppercase tracking-widest mt-1" style="color: ${textColor};">Statement & Analytics</p>
+                    <h2 class="text-3xl font-black tracking-tight" style="color: ${textColor};">Maintenance Dashboard</h2>
+                    <p class="text-sm font-bold opacity-50 uppercase tracking-widest mt-1" style="color: ${textColor};">รายงานสรุปผลกำไร-ขาดทุน (อัปเดตอัตโนมัติ)</p>
                 </div>
                 <div class="w-full sm:w-auto flex justify-end">
                     ${datePickerHtml}
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="p-6 md:p-8 rounded-2xl shadow-xl flex flex-col items-center justify-center border-l-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: ${primaryColor}; border-top: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.4)'};">
-                    <p class="text-sm font-bold opacity-60 uppercase tracking-widest mb-3" style="color: ${textColor};">ยอดรวมเงินเข้าทั้งหมด (ปี ${yyyy+543})</p>
-                    <h3 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
-                </div>
-                <div class="p-6 md:p-8 rounded-2xl shadow-xl flex flex-col items-center justify-center border-l-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: #10b981; border-top: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.4)'};">
-                    <p class="text-sm font-bold opacity-60 uppercase tracking-widest mb-3" style="color: ${textColor};">กำไร/ส่วนต่างสุทธิ (ปี ${yyyy+543})</p>
-                    <h3 class="text-4xl md:text-5xl font-black tracking-tight flex items-baseline gap-3 drop-shadow-sm" style="color: #10b981;">
-                        ฿${Math.round(data.totalProfit).toLocaleString()}
-                        <span class="text-xl md:text-2xl font-black opacity-80">(${totalProfitPercent}%)</span>
-                    </h3>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; height: 450px; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};">
-                    <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
-                    <div style="height: 330px; width: 100%;">
-                        <canvas id="statementChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="p-6 md:p-8 rounded-2xl shadow-xl flex flex-col h-[450px]" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};">
-                    <h3 class="text-lg font-bold opacity-90 mb-6 border-b pb-4 flex justify-between items-center uppercase tracking-wider" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#f1f5f9'};">
-                        <span>กำไรแยกตามลูกค้า</span>
-                        <span class="text-xs font-black opacity-70 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-700">${customers.length} คน</span>
-                    </h3>
-                    <div class="flex-1 overflow-y-auto no-scrollbar pr-2 -mx-2 px-2">
-                        ${customers.length > 0 ? breakdownHtml : `<div class="h-full w-full flex items-center justify-center"><p class="text-center font-bold opacity-40 uppercase tracking-widest" style="color: ${textColor};">ไม่มียอดเงินเข้าในปีนี้</p></div>`}
-                    </div>
-                </div>
-            </div>
+            ${topBoxesHtml}
+            ${middleSectionHtml}
+            ${bottomTableHtml}
         </div>
         `;
     }
@@ -1449,6 +1584,17 @@
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
         {
+            version: "V.10.9 (Dashboard UI & NaN Fix)",
+            date: "09/09/2026",
+            changes: [
+                "ปรับปรุงหน้าเดินบัญชีใหม่ทั้งหมด เปลี่ยนเป็นสไตล์ Dashboard (เหมือนระบบซ่อมบำรุง)",
+                "เพิ่มกราฟแท่งแนวนอน (Top 5 Customers) และกราฟโดนัท (Cost vs Profit Ratio)",
+                "เปลี่ยนการแสดงผลรายชื่อลูกค้าเป็นตารางรายการรับชำระล่าสุด (Recent Logs) เพื่อให้อ่านง่ายขึ้น",
+                "แก้ไขบั๊กยอดเงินแสดงผลเป็น NaN ด้วยการเพิ่ม Math.round() เพื่อปัดเศษทศนิยมต้นทุนให้เป็นเลขกลมๆ",
+                "แก้ไขบั๊กหน้าเพิ่มข้อมูลลูกค้า (UI ทับซ้อนกัน) โดยปรับเลย์เอาต์กล่องสรุปยอดให้เรียงต่อกันแนวตั้ง"
+            ]
+        },
+        {
             version: "V.10.8 (Premium Fintech UI)",
             date: "09/09/2026",
             changes: [
@@ -1492,47 +1638,7 @@
                 "แก้ไขปัญหาประวัติการอัปเดตแอปไม่เปลี่ยนแปลงหลังจากอัปเดตระบบ",
                 "เพิ่มบันทึกการเปลี่ยน 'งวดถัดไป' ลงในประวัติการแก้ไขข้อมูลลูกค้า"
             ]
-        },
-        {
-            version: "V.10.1 (Account Statement)",
-            date: "04/03/2026",
-            changes: [
-                "เพิ่มเมนู 'ข้อมูลเดินบัญชี' นำข้อมูลชำระเงินที่สำเร็จมาคำนวณและสรุปยอด",
-                "ดูกราฟเงินเข้า รายวัน / รายเดือน / รายปี",
-                "เพิ่มรายการแยกยอดเงินเข้าตามรายชื่อลูกค้าอัตโนมัติ (สามารถคลิกดูรายละเอียดสินค้าได้)",
-                "ปรับปีในระบบให้แสดงเฉพาะปีที่มีข้อมูลทำรายการจริง",
-                "ดูได้เฉพาะข้อมูลของบัญชีผู้ใช้ตนเองเท่านั้น (Admin ดูได้ทั้งหมด)"
-            ]
-        },
-        {
-            version: "V.10.0 (System Updates)",
-            date: "03/03/2026",
-            changes: [
-                "ปรับปรุงการนับเวอร์ชันให้รันต่อเนื่องเป็น 10.0",
-                "แก้ไขปัญหาเวอร์ชันที่แสดงผลไม่ตรงกันระหว่างแถบเมนูกับหน้าประวัติการอัปเดต"
-            ]
-        },
-        {
-            version: "V.9.8 (Toast Settings)",
-            date: "02/03/2026",
-            changes: [
-                "เพิ่มเมนูตั้งค่าสำหรับแอดมิน เพื่อปรับระยะเวลาแสดงผลแจ้งเตือน (Toast)",
-                "ปรับสีพื้นหลังแจ้งเตือนตามบริบท (เข้าสู่ระบบ=น้ำเงิน, ออกจากระบบ=แดง)"
-            ]
-        },
-        { version: "V.9.7 (Toast Duration)", date: "02/03/2026", changes: ["ปรับลดระยะเวลาแสดงข้อความแจ้งเตือนลงเหลือ 1.5 วินาที"] },
-        { version: "V.9.6 (Notification Updates)", date: "02/03/2026", changes: ["ปรับสีการแจ้งเตือน: เข้าสู่ระบบเป็นสีน้ำเงิน, ออกจากระบบ/กลับหน้าหลักเป็นสีแดง", "ลดระยะเวลาแสดงข้อความแจ้งเตือนลงเหลือ 2 วินาที"] },
-        { version: "V.9.5 (Restored Theme & Fixes)", date: "28/02/2026", changes: ["กู้คืนสีแอปหลักเป็นโทนสว่างสีฟ้าแบบดั้งเดิม", "กู้คืนระบบโหลดโลโก้ และไอคอนแถบเมนูข้างทั้งหมด", "คงระบบการแสดงไอคอน Emoji หน้าชื่อสินค้า 🍎🚗📺📱 ไว้ในตาราง"] },
-        { version: "V.9.4 (Mockup)", date: "28/02/2026", changes: ["เพิ่มระบบตรวจจับคำในชื่อสินค้าเพื่อเปลี่ยนเป็นไอคอน Emoji อัตโนมัติ"] },
-        { version: "V.9.3 (Mobile Layout)", date: "28/02/2026", changes: ["ปรับการแสดงผลจำนวนสัญญาบนมือถือให้อยู่ในบรรทัดเดียวกันเพื่อความสวยงามและประหยัดพื้นที่"] },
-        { version: "V.9.2 (Detailed Edit History)", date: "28/02/2026", changes: ["หน้าประวัติทำรายการ: แสดงรายละเอียดการแก้ไขชัดเจนว่าเปลี่ยนค่าอะไร จากเดิมเป็นอะไร", "ปรับปรุงข้อความบันทึกประวัติการเพิ่มและลบข้อมูลให้ละเอียดขึ้น"] },
-        { version: "V.9.1 (Pay All Button UI)", date: "28/02/2026", changes: ["เปลี่ยนข้อความปุ่ม 'ชำระยอดรวม' เป็น 'ชำระทั้งหมด'", "เพิ่มความสูงและปรับสัดส่วนปุ่มชำระทั้งหมดให้สมส่วนกดง่ายขึ้น"] },
-        { version: "V.9.0 (Bigger Icons)", date: "28/02/2026", changes: ["ขยายขนาดไอคอนปุ่มชำระเงินและปุ่มแก้ไขในตารางให้ใหญ่และกดง่ายขึ้น"] },
-        { version: "V.8.9 (Clean UI Styles)", date: "28/02/2026", changes: ["ลบกรอบสีพื้นหลังของชื่อผู้ให้บริการออกให้เหลือแต่ข้อความ", "ขยายขนาดตัวอักษรหัวข้อ 'ผู้ให้บริการ' และ 'ยอดรวม' ให้มองเห็นชัดเจนขึ้น"] },
-        { version: "V.8.8 (Summary UI Enhancement)", date: "28/02/2026", changes: ["เพิ่มขนาดตัวอักษรยอดรวมที่ต้องชำระทั้งหมดให้ใหญ่ขึ้น", "เพิ่มหัวข้อคอลัมน์ 'ผู้ให้บริการ' และ 'ยอดรวม' เพื่อให้อ่านง่ายขึ้นในส่วนสรุปรายคน"] },
-        { version: "V.8.7 (Mobile Color Fix)", date: "28/02/2026", changes: ["แก้ปัญหาแถบสีดำโผล่ทับข้อความเวลาเปิดดูข้อมูลลูกค้าในมือถือ"] },
-        { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
-        { version: "V.8.5 (Remember Me)", date: "28/02/2026", changes: ["เพิ่มปุ่ม 'เข้าสู่ระบบค้างไว้' ในหน้า Login", "เมื่อติ๊กถูก ระบบจะจำการล็อกอินแม้ปิดเว็บไปแล้ว"] }
+        }
       ];
       return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-8">${logs.map((log, index) => `<div class="p-8 rounded-2xl shadow-xl relative overflow-hidden" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><div class="absolute top-0 left-0 w-3 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#4b5563' : '#e2e8f0')}"></div><div class="flex justify-between items-start mb-6 pl-5"><div><span class="px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#f8fafc')}; border: 1px solid ${index === 0 ? primaryColor + '50' : (dark?'#4b5563':'#e2e8f0')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-3 text-sm font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-3 pl-6 text-base font-medium opacity-80" style="color: ${textColor};">${log.changes.map(c => `<li>${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
     }
@@ -1561,58 +1667,6 @@
         </div>
         <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         <div class="flex gap-4 pt-4"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ยืนยันการลบถาวร</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ลบข้อมูล</button>`}</form></div></div>`;
-      }
-      if (statementDetailCustomer) {
-        const data = getAggregatedStatementData();
-        const items = data.filtered.filter(p => p.name === statementDetailCustomer);
-        
-        let periodText = `ปี ${stmtSelectedDate.getFullYear() + 543}`;
-        
-        const totalCustAmount = items.reduce((s,i) => s + i.amount, 0);
-        const totalCustProfit = items.reduce((s,i) => s + i.profit, 0);
-        const totalCustPercent = totalCustAmount > 0 ? ((totalCustProfit / totalCustAmount) * 100).toFixed(1) : 0;
-
-        return `
-        <div class="modal-overlay" onclick="hideModal()">
-            <div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 600px;" onclick="event.stopPropagation()">
-                <div class="flex justify-between items-center mb-6 border-b pb-4" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
-                    <div>
-                        <h3 class="text-2xl font-black tracking-tight" style="color: ${textColor};">รายละเอียด: ${statementDetailCustomer}</h3>
-                        <p class="text-xs font-bold uppercase tracking-widest opacity-50 mt-1" style="color: ${textColor};">ประจำ${periodText}</p>
-                    </div>
-                    <button onclick="hideModal()" class="text-gray-400 hover:text-gray-800 transition-colors text-2xl font-bold px-2">&times;</button>
-                </div>
-                
-                <div class="space-y-4 max-h-[50vh] overflow-y-auto no-scrollbar pr-2">
-                    ${items.length === 0 ? `<p class="text-center font-bold opacity-40 uppercase tracking-widest py-8" style="color: ${textColor};">ไม่มีข้อมูล</p>` : ''}
-                    ${items.map(item => {
-                        const itemPercent = item.amount > 0 ? ((item.profit / item.amount) * 100).toFixed(1) : 0;
-                        return `
-                        <div class="p-5 rounded-2xl border flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow" style="background: ${dark ? '#1f2937' : '#ffffff'}; border-color: ${dark ? '#374151' : '#f1f5f9'};">
-                            <div class="flex justify-between items-start">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-2xl bg-slate-50 dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">${getProductIcon(item.product)}</span>
-                                    <span class="font-bold text-lg" style="color: ${textColor};">${item.product}</span>
-                                </div>
-                                <div class="flex flex-col items-end">
-                                    <span class="font-black text-lg tracking-tight" style="color: ${primaryColor};">จ่ายเข้า ฿${item.amount.toLocaleString()}</span>
-                                    <span class="font-bold text-sm" style="color: #10b981;">(กำไร ฿${Math.round(item.profit).toLocaleString()} • ${itemPercent}%)</span>
-                                </div>
-                            </div>
-                            <div class="text-xs font-bold uppercase tracking-widest opacity-40 text-right" style="color: ${textColor};">
-                                ${item.date.toLocaleString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'})} น.
-                            </div>
-                        </div>
-                        `;
-                    }).join('')}
-                </div>
-                <div class="mt-6 pt-5 border-t flex justify-between items-end" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
-                    <span class="font-bold text-sm uppercase tracking-wider opacity-80" style="color: ${textColor};">กำไรรวมลูกค้ารายนี้</span>
-                    <span class="text-3xl font-black tracking-tight drop-shadow-sm" style="color: #10b981;">฿${Math.round(totalCustProfit).toLocaleString()} <span class="text-lg opacity-80">(${totalCustPercent}%)</span></span>
-                </div>
-            </div>
-        </div>
-        `;
       }
       return '';
     }
@@ -1719,10 +1773,14 @@
           const updateCalc = () => {
               const name = document.getElementById('customer-name').value.trim();
               const product = document.getElementById('product').value.trim();
-              const p = parseFloat(document.getElementById('product-price').value);
-              const r = parseFloat(document.getElementById('interest-rate').value);
-              const n = parseInt(document.getElementById('installments').value);
+              const pStr = document.getElementById('product-price').value;
+              const rStr = document.getElementById('interest-rate').value;
+              const nStr = document.getElementById('installments').value;
               const fStr = document.getElementById('bill-fee').value;
+              
+              const p = parseFloat(pStr);
+              const r = parseFloat(rStr);
+              const n = parseInt(nStr);
               const f = parseFloat(fStr);
 
               const isValid = name && product && !isNaN(p) && p > 0 && 
@@ -1734,6 +1792,7 @@
               const detailsDiv = document.getElementById('calculation-details');
 
               if (isValid) {
+                  // คำนวณค่างวดเหมือนเดิม
                   const m = Math.round((p * (1 + (r/100*n))) / n) + f;
                   
                   if(display) display.value = '฿' + m.toLocaleString();
@@ -1934,9 +1993,10 @@
           const config = window.elementSdk?.config || defaultConfig;
           const dark = isDarkMode();
           const txtColor = dark ? '#f9fafb' : config.text_color;
+          const isGuest = currentUser && currentUser.isGuestView;
           const data = getAggregatedStatementData();
           setTimeout(() => {
-              initStatementChart(data.chartLabels, data.chartDataAmount, data.chartDataProfit, config.primary_color, txtColor, dark);
+              initDashboardCharts(data, config.primary_color, txtColor, dark, isGuest);
           }, 50); 
       }
     }
