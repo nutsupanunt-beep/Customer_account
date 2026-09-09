@@ -197,7 +197,6 @@
       menu_statement: "ข้อมูลเดินบัญชี",
       menu_settings: "การตั้งค่า",
       menu_account: "บัญชีผู้ใช้",
-      menu_changelog: "ประวัติการอัปเดต",
       primary_color: "#3b82f6",     
       secondary_color: "#1f2937",   
       text_color: "#0f172a",        
@@ -343,10 +342,11 @@
 
     function getUserSettings() {
       if (!currentUser) return null;
+      // ลบสิทธิ์ changelog ออกจาก default
       const defaultSettings = { 
           is_dark_mode: false, 
           payment_days_before: 5, 
-          guest_permissions: currentUser.isAdmin ? 'add,manage,history,statement,settings,edit,changelog' : 'manage,history,statement,changelog',
+          guest_permissions: currentUser.isAdmin ? 'add,manage,history,statement,settings,edit' : 'manage,history,statement',
       };
 
       if (currentUser.isGuestView) {
@@ -401,7 +401,7 @@
           ...updatedData
         });
       }
-      showToast('บันึกการตั้งค่าสำเร็จ');
+      showToast('บันทึกการตั้งค่าสำเร็จ');
     }
 
     function canAccessView(view) {
@@ -417,7 +417,7 @@
           if (adminSettings && adminSettings.guest_permissions) {
               return adminSettings.guest_permissions.includes(view);
           }
-          return 'manage,history,statement,changelog'.includes(view);
+          return 'manage,history,statement'.includes(view);
       }
       
       return true;
@@ -824,16 +824,16 @@
     }
 
     function renderSidebar(config, dark, surfaceColor, textColor, primaryColor) {
+      // 🟢 นำเมนู "ประวัติการอัปเดต" ออกจาก Sidebar
       const views = [
         { id: 'add', label: config.menu_add_customer, icon: '➕' },
         { id: 'manage', label: config.menu_manage_customer, icon: '📋' },
         { id: 'history', label: config.menu_history, icon: '📜' },
         { id: 'statement', label: config.menu_statement || 'ข้อมูลเดินบัญชี', icon: '📊' },
         { id: 'settings', label: config.menu_settings, icon: '⚙️' },
-        { id: 'changelog', label: config.menu_changelog, icon: '🔄' },
         { id: 'account', label: config.menu_account, icon: '👤' }
       ];
-      if (currentUser && currentUser.isAdmin) views.splice(6, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
+      if (currentUser && currentUser.isAdmin) views.splice(5, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
 
       const baseClasses = "w-64 p-6 flex flex-col z-40 transition-all duration-300 ease-in-out h-full overflow-x-hidden custom-sidebar border-r";
       const mobileClasses = `absolute top-0 left-0 bottom-0 transform ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`;
@@ -867,7 +867,11 @@
             <button id="logout-btn" class="w-full px-4 py-3 rounded-xl font-bold transition-all hover:shadow-lg active:scale-95" style="background: #ef4444; color: white; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-5 opacity-40 font-semibold uppercase tracking-wider" style="color: ${textColor};">Version V.10.10</p>
+            <!-- 🟢 เพิ่มปุ่มดู Changelog ตรงนี้ -->
+            <div class="flex justify-center items-center mt-5 gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer select-none" onclick="window.showModal('changelog')">
+                 <p class="text-xs font-bold uppercase tracking-wider" style="color: ${textColor};">Version V.11.0</p>
+                 <span class="text-blue-500 text-sm">ⓘ</span>
+            </div>
           </div>
         </div>
       `;
@@ -881,12 +885,10 @@
       else if(currentView === 'history') html = renderHistory(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'statement') html = renderStatement(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'settings') html = renderSettings(config, dark, surfaceColor, textColor, primaryColor);
-      else if(currentView === 'changelog') html = renderChangelog(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'manage_users') html = renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor);
       else if(currentView === 'account') html = renderAccount(config, dark, surfaceColor, textColor, primaryColor);
       
-      // ✅ แก้ไข: ลบเงื่อนไข statementDetailCustomer ออกเพื่อป้องกัน Error ReferenceError
-      if (showingModal || editingCustomer || editingUser) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
+      if (showingModal) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
       return html;
     }
 
@@ -1438,14 +1440,12 @@
         } else {
             middleSectionHtml = `
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <!-- กราฟแท่งซ้าย -->
                 <div class="lg:col-span-2 p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
                     <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">🚨 5 อันดับลูกค้าที่ยอดชำระสูงสุด</h3>
                     <div style="height: 300px; width: 100%;">
                         ${data.top5.length > 0 ? `<canvas id="topCustomersChart"></canvas>` : `<div class="h-full flex items-center justify-center font-bold opacity-40">ไม่มีข้อมูล</div>`}
                     </div>
                 </div>
-                <!-- กราฟโดนัทขวา -->
                 <div class="p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
                     <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">⏱️ สัดส่วนต้นทุน vs กำไร</h3>
                     <div style="height: 300px; width: 100%; position: relative;">
@@ -1530,12 +1530,13 @@
       const currentDarkMode = settings ? settings.is_dark_mode : false;
       const currentDaysBefore = settings ? settings.payment_days_before : 5;
       const currentPermissions = (currentUser.isAdmin || !settings) ? 
-        (globalSettings ? globalSettings.guest_permissions : 'manage,history,changelog') : 
-        (settings.guest_permissions || 'manage,history,changelog');
+        (globalSettings ? globalSettings.guest_permissions : 'manage,history,statement') : 
+        (settings.guest_permissions || 'manage,history,statement');
         
       const currentToastDuration = globalSettings && globalSettings.toast_duration ? (globalSettings.toast_duration / 1000) : 1.5;
       const isAdmin = currentUser && currentUser.isAdmin;
 
+      // 🟢 ลบการตั้งค่า "สิทธิ์เข้าถึงหน้าประวัติอัปเดต" ออกไปเลย
       return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-6 h-6 rounded border-gray-300" style="accent-color: ${primaryColor};"><span class="font-semibold text-lg" style="color: ${textColor};">เปิดโหมดมืด (Dark Mode)</span></label></div><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-3 font-semibold" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-5 py-3 rounded-xl border font-bold text-lg" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"><p class="text-sm mt-3 font-medium opacity-60" style="color: ${textColor};">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระตามจำนวนวันที่ตั้งไว้</p></div>
       ${isAdmin ? `<div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}40; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};">
         <h3 class="font-black text-lg mb-6 flex items-center gap-3 uppercase tracking-wider" style="color: ${textColor};">
@@ -1562,77 +1563,8 @@
             <p class="text-xs font-bold opacity-50 uppercase tracking-widest mt-2" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่า URL/Key จะทำให้ระบบรีโหลดใหม่ทันที</p>
         </div>
     </div>
-    <div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-4"><label class="flex items-center gap-4"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-statement" ${currentPermissions.includes('statement') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าข้อมูลเดินบัญชี</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div><label class="flex items-center gap-4"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
+    <div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-4"><label class="flex items-center gap-4"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-statement" ${currentPermissions.includes('statement') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าข้อมูลเดินบัญชี</span></label><div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div><label class="flex items-center gap-4"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
       <button id="save-settings-btn" class="w-full py-4 rounded-xl font-black text-lg transition-all hover:shadow-lg active:scale-[0.98] uppercase tracking-wide mt-4" style="background: ${primaryColor}; color: white; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);">บันทึกการตั้งค่า</button></div></div>`;
-    }
-
-    function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
-      const logs = [
-        {
-            version: "V.10.10 (Hotfix)",
-            date: "09/09/2026",
-            changes: [
-                "แก้ไขบั๊กหน้าจอล็อกอินค้าง (ReferenceError) โดยลบตัวแปร statementDetailCustomer ที่ตกค้างอยู่ออกทั้งหมด"
-            ]
-        },
-        {
-            version: "V.10.9 (Dashboard UI & NaN Fix)",
-            date: "09/09/2026",
-            changes: [
-                "ปรับปรุงหน้าเดินบัญชีใหม่ทั้งหมด เปลี่ยนเป็นสไตล์ Dashboard (เหมือนระบบซ่อมบำรุง)",
-                "เพิ่มกราฟแท่งแนวนอน (Top 5 Customers) และกราฟโดนัท (Cost vs Profit Ratio)",
-                "เปลี่ยนการแสดงผลรายชื่อลูกค้าเป็นตารางรายการรับชำระล่าสุด (Recent Logs) เพื่อให้อ่านง่ายขึ้น",
-                "แก้ไขบั๊กยอดเงินแสดงผลเป็น NaN ด้วยการเพิ่ม Math.round() เพื่อปัดเศษทศนิยมต้นทุนให้เป็นเลขกลมๆ",
-                "แก้ไขบั๊กหน้าเพิ่มข้อมูลลูกค้า (UI ทับซ้อนกัน) โดยปรับเลย์เอาต์กล่องสรุปยอดให้เรียงต่อกันแนวตั้ง"
-            ]
-        },
-        {
-            version: "V.10.8 (Premium Fintech UI)",
-            date: "09/09/2026",
-            changes: [
-                "อัปเกรดหน้าจอหลักทั้งหมดเข้าสู่ดีไซน์ 'Premium Fintech' (สไตล์ที่ 2) ดูหรูหราและน่าเชื่อถือมากขึ้น",
-                "ปรับปรุงการ์ดข้อมูลลูกค้าให้มีมิติ (Soft Shadows) และขอบโค้งมนแบบแอปการเงินสมัยใหม่",
-                "ปรับโครงสร้างสีและตัวอักษรให้ชัดเจน คลีน และอ่านง่ายขึ้น โดยไม่กระทบกับระบบคำนวณเดิม"
-            ]
-        },
-        {
-            version: "V.10.5 (Clean Dual Bar Chart)",
-            date: "04/03/2026",
-            changes: [
-                "ปรับรูปแบบกราฟแท่งเดินบัญชีกลับมาเป็นกราฟแท่งคู่ (Dual Bar Chart) ที่ดูเรียบและคลีนขึ้น",
-                "ปรับตัวอักษรและป้ายกำกับของกราฟไม่ให้หนาเกินไป"
-            ]
-        },
-        {
-            version: "V.10.4 (Cartoon Chart & % Profit)",
-            date: "04/03/2026",
-            changes: [
-                "ปรับปรุงกราฟสรุปยอดให้เป็นแนวการ์ตูนดูง่ายขึ้น (กราฟแท่งเงินเข้ารวม + กราฟเส้นสำหรับกำไร)",
-                "เพิ่มการแสดงผล 'เปอร์เซ็นต์กำไร (%)' ควบคู่กับยอดกำไรในหน้าสรุปเดินบัญชี",
-                "เพิ่มเปอร์เซ็นต์กำไรในป๊อปอัปรายละเอียดของลูกค้ารายคน"
-            ]
-        },
-        {
-            version: "V.10.3 (Profit & Commission Tracking)",
-            date: "04/03/2026",
-            changes: [
-                "เพิ่มระบบคำนวณ 'กำไร/ค่าส่วนต่าง' โดยหักลบต้นทุนสินค้าออกจากยอดผ่อนชำระอัตโนมัติ",
-                "ปรับปรุงหน้าข้อมูลเดินบัญชีให้แสดงยอดเงินเข้า ควบคู่กับยอดกำไรที่ได้รับ",
-                "เพิ่มกราฟแท่งแบบคู่ (Dual Bar Chart) เปรียบเทียบเงินเข้ากับกำไรในแต่ละเดือน",
-                "ปรับปรุงรายละเอียดลูกค้ารายคน ให้แสดงค่าคอมมิชชั่นแยกตามสินค้าที่ชำระ"
-            ]
-        },
-        {
-            version: "V.10.2 (Yearly Statement Only)",
-            date: "04/03/2026",
-            changes: [
-                "ปรับหน้ารายการเดินบัญชีให้แสดงผลเฉพาะ 'รายปี' ตามที่ผู้ใช้ต้องการ",
-                "แก้ไขปัญหาประวัติการอัปเดตแอปไม่เปลี่ยนแปลงหลังจากอัปเดตระบบ",
-                "เพิ่มบันทึกการเปลี่ยน 'งวดถัดไป' ลงในประวัติการแก้ไขข้อมูลลูกค้า"
-            ]
-        }
-      ];
-      return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-8">${logs.map((log, index) => `<div class="p-8 rounded-2xl shadow-xl relative overflow-hidden" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><div class="absolute top-0 left-0 w-3 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#4b5563' : '#e2e8f0')}"></div><div class="flex justify-between items-start mb-6 pl-5"><div><span class="px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#f8fafc')}; border: 1px solid ${index === 0 ? primaryColor + '50' : (dark?'#4b5563':'#e2e8f0')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-3 text-sm font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-3 pl-6 text-base font-medium opacity-80" style="color: ${textColor};">${log.changes.map(c => `<li>${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
     }
 
     function renderAccount(config, dark, surfaceColor, textColor, primaryColor) {
@@ -1659,6 +1591,72 @@
         </div>
         <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         <div class="flex gap-4 pt-4"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ยืนยันการลบถาวร</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ลบข้อมูล</button>`}</form></div></div>`;
+      }
+      
+      // 🟢 หน้าต่าง Modal สำหรับโชว์ประวัติการอัปเดต (Changelog)
+      if (showingModal === 'changelog') {
+          const logs = [
+            {
+                version: "V.11.0 (UI & Versioning Update)",
+                date: "09/09/2026",
+                changes: [
+                    "เปลี่ยนระบบการนับเวอร์ชันใหม่ (รันเศษถึง .9 แล้วปัดขึ้นเป็นเลขหลักถัดไป)",
+                    "ย้ายเมนู 'ประวัติการอัปเดต' ออกจากแถบเมนูหลัก เพื่อเพิ่มพื้นที่การใช้งาน",
+                    "เพิ่มปุ่ม ⓘ ท้ายเลขเวอร์ชันด้านล่าง สำหรับดูประวัติแบบป๊อปอัป (Modal)"
+                ]
+            },
+            {
+                version: "V.10.10 (Hotfix)",
+                date: "09/09/2026",
+                changes: ["แก้ไขบั๊กหน้าจอล็อกอินค้าง (ReferenceError)"]
+            },
+            {
+                version: "V.10.9 (Dashboard UI & NaN Fix)",
+                date: "09/09/2026",
+                changes: [
+                    "ปรับปรุงหน้าเดินบัญชีใหม่ทั้งหมด เปลี่ยนเป็นสไตล์ Dashboard",
+                    "เพิ่มกราฟแท่งแนวนอน (Top 5 Customers) และกราฟโดนัท (Cost vs Profit Ratio)",
+                    "แก้ไขบั๊กยอดเงินแสดงผลเป็น NaN ด้วยการเพิ่มฟังก์ชัน Math.round() ปัดเศษทศนิยมต้นทุน"
+                ]
+            },
+            {
+                version: "V.10.8 (Premium Fintech UI)",
+                date: "09/09/2026",
+                changes: ["อัปเกรดหน้าจอหลักทั้งหมดเข้าสู่ดีไซน์ 'Premium Fintech' ดูหรูหราน่าเชื่อถือ"]
+            }
+          ];
+
+          let logsHtml = logs.map((log, index) => `
+              <div class="p-6 rounded-2xl shadow-sm relative overflow-hidden mb-5" style="background: ${dark?'#1f2937':'#f8fafc'}; border: 1px solid ${dark?'#374151':'#e2e8f0'};">
+                  <div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#4b5563' : '#cbd5e1')}"></div>
+                  <div class="flex justify-between items-start mb-4 pl-4">
+                      <div>
+                          <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#f1f5f9')}; border: 1px solid ${index === 0 ? primaryColor + '50' : (dark?'#4b5563':'#e2e8f0')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span>
+                          <span class="ml-3 text-xs font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">${log.date}</span>
+                      </div>
+                  </div>
+                  <ul class="list-disc list-inside space-y-2 pl-4 text-sm font-medium opacity-80" style="color: ${textColor};">
+                      ${log.changes.map(c => `<li>${c}</li>`).join('')}
+                  </ul>
+              </div>
+          `).join('');
+
+          return `
+          <div class="modal-overlay" onclick="hideModal()">
+              <div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 650px;" onclick="event.stopPropagation()">
+                  <div class="flex justify-between items-center mb-6 border-b pb-4" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
+                      <div>
+                          <h3 class="text-2xl font-black tracking-tight" style="color: ${textColor};">ประวัติการอัปเดต</h3>
+                          <p class="text-xs font-bold uppercase tracking-widest opacity-50 mt-1" style="color: ${textColor};">Changelog & Release Notes</p>
+                      </div>
+                      <button onclick="hideModal()" class="text-gray-400 hover:text-gray-800 transition-colors text-2xl font-bold px-2">&times;</button>
+                  </div>
+                  <div class="max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                      ${logsHtml}
+                  </div>
+              </div>
+          </div>
+          `;
       }
       return '';
     }
@@ -1936,7 +1934,8 @@
       if(saveSet) saveSet.addEventListener('click', async () => {
           saveSet.innerHTML = '<div class="spinner"></div>';
           const perms = [];
-          ['add','manage','history','statement','changelog','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
+          // 🟢 ตัด 'changelog' ออกจากการบันทึกสิทธิ์ เพราะเราเปิดสาธารณะแล้ว
+          ['add','manage','history','statement','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
           
           let toastDuration = undefined;
           const toastInput = document.getElementById('setting-toast-duration');
