@@ -3,29 +3,18 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- เพิ่ม Theme Color เพื่อให้ Status Bar มือถือสีกลืนกับแอป -->
   <meta name="theme-color" content="#ffffff" id="meta-theme-color">
   <title>ARBANG FAST TRACK ASSET LOAN</title>
   
-  <!-- ========================================== -->
-  <!-- 1. ไอคอนบนแถบ Browser -->
   <link rel="icon" type="image/x-icon" href="edited-image.ico">
-  
-  <!-- 2. ไอคอนสำหรับ iPhone/iPad/Android -->
   <link rel="apple-touch-icon" href="edited-image.png">
-  
-  <!-- 3. รูปภาพเวลาแชร์ -->
   <meta property="og:image" content="edited-image.png">
   <meta property="og:title" content="ระบบจัดการลูกค้าออนไลน์">
   <meta property="og:description" content="ระบบบันทึกและจัดการข้อมูลลูกค้า">
-  <!-- ========================================== -->
 
-  <!-- Import Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Import Chart.js สำหรับทำกราฟไดนามิก -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Supabase Data SDK Implementation -->
   <script>
     // Configuration
     const savedConfig = JSON.parse(localStorage.getItem('app_supabase_config') || '{}');
@@ -166,25 +155,22 @@
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { box-sizing: border-box; }
     * { font-family: 'Sarabun', sans-serif; }
     .sidebar-item { transition: all 0.2s ease; }
     .sidebar-item:hover { transform: translateX(4px); }
-    .card-hover { transition: all 0.3s ease; }
-    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
-    .dark .card-hover:hover { box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); }
     .payment-disabled { opacity: 0.5; cursor: not-allowed; }
     .fade-in { animation: fadeIn 0.3s ease-in; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .spinner { border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: currentColor; width: 24px; height: 24px; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .toast { position: fixed; bottom: 20px; right: 20px; padding: 16px 24px; border-radius: 8px; background: #10b981; color: white; font-weight: 500; z-index: 9999; animation: slideIn 0.3s ease-out; }
+    .toast { position: fixed; bottom: 20px; right: 20px; padding: 16px 24px; border-radius: 8px; background: #10b981; color: white; font-weight: 500; z-index: 9999; animation: slideIn 0.3s ease-out; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); }
     .toast.error { background: #ef4444; }
     @keyframes slideIn { from { transform: translateX(400px); } to { transform: translateX(0); } }
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 999; animation: fadeIn 0.2s ease-in; padding: 20px; }
-    .modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; animation: scaleIn 0.2s ease-out; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 999; animation: fadeIn 0.2s ease-in; padding: 20px; backdrop-filter: blur(4px); }
+    .modal-content { background: white; border-radius: 20px; padding: 32px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; animation: scaleIn 0.2s ease-out; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
     .dark .modal-content { background: #1f2937; }
     @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     
@@ -196,7 +182,7 @@
   </style>
   <style>@view-transition { navigation: auto; }</style>
  </head>
- <body class="h-full">
+ <body class="h-full bg-slate-50 dark:bg-gray-900 transition-colors duration-300">
   <div id="app" class="h-full w-full overflow-hidden flex items-center justify-center">
       <div class="flex flex-col items-center gap-4 text-gray-500">
           <div class="spinner text-blue-500" style="width: 40px; height: 40px;"></div>
@@ -216,8 +202,8 @@
       menu_changelog: "ประวัติการอัปเดต",
       primary_color: "#3b82f6",     // Original Blue
       secondary_color: "#1f2937",   
-      text_color: "#111827",        
-      background_color: "#f3f4f6",  
+      text_color: "#0f172a",        
+      background_color: "#f8fafc",  
       surface_color: "#ffffff"      
     };
 
@@ -232,10 +218,10 @@
     let manageSearchTerm = '';
     let expandedCustomerName = null;
     
-    // ตัวแปรสำหรับข้อมูลเดินบัญชี (อัปเดตเป็นรายปีเท่านั้น)
+    // ตัวแปรสำหรับข้อมูลเดินบัญชี
     let stmtSelectedDate = new Date();
     let statementChart = null;
-    let statementDetailCustomer = null; // เก็บชื่อลูกค้าที่กำลังดูรายละเอียดการโอนเงิน
+    let statementDetailCustomer = null;
 
     const dataHandler = {
       onDataChanged(data) {
@@ -271,7 +257,6 @@
       const toast = document.createElement('div');
       toast.className = `toast ${isError ? 'error' : ''}`;
       
-      // ปรับสีพื้นหลังตามข้อความที่แสดง
       if (message.includes('เข้าสู่ระบบ')) {
           toast.style.background = '#3b82f6';
       } else if (message.includes('ออกจากระบบ') || message.includes('กลับไปหน้าหลัก')) {
@@ -300,7 +285,6 @@
     }
 
     function checkLogin() {
-      // Check localStorage first (remember me), then sessionStorage
       let savedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
       if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -339,7 +323,6 @@
       currentView = 'manage'; 
       isMobileSidebarOpen = false;
       
-      // ลบข้อมูลการล็อกอินทั้ง 2 แบบ
       localStorage.removeItem('currentUser');
       sessionStorage.removeItem('currentUser');
       
@@ -392,10 +375,6 @@
         return null;
     }
 
-    function getGlobalLogoSettings() {
-        return { login: 280, sidebar: 160 }; 
-    }
-
     async function saveSettings(isDarkMode, paymentDaysBefore, guestPermissions, toastDuration) {
       if (!currentUser || currentUser.isGuestView) return;
 
@@ -415,7 +394,6 @@
           updated_at: new Date().toISOString()
       };
       
-      // อัปเดตข้อมูลระยะเวลาแจ้งเตือนถ้ามีการส่งค่ามา
       if (toastDuration !== undefined) {
           updatedData.toast_duration = toastDuration;
       }
@@ -513,7 +491,6 @@
         return isDark ? colorsDark[index] : colorsLight[index];
     }
 
-    // ฟังก์ชันเลือกไอคอนจากชื่อสินค้าอัตโนมัติ
     function getProductIcon(productName) {
         if (!productName) return '📦';
         const name = productName.toLowerCase();
@@ -746,23 +723,19 @@
       if (dark) document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');
 
-      let bgColor = dark ? '#111827' : config.background_color;
-      let surfaceColor = dark ? '#1f2937' : config.surface_color;
-      let textColor = dark ? '#f9fafb' : config.text_color;
+      let bgColor = dark ? '#111827' : '#f8fafc'; // Fintech light background
+      let surfaceColor = dark ? '#1f2937' : '#ffffff';
+      let textColor = dark ? '#f9fafb' : '#0f172a'; // Deeper text color
       let sidebarBg = surfaceColor; 
-      let hoverText = config.primary_color; 
       
       app.style.background = bgColor;
       app.style.color = textColor;
-      app.className = 'h-full w-full flex flex-col overflow-hidden custom-text';
+      app.className = 'h-full w-full flex flex-col overflow-hidden custom-text transition-colors duration-300';
 
-      // Fix for background bleeding on mobile viewports
       document.body.style.backgroundColor = bgColor;
       
-      // Update theme color meta tag for mobile status bar
       let metaThemeColor = document.getElementById('meta-theme-color');
       if (metaThemeColor) {
-          // Use surface color so header blends with status bar
           metaThemeColor.content = surfaceColor;
       }
 
@@ -778,8 +751,8 @@
         const hideScrollbar = ['add', 'settings'].includes(currentView) ? 'no-scrollbar' : '';
         app.innerHTML = `
           <!-- Mobile Header -->
-          <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface" style="color: ${textColor}; background: ${surfaceColor};">
-            <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+          <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface transition-all" style="color: ${textColor}; background: ${surfaceColor}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
+            <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
                 <span class="text-2xl font-bold">≡</span>
             </button>
             <div class="flex items-center gap-2 flex-1 justify-center">
@@ -789,10 +762,10 @@
           </div>
 
           <div class="flex flex-1 h-full overflow-hidden relative">
-            ${isMobileSidebarOpen ? `<div id="sidebar-overlay" class="absolute inset-0 bg-black bg-opacity-50 z-30 md:hidden fade-in"></div>` : ''}
+            ${isMobileSidebarOpen ? `<div id="sidebar-overlay" class="absolute inset-0 bg-black bg-opacity-50 z-30 md:hidden fade-in backdrop-blur-sm"></div>` : ''}
             ${renderSidebar(config, dark, sidebarBg, textColor, config.primary_color)}
-            <div class="flex-1 overflow-auto ${hideScrollbar} w-full relative z-0">
-              ${renderContent(config, dark, surfaceColor, textColor, config.primary_color, dark ? '#374151' : '#e5e7eb')}
+            <div class="flex-1 overflow-auto ${hideScrollbar} w-full relative z-0 pb-10">
+              ${renderContent(config, dark, surfaceColor, textColor, config.primary_color, dark ? '#374151' : '#f1f5f9')}
             </div>
           </div>
         `;
@@ -807,44 +780,51 @@
 
     function renderLoginPage(config, dark, surfaceColor, textColor, primaryColor) {
       return `
-        <div class="flex items-center justify-center min-h-full p-4 w-full" style="background: ${dark ? '#111827' : config.background_color};">
-          <div class="w-full max-w-md p-8 rounded-xl shadow-lg" style="background: ${surfaceColor};">
+        <div class="flex items-center justify-center min-h-full p-4 w-full transition-colors duration-300" style="background: ${dark ? '#111827' : '#f8fafc'};">
+          <div class="w-full max-w-md p-8 md:p-10 rounded-[2rem] transition-all" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#ffffff'}; box-shadow: ${dark ? '0 25px 50px -12px rgba(0,0,0,0.5)' : '0 25px 50px -12px rgba(0,0,0,0.05), 0 0 40px rgba(59, 130, 246, 0.05)'};">
             <div class="flex flex-col items-center mb-8">
-                <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 280px; height: auto;" class="object-contain">
+                <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 280px; height: auto;" class="object-contain drop-shadow-sm">
             </div>
-            <div id="login-form" class="space-y-4 pb-2">
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="login-username" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:outline-none transition-all" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];"></div>
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="login-password" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:outline-none transition-all" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];"></div>
+            <div id="login-form" class="space-y-5 pb-2">
+              <div>
+                  <label class="block text-sm font-semibold mb-2" style="color: ${textColor}; opacity: 0.9;">ชื่อผู้ใช้</label>
+                  <input type="text" id="login-username" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
+              </div>
+              <div>
+                  <label class="block text-sm font-semibold mb-2" style="color: ${textColor}; opacity: 0.9;">รหัสผ่าน</label>
+                  <input type="password" id="login-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
+              </div>
               
-              <!-- V.8.5: Remember Me Checkbox -->
-              <div class="flex items-center mt-3 mb-1">
-                  <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-gray-300 focus:ring-[${primaryColor}]" style="accent-color: ${primaryColor}; cursor: pointer;">
-                  <label for="remember-me" class="ml-2 block text-sm cursor-pointer select-none" style="color: ${textColor}; opacity: 0.8;">เข้าสู่ระบบค้างไว้</label>
+              <div class="flex items-center mt-4 mb-2">
+                  <input type="checkbox" id="remember-me" class="w-5 h-5 rounded border-gray-300 focus:ring-2" style="accent-color: ${primaryColor}; cursor: pointer;">
+                  <label for="remember-me" class="ml-3 block text-sm font-medium cursor-pointer select-none" style="color: ${textColor}; opacity: 0.8;">เข้าสู่ระบบค้างไว้</label>
               </div>
 
-              <button id="login-btn" class="w-full py-3 rounded-lg font-medium transition-colors mt-2" style="background: #3b82f6; color: white;">เข้าสู่ระบบ</button>
-              <button id="guest-continue-btn" class="w-full py-3 rounded-lg font-medium transition-colors" style="background: #f59e0b; color: white;">ตรวจสอบยอดชำระ</button>
-              
-              <div class="pt-4 mt-2 border-t" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                  <button id="show-register-btn" class="w-full py-3 rounded-lg font-medium transition-colors" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ลงทะเบียนบัญชีใหม่</button>
+              <div class="pt-2 space-y-3">
+                  <button id="login-btn" class="w-full py-3.5 rounded-xl font-bold transition-all hover:shadow-lg active:scale-[0.98]" style="background: ${primaryColor}; color: white; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);">เข้าสู่ระบบ</button>
+                  <button id="guest-continue-btn" class="w-full py-3.5 rounded-xl font-bold transition-all hover:shadow-lg active:scale-[0.98]" style="background: #f59e0b; color: white; box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.39);">ตรวจสอบยอดชำระ</button>
               </div>
-              <div class="text-right mt-2">
-                  <button id="show-reset-btn" class="text-sm font-medium hover:underline" style="color: ${primaryColor};">ลืมรหัสผ่าน?</button>
+              
+              <div class="pt-5 mt-4 border-t" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
+                  <button id="show-register-btn" class="w-full py-3.5 rounded-xl font-bold transition-colors hover:bg-slate-100 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f8fafc'}; color: ${textColor}; border: 1px solid ${dark?'#4b5563':'#e2e8f0'};">ลงทะเบียนบัญชีใหม่</button>
+              </div>
+              <div class="text-center mt-4">
+                  <button id="show-reset-btn" class="text-sm font-semibold hover:underline transition-all opacity-80 hover:opacity-100" style="color: ${textColor};">ลืมรหัสผ่านใช่หรือไม่?</button>
               </div>
             </div>
             
             <div id="register-form" class="space-y-4 hidden">
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="register-username" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="register-password" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-              <button id="register-btn" class="w-full py-3 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">ลงทะเบียน</button>
-              <button id="back-to-login-btn" class="w-full py-2 text-sm font-medium" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="register-username" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="register-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <button id="register-btn" class="w-full py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor}; color: white;">ลงทะเบียน</button>
+              <button id="back-to-login-btn" class="w-full py-3 text-sm font-bold opacity-70 hover:opacity-100 transition-all" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
             </div>
             <div id="reset-form" class="space-y-4 hidden">
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="reset-username" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัส Admin</label><input type="text" id="reset-admin" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-              <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="reset-newpassword" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-              <button id="reset-btn" class="w-full py-3 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">รีเซ็ตรหัสผ่าน</button>
-              <button id="back-to-login-btn2" class="w-full py-2 text-sm font-medium" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="reset-username" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัส Admin</label><input type="text" id="reset-admin" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="reset-newpassword" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <button id="reset-btn" class="w-full py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor}; color: white;">รีเซ็ตรหัสผ่าน</button>
+              <button id="back-to-login-btn2" class="w-full py-3 text-sm font-bold opacity-70 hover:opacity-100 transition-all" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
             </div>
           </div>
         </div>
@@ -863,39 +843,46 @@
       ];
       if (currentUser && currentUser.isAdmin) views.splice(6, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
 
-      const baseClasses = "w-64 p-6 shadow-lg flex flex-col z-40 transition-transform duration-300 ease-in-out h-full overflow-x-hidden custom-sidebar";
+      const baseClasses = "w-64 p-6 flex flex-col z-40 transition-all duration-300 ease-in-out h-full overflow-x-hidden custom-sidebar border-r";
       const mobileClasses = `absolute top-0 left-0 bottom-0 transform ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`;
       const desktopClasses = "md:relative md:translate-x-0";
+      
+      const shadowStyle = dark ? 'box-shadow: 4px 0 24px rgba(0,0,0,0.5); border-color: #374151;' : 'box-shadow: 4px 0 24px rgba(0,0,0,0.02); border-color: #f1f5f9;';
 
       return `
-        <div class="${baseClasses} ${mobileClasses} ${desktopClasses}" style="background: ${surfaceColor};">
-          <div class="flex flex-col items-center mb-10">
-            <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 160px; height: auto;" class="object-contain mb-6">
+        <div class="${baseClasses} ${mobileClasses} ${desktopClasses}" style="background: ${surfaceColor}; ${shadowStyle}">
+          <div class="flex flex-col items-center mb-8 pt-2">
+            <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" style="width: 160px; height: auto;" class="object-contain mb-6 drop-shadow-sm">
             <div class="flex justify-between w-full items-start absolute top-4 right-4">
-                <button id="close-sidebar-btn" class="md:hidden text-gray-500 hover:text-gray-700">✖</button>
+                <button id="close-sidebar-btn" class="md:hidden text-gray-400 hover:text-gray-800 transition-colors"><span class="text-xl font-bold">✖</span></button>
             </div>
-            <p class="text-sm opacity-80 text-center w-full" style="color: ${primaryColor}; font-weight: 500;">
+            <p class="text-sm text-center w-full px-4 py-2 rounded-lg font-semibold" style="background: ${primaryColor}15; color: ${primaryColor}; border: 1px solid ${primaryColor}30;">
                 ${currentUser.isAdmin ? '👑 ' : '👤 '}${currentUser.username}
             </p>
           </div>
-          <nav class="space-y-2 flex-1 overflow-y-auto no-scrollbar">
+          <nav class="space-y-1.5 flex-1 overflow-y-auto no-scrollbar">
             ${views.map(v => {
                 if (!canAccessView(v.id)) return '';
-                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3 rounded-lg font-medium flex items-center gap-3 ${currentView === v.id ? 'active-view' : ''}" style="background: ${currentView === v.id ? primaryColor : 'transparent'}; color: ${currentView === v.id ? 'white' : textColor};"><span class="text-xl">${v.icon}</span>${v.label}</button>`;
+                const isActive = currentView === v.id;
+                const activeStyle = isActive 
+                    ? `background: ${primaryColor}; color: white; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);` 
+                    : `background: transparent; color: ${textColor};`;
+                const hoverStyle = isActive ? '' : 'hover:bg-slate-50 dark:hover:bg-gray-800';
+                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3.5 rounded-xl font-semibold flex items-center gap-3 transition-all ${hoverStyle}" style="${activeStyle}"><span class="text-xl">${v.icon}</span>${v.label}</button>`;
             }).join('')}
           </nav>
-          <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
-            <button id="logout-btn" class="w-full px-4 py-2 rounded-lg font-medium transition-colors hover:bg-red-600" style="background: #ef4444; color: white;">
+          <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#f1f5f9'};">
+            <button id="logout-btn" class="w-full px-4 py-3 rounded-xl font-bold transition-all hover:shadow-lg active:scale-95" style="background: #ef4444; color: white; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.2);">
                 ${currentUser && currentUser.isGuestView ? 'กลับไปหน้าหลัก' : 'ออกจากระบบ'}
             </button>
-            <p class="text-xs text-center mt-4 opacity-50" style="color: ${textColor};">Version V.10.5</p>
+            <p class="text-xs text-center mt-5 opacity-40 font-semibold uppercase tracking-wider" style="color: ${textColor};">Version V.10.8</p>
           </div>
         </div>
       `;
     }
 
     function renderContent(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
-      if (!canAccessView(currentView)) return `<div class="p-4 md:p-8 flex flex-col items-center justify-center h-full opacity-60"><span class="text-4xl mb-4">🔒</span><p style="color: ${textColor};" class="text-lg">คุณไม่มีสิทธิ์เข้าถึงส่วนนี้</p></div>`;
+      if (!canAccessView(currentView)) return `<div class="p-4 md:p-8 flex flex-col items-center justify-center h-full opacity-60"><span class="text-4xl mb-4">🔒</span><p style="color: ${textColor};" class="text-lg font-bold">คุณไม่มีสิทธิ์เข้าถึงส่วนนี้</p></div>`;
       let html = '';
       if(currentView === 'add') html = renderAddCustomer(config, dark, surfaceColor, textColor, primaryColor);
       else if(currentView === 'manage') html = renderManageCustomers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor);
@@ -911,24 +898,25 @@
 
     function renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       const users = allRecords.filter(r => r.type === 'user');
-      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-xl shadow-sm"><table class="w-full min-w-[600px] custom-surface" style="border-radius: 12px; overflow: hidden;"><thead style="background: ${dark ? '#374151' : secondaryColor};"><tr><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ลำดับ</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-4 py-3 text-left text-sm font-semibold" style="color: ${textColor};">วันที่สมัคร</th><th class="px-4 py-3 text-center text-sm font-semibold" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-t" style="border-color: ${dark ? '#374151' : '#e5e7eb'};"><td class="px-4 py-3" style="color: ${textColor};">${idx + 1}</td><td class="px-4 py-3 font-medium" style="color: ${textColor};">${u.username}</td><td class="px-4 py-3" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-4 py-3 text-center"><div class="flex justify-center gap-2"><button type="button" class="btn-reset-user w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer" data-id="${u.id}" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button type="button" class="btn-delete-user w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer" data-id="${u.id}" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
+      return `<div class="p-4 md:p-8"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-2xl shadow-xl transition-all" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};"><table class="w-full min-w-[600px]"><thead style="background: ${dark ? '#374151' : '#f8fafc'}; border-bottom: 1px solid ${dark?'#4b5563':'#e2e8f0'};"><tr><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ลำดับ</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">วันที่สมัคร</th><th class="px-6 py-4 text-center text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark ? '#374151' : '#f1f5f9'};"><td class="px-6 py-4 font-medium" style="color: ${textColor};">${idx + 1}</td><td class="px-6 py-4 font-bold text-base" style="color: ${textColor};">${u.username}</td><td class="px-6 py-4 font-medium opacity-80" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-6 py-4 text-center"><div class="flex justify-center gap-3"><button type="button" class="btn-reset-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-id="${u.id}" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button type="button" class="btn-delete-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-id="${u.id}" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
     }
 
     function renderAddCustomer(config, dark, surfaceColor, textColor, primaryColor) {
       const autocomplete = getAutocompleteData();
-      return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_add_customer}</h2><div class="p-4 md:p-6 rounded-xl shadow-md custom-surface"><form id="add-customer-form" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="customer-name" value="" required list="list-customer-name" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-customer-name">${autocomplete.names.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="product" value="" required list="list-product" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-product">${autocomplete.products.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="product-price" value="" required list="list-product-price" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-product-price">${autocomplete.prices.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ดอกเบี้ย %</label><input type="number" id="interest-rate" value="" required step="0.01" list="list-interest-rate" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-interest-rate">${autocomplete.interests.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">งวดผ่อน</label><input type="number" id="installments" value="" required list="list-installments" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-installments">${autocomplete.installments.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ค่าบิล</label><input type="number" id="bill-fee" value="" min="0" list="list-bill-fee" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><datalist id="list-bill-fee">${autocomplete.fees.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รวมจ่ายต่องวด</label><input type="number" id="bill-amount-input" value="" readonly class="w-full px-4 py-2 rounded-lg border opacity-70 cursor-not-allowed" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};" tabindex="-1"></div>
-            <div id="contract-date-wrapper"><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="contract-date" value="${new Date().toISOString().split('T')[0]}" required class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-            <div class="col-span-full mt-4"><div class="p-4 md:p-6 rounded-xl border border-dashed shadow-sm" style="background: ${dark ? '#374151' : '#f9fafb'}; border-color: ${dark ? '#4b5563' : '#d1d5db'};"><label class="block text-base font-semibold mb-4 border-b pb-2" style="color: ${textColor}; border-color: ${dark ? '#4b5563' : '#e5e7eb'};">สรุปยอดผ่อนชำระ</label><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="text-center md:text-left"><p class="text-sm opacity-70 mb-1" style="color: ${textColor};">ค่างวดต่อเดือน (คำนวณ)</p><input type="text" id="bill-amount-display" readonly class="text-3xl font-bold bg-transparent border-none p-0 focus:ring-0 w-full md:w-auto text-center md:text-left" style="color: ${primaryColor};" placeholder="฿0"></div><div id="calculation-details" class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4 text-center hidden"><div class="p-2 rounded-lg" style="background: ${dark ? '#1f2937' : 'white'};"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">เงินต้น</p><span id="detail-principal" class="font-medium text-lg" style="color: ${textColor};">0</span></div><div class="p-2 rounded-lg" style="background: ${dark ? '#1f2937' : 'white'};"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ดอกเบี้ยรวม</p><span id="detail-interest" class="font-medium text-lg text-red-500">0</span></div><div class="p-2 rounded-lg" style="background: ${dark ? '#1f2937' : 'white'};"><p class="text-xs opacity-60 mb-1" style="color: ${textColor};">ยอดรวมทั้งหมด</p><span id="detail-total" class="font-medium text-lg text-green-600">0</span></div></div></div></div></div>
+      return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_add_customer}</h2><div class="p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};"><form id="add-customer-form" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="customer-name" value="" required list="list-customer-name" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-customer-name">${autocomplete.names.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">สินค้า</label><input type="text" id="product" value="" required list="list-product" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-product">${autocomplete.products.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="product-price" value="" required list="list-product-price" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-product-price">${autocomplete.prices.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ดอกเบี้ย %</label><input type="number" id="interest-rate" value="" required step="0.01" list="list-interest-rate" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-interest-rate">${autocomplete.interests.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">งวดผ่อน</label><input type="number" id="installments" value="" required list="list-installments" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-installments">${autocomplete.installments.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ค่าบิล</label><input type="number" id="bill-fee" value="" min="0" list="list-bill-fee" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"><datalist id="list-bill-fee">${autocomplete.fees.map(opt => `<option value="${opt}">`).join('')}</datalist></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">รวมจ่ายต่องวด</label><input type="number" id="bill-amount-input" value="" readonly class="w-full px-5 py-3 rounded-xl border opacity-60 cursor-not-allowed font-bold" style="background: ${dark ? '#1f2937' : '#f1f5f9'}; border-color: ${dark ? '#374151' : '#e2e8f0'}; color: ${textColor};" tabindex="-1"></div>
+            <div id="contract-date-wrapper"><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="contract-date" value="${new Date().toISOString().split('T')[0]}" required class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all font-medium" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;"></div>
+            
+            <div class="col-span-full mt-4"><div class="p-6 md:p-8 rounded-2xl shadow-inner border" style="background: ${dark ? '#111827' : '#f8fafc'}; border-color: ${dark ? '#374151' : '#e2e8f0'};"><label class="block text-base font-black uppercase tracking-wider mb-5 border-b pb-3 opacity-80" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e2e8f0'};">สรุปยอดผ่อนชำระ</label><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="text-center md:text-left"><p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-wide" style="color: ${textColor};">ค่างวดต่อเดือน (คำนวณ)</p><input type="text" id="bill-amount-display" readonly class="text-4xl md:text-5xl font-black bg-transparent border-none p-0 focus:ring-0 w-full md:w-auto text-center md:text-left tracking-tight" style="color: ${primaryColor};" placeholder="฿0"></div><div id="calculation-details" class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4 text-center hidden"><div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm"><p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">เงินต้น</p><span id="detail-principal" class="font-black text-xl" style="color: ${textColor};">0</span></div><div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm"><p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">ดอกเบี้ยรวม</p><span id="detail-interest" class="font-black text-xl text-red-500">0</span></div><div class="p-3 rounded-xl border" style="background: ${dark ? '#1f2937' : 'white'}; border-color: ${dark?'#374151':'#f1f5f9'}; shadow-sm"><p class="text-xs font-bold uppercase tracking-wider opacity-50 mb-1" style="color: ${textColor};">ยอดรวมทั้งหมด</p><span id="detail-total" class="font-black text-xl text-[#10b981]">0</span></div></div></div></div></div>
         </div>
-        <button type="submit" id="save-customer-btn" class="w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 mt-4" style="background: ${primaryColor}; color: white;">บันทึกข้อมูลลูกค้า</button>
+        <button type="submit" id="save-customer-btn" class="w-full py-4 rounded-xl font-black text-lg transition-all hover:shadow-lg active:scale-[0.98] mt-8 uppercase tracking-wide" style="background: ${primaryColor}; color: white; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);">บันทึกข้อมูลลูกค้า</button>
       </form></div></div>`;
     }
 
@@ -953,32 +941,36 @@
       const isSpecialView = isAdmin || isGuestView;
       
       return `<div class="p-4 md:p-8">
-        <h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_manage_customer}</h2>
+        <h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_manage_customer}</h2>
         
-        <div class="relative mb-6">
-            <input type="text" id="manage-search-input" value="${manageSearchTerm}" placeholder="ค้นหา" 
-                class="w-full px-4 py-3 pl-10 rounded-lg border shadow-sm focus:ring-2 focus:ring-opacity-50 transition-all" 
-                style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor}; outline-color: ${primaryColor};">
-            <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
-            ${manageSearchTerm ? `<button id="manage-search-clear" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 p-1">✖</button>` : ''}
+        <div class="relative mb-8">
+            <input type="text" id="manage-search-input" value="${manageSearchTerm}" placeholder="ค้นหาชื่อลูกค้า หรือ สินค้า..." 
+                class="w-full px-5 py-4 pl-12 rounded-2xl border shadow-sm focus:ring-4 transition-all font-medium text-lg" 
+                style="background: ${surfaceColor}; border-color: ${dark ? '#374151' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
+            <span class="absolute left-4 top-4 text-xl opacity-50">🔍</span>
+            ${manageSearchTerm ? `<button id="manage-search-clear" class="absolute right-4 top-4 text-xl opacity-50 hover:opacity-100 transition-opacity">✖</button>` : ''}
         </div>
 
         <div class="mb-6">
-            <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4" style="border-color: ${dark?'#374151':'#e5e7eb'};">
-                    <h3 class="text-lg font-semibold" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
-                    <div class="text-left sm:text-right mt-2 sm:mt-0">
-                        <p class="text-base font-bold opacity-80 mb-1" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
-                        <p class="text-4xl font-black tracking-tight" style="color: ${primaryColor};">฿${grandTotal.toLocaleString()}</p>
+            <!-- Fintech Summary Box -->
+            <div class="p-6 md:p-8 rounded-2xl shadow-xl transition-all mb-8" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.4)'}; border-top: 4px solid ${primaryColor};">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div>
+                        <h3 class="text-lg font-bold opacity-90 mb-1" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
+                        <p class="text-sm font-medium opacity-60 uppercase tracking-widest" style="color: ${textColor};">Overview</p>
+                    </div>
+                    <div class="text-left sm:text-right mt-4 sm:mt-0">
+                        <p class="text-sm font-bold opacity-60 uppercase tracking-widest mb-1" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
+                        <p class="text-4xl md:text-5xl font-black tracking-tight" style="color: ${primaryColor}; drop-shadow-sm;">฿${grandTotal.toLocaleString()}</p>
                     </div>
                 </div>
-                
-                <div class="flex flex-col space-y-3">
-                ${summary.length===0?`<p class="text-center py-4 opacity-50" style="color: ${textColor};">ไม่พบข้อมูล</p>`:''}
-                ${summary.map(s=>{
+            </div>
+            
+            <div class="flex flex-col space-y-4">
+            ${summary.length===0?`<p class="text-center py-8 font-medium opacity-50 bg-white dark:bg-gray-800 rounded-2xl border" style="border-color: ${dark?'#374151':'#f1f5f9'}; color: ${textColor};">ไม่พบข้อมูล</p>`:''}
+            ${summary.map(s=>{
                   const customerItems = customers.filter(c => c.customer_name === s.name);
                   
-                  // NEW V.8.2: Sort customer items alphabetically by lender name (account owner's username)
                   customerItems.sort((a, b) => {
                       let ownerA = '-';
                       const userA = allRecords.find(r => r.type === 'user' && r.id === a.account_id);
@@ -995,16 +987,14 @@
                   const isExpanded = expandedCustomerName === s.name;
                   
                   let breakdownHtml = '';
-                  // Sort the breakdown list by lender name as well
                   const lenders = Object.keys(s.lenderTotals).sort((a, b) => a.localeCompare(b, 'th'));
 
-                  // V.8.9 Unified summary UI
                   if (isSpecialView) {
                       breakdownHtml = `
                           <div class="w-full flex flex-col items-end">
-                              <div class="flex items-center justify-end gap-3 mb-2 w-full border-b pb-1" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'}60;">
-                                  <span class="text-sm font-semibold opacity-70" style="color: ${textColor};">ผู้ให้บริการ</span>
-                                  <span class="text-sm font-semibold opacity-70 w-24 text-right" style="color: ${textColor};">ยอดรวม</span>
+                              <div class="flex items-center justify-end gap-3 mb-2 w-full border-b pb-2" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
+                                  <span class="text-xs font-bold uppercase tracking-wider opacity-50" style="color: ${textColor};">ผู้ให้บริการ</span>
+                                  <span class="text-xs font-bold uppercase tracking-wider opacity-50 w-24 text-right" style="color: ${textColor};">ยอดรวม</span>
                               </div>
                       `;
 
@@ -1012,18 +1002,17 @@
                           const lenderColor = getLenderColor(lender, dark);
                           return `
                           <div class="flex items-center justify-end gap-3 mb-2 w-full">
-                              <span class="text-base font-bold" style="color: ${lenderColor};">${lender}</span>
-                              <span class="text-xl font-bold w-24 text-right" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
+                              <span class="text-base font-bold tracking-wide" style="color: ${lenderColor};">${lender}</span>
+                              <span class="text-xl font-black w-24 text-right" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
                           </div>
                           `;
                       }).join('');
                       
-                      // แสดงยอดรวมเฉพาะกรณีที่มีผู้ให้บริการหลายคนเพื่อไม่ให้ข้อมูลซ้ำซ้อน
                       if (lenders.length > 1) {
                           breakdownHtml += `
-                                  <div class="flex items-center justify-end gap-3 mt-2 pt-2 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                                      <span class="text-base font-semibold opacity-80" style="color: ${textColor};">รวมทุกสัญญา</span>
-                                      <span class="text-2xl font-bold w-24 text-right" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
+                                  <div class="flex items-center justify-end gap-3 mt-3 pt-3 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e2e8f0'};">
+                                      <span class="text-sm font-bold uppercase tracking-wider opacity-70" style="color: ${textColor};">รวมทุกสัญญา</span>
+                                      <span class="text-2xl font-black w-24 text-right" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
                                   </div>
                           `;
                       }
@@ -1032,53 +1021,53 @@
                   } else {
                       breakdownHtml = `
                           <div class="flex flex-col items-end">
-                              <span class="text-sm font-semibold opacity-80 uppercase mb-1" style="color: ${textColor};">ยอดรวมงวดถัดไป</span>
-                              <p class="text-2xl font-bold" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</p>
+                              <span class="text-xs font-bold uppercase tracking-widest opacity-60 mb-1" style="color: ${textColor};">ยอดเรียกเก็บงวดถัดไป</span>
+                              <p class="text-3xl font-black tracking-tight" style="color: #10b981;">฿${s.totalNextMonth.toLocaleString()}</p>
                           </div>
                       `;
                   }
 
+                  // Fintech Card Style
                   let html = `
-                  <div class="border rounded-xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md" style="border-color: ${dark?'#374151':'#e5e7eb'}; background: ${isExpanded ? (dark?'#1f2937':'#f9fafb') : 'transparent'};">
-                    <div class="py-4 px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center cursor-pointer" onclick="window.toggleCustomerExpand('${s.name}')">
+                  <div class="rounded-2xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl group" style="border: 1px solid ${dark?'#374151':'#f1f5f9'}; background: ${dark?'#1f2937':'#ffffff'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};">
+                    <div class="py-6 px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center cursor-pointer" onclick="window.toggleCustomerExpand('${s.name}')">
                         
-                        <div class="flex items-center gap-4 sm:gap-6 mb-3 sm:mb-0 w-full sm:w-auto">
+                        <div class="flex items-center gap-5 sm:gap-6 mb-4 sm:mb-0 w-full sm:w-auto">
                             <div class="flex flex-col justify-center shrink-0">
-                                <p class="font-bold text-lg flex items-center gap-2" style="color: ${textColor};">
+                                <p class="font-black text-xl flex items-center gap-3 tracking-wide group-hover:text-blue-500 transition-colors" style="color: ${textColor};">
                                     ${s.name}
-                                    <span class="text-[10px] opacity-50 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}">▼</span>
+                                    <span class="text-xs opacity-40 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}">▼</span>
                                 </p>
                             </div>
-                            <div class="flex flex-row sm:flex-col items-baseline sm:items-start gap-1.5 sm:gap-0 border-l-2 pl-4 sm:pl-6" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
-                                <span class="text-[11px] font-semibold opacity-60 uppercase sm:mb-1 whitespace-nowrap" style="color: ${textColor};">จำนวนรายการ</span>
-                                <p class="font-bold text-base sm:text-lg whitespace-nowrap" style="color: ${primaryColor};">
-                                    ${s.count} <span class="text-xs sm:text-sm font-normal opacity-70" style="color: ${textColor};">สัญญา</span>
+                            <div class="flex flex-row sm:flex-col items-baseline sm:items-start gap-2 sm:gap-0 border-l-2 pl-5 sm:pl-6" style="border-color: ${dark ? '#374151' : '#f1f5f9'};">
+                                <span class="text-[10px] font-bold opacity-50 uppercase tracking-widest sm:mb-1 whitespace-nowrap" style="color: ${textColor};">จำนวนรายการ</span>
+                                <p class="font-black text-lg whitespace-nowrap" style="color: ${primaryColor};">
+                                    ${s.count} <span class="text-xs font-bold opacity-60 uppercase tracking-wider" style="color: ${textColor};">สัญญา</span>
                                 </p>
                             </div>
                         </div>
 
-                        <div class="flex flex-col items-end gap-2 w-full sm:w-auto">
+                        <div class="flex flex-col items-end gap-3 w-full sm:w-auto">
                             <div class="text-right w-full flex flex-col items-end">
                                 ${breakdownHtml}
                             </div>
-                            ${canEditData() ? `<button data-pay-all="${s.name}" onclick="event.stopPropagation();" class="px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md ${hasDueItems ? '' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? '#10b981' : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระทั้งหมด</button>` : ''}
+                            ${canEditData() ? `<button data-pay-all="${s.name}" onclick="event.stopPropagation();" class="px-6 py-3 rounded-xl text-sm font-bold shadow-md transition-all uppercase tracking-wider ${hasDueItems ? 'hover:-translate-y-0.5 hover:shadow-lg' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? (dark ? '#3b82f6' : '#1e293b') : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระทั้งหมด</button>` : ''}
                         </div>
                     </div>
                   `;
 
                   if (isExpanded) {
                       html += `
-                      <div class="border-t p-4 overflow-x-auto" style="border-color: ${dark?'#374151':'#e5e7eb'};">
-                          <table class="w-full min-w-[700px] text-sm">
-                              <thead style="color: ${textColor}; border-bottom: 2px solid ${dark?'#374151':'#e5e7eb'};">
+                      <div class="border-t p-6 md:p-8 overflow-x-auto" style="border-color: ${dark?'#374151':'#f1f5f9'}; background: ${dark?'#111827':'#f8fafc'};">
+                          <table class="w-full min-w-[700px]">
+                              <thead style="border-bottom: 2px solid ${dark?'#374151':'#e2e8f0'};">
                                   <tr>
-                                      <th class="px-3 py-2 text-left font-semibold">สินค้า</th>
-                                      <th class="px-3 py-2 text-left font-semibold">ราคาสินค้า</th>
-                                      <th class="px-3 py-2 text-left font-semibold">ค่างวด</th>
-                                      <th class="px-3 py-2 text-left font-semibold">งวดทั้งหมด</th>
-                                      <th class="px-3 py-2 text-left font-semibold">งวดถัดไป</th>
-                                      <!-- For guests, this column will show the account owner instead of manage buttons -->
-                                      <th class="px-3 py-2 text-center font-semibold">${canEditData() ? 'จัดการ' : 'ผู้ให้บริการ'}</th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">รายการสินค้า</th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">ราคาสินค้า</th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">ค่างวด</th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">งวดทั้งหมด</th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">งวดถัดไป</th>
+                                      <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">${canEditData() ? 'การจัดการ' : 'ผู้ให้บริการ'}</th>
                                   </tr>
                               </thead>
                               <tbody>
@@ -1093,25 +1082,24 @@
                                       const lenderColor = getLenderColor(ownerName, dark);
                                       
                                       return `
-                                      <tr class="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f3f4f6'};">
-                                          <td class="px-3 py-3 font-medium flex items-center gap-2" style="color: ${textColor};">
-                                              <!-- V.9.6 Render Emoji Icon here -->
-                                              <span class="text-xl">${getProductIcon(c.product)}</span>
-                                              <span>${c.product}</span>
+                                      <tr class="border-b last:border-b-0 hover:bg-white dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#e2e8f0'};">
+                                          <td class="px-4 py-4 font-bold text-sm flex items-center gap-3" style="color: ${textColor};">
+                                              <span class="text-2xl bg-white dark:bg-gray-700 p-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-600">${getProductIcon(c.product)}</span>
+                                              <span class="tracking-wide">${c.product}</span>
                                           </td>
-                                          <td class="px-3 py-3 opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
-                                          <td class="px-3 py-3 font-semibold" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
-                                          <td class="px-3 py-3 opacity-80" style="color: ${textColor};">${c.paid_installments}/${c.installments}</td>
-                                          <td class="px-3 py-3 opacity-80" style="color: ${textColor};">${new Date(c.next_payment_date).toLocaleDateString('th-TH')}</td>
-                                          <td class="px-3 py-3 text-center">
+                                          <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
+                                          <td class="px-4 py-4 font-black text-base" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
+                                          <td class="px-4 py-4 font-bold opacity-80" style="color: ${textColor};">${c.paid_installments} / ${c.installments}</td>
+                                          <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">${new Date(c.next_payment_date).toLocaleDateString('th-TH')}</td>
+                                          <td class="px-4 py-4 text-center">
                                               ${hasEditPermission ? `
-                                              <div class="flex justify-center gap-2 items-center">
-                                                  <button data-pay="${c.id}" class="flex items-center justify-center w-10 h-10 rounded-full shadow-sm hover:shadow-md transition-all ${canPay?'':'payment-disabled'}" style="background: ${canPay?primaryColor:'#9ca3af'}; color: white;" ${canPay?'':'disabled'} title="ชำระเงิน">
-                                                      <img src="pay-icon.png" alt="Pay" class="w-6 h-6 object-contain filter drop-shadow-sm" onerror="this.outerHTML='<span class=\\'text-lg\\'>💰</span>'">
+                                              <div class="flex justify-center gap-3 items-center">
+                                                  <button data-pay="${c.id}" class="flex items-center justify-center w-11 h-11 rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 ${canPay?'':'payment-disabled'}" style="background: ${canPay?primaryColor:'#9ca3af'}; color: white;" ${canPay?'':'disabled'} title="ชำระเงิน">
+                                                      <img src="pay-icon.png" alt="Pay" class="w-6 h-6 object-contain filter drop-shadow-sm" onerror="this.outerHTML='<span class=\\'text-xl\\'>💰</span>'">
                                                   </button>
-                                                  <button data-edit="${c.id}" class="flex items-center justify-center w-10 h-10 rounded-full shadow-sm hover:shadow-md transition-all" style="background: ${dark?'#4b5563':'#e5e7eb'}; color: ${textColor};" title="แก้ไข"><span class="text-lg">✏️</span></button>
+                                                  <button data-edit="${c.id}" class="flex items-center justify-center w-11 h-11 rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5" style="background: ${dark?'#374151':'#ffffff'}; border: 1px solid ${dark?'#4b5563':'#e2e8f0'}; color: ${textColor};" title="แก้ไข"><span class="text-lg">✏️</span></button>
                                               </div>
-                                              ` : `<span class="text-base font-bold" style="color: ${lenderColor};">${ownerName}</span>`}
+                                              ` : `<span class="text-sm font-bold tracking-wide border px-3 py-1 rounded-md" style="color: ${lenderColor}; border-color: ${lenderColor}40; background: ${lenderColor}10;">${ownerName}</span>`}
                                           </td>
                                       </tr>
                                       `;
@@ -1135,50 +1123,47 @@
       const history = getHistoryRecords();
       return `
         <div class="p-4 md:p-8 max-w-4xl mx-auto">
-            <h2 class="text-2xl font-bold mb-8" style="color: ${textColor};">${config.menu_history}</h2>
+            <h2 class="text-2xl font-black mb-10 tracking-tight" style="color: ${textColor};">${config.menu_history}</h2>
             
-            <div class="space-y-8 relative border-l-2 ml-3 md:ml-6" style="border-color: ${dark ? '#374151' : '#e5e7eb'};">
-                ${history.length === 0 ? `<div class="pl-8 text-sm opacity-60" style="color: ${textColor};">ไม่พบประวัติการทำรายการ</div>` : ''}
+            <div class="space-y-10 relative border-l-2 ml-4 md:ml-8" style="border-color: ${dark ? '#374151' : '#e2e8f0'};">
+                ${history.length === 0 ? `<div class="pl-8 text-sm font-bold opacity-50" style="color: ${textColor};">ไม่พบประวัติการทำรายการ</div>` : ''}
                 ${history.map((h, idx) => {
                     let actionColor = primaryColor;
-                    let actionBgLight = dark ? surfaceColor : '#ffffff';
                     
-                    if(h.history_action.includes('เพิ่ม')) { actionColor = '#28A745'; actionBgLight = '#E8F5E9'; }
-                    else if(h.history_action.includes('แก้ไข')) { actionColor = '#007BFF'; actionBgLight = '#E3F2FD'; }
-                    else if(h.history_action.includes('ชำระเงินครบ') || h.history_action.includes('ปิด')) { actionColor = '#1B5E20'; actionBgLight = '#C8E6C9'; }
-                    else if(h.history_action.includes('ชำระเงิน')) { actionColor = '#FF9800'; actionBgLight = '#FFF3E0'; }
-                    else if(h.history_action.includes('ลบ')) { actionColor = '#DC3545'; actionBgLight = '#FFEBEE'; }
+                    if(h.history_action.includes('เพิ่ม')) { actionColor = '#10b981'; }
+                    else if(h.history_action.includes('แก้ไข')) { actionColor = '#3b82f6'; }
+                    else if(h.history_action.includes('ชำระเงินครบ') || h.history_action.includes('ปิด')) { actionColor = '#059669'; }
+                    else if(h.history_action.includes('ชำระเงิน')) { actionColor = '#f59e0b'; }
+                    else if(h.history_action.includes('ลบ')) { actionColor = '#ef4444'; }
                     
-                    let cardBg = dark ? surfaceColor : actionBgLight;
-                    let borderColor = dark ? '#374151' : actionColor + '30';
+                    let cardBg = surfaceColor;
                     
-                    // ปรับขนาดของข้อความเดิมในประวัติ (ที่ถูกเซฟเป็น HTML เล็กๆ) ให้ใหญ่ขึ้น
-                    let updatedDetails = h.history_details.replace(/text-xs/g, 'text-sm').replace(/p-2/g, 'p-3').replace(/mt-1\.5/g, 'mt-3');
+                    let updatedDetails = h.history_details.replace(/text-xs/g, 'text-sm').replace(/p-2/g, 'p-4 rounded-xl').replace(/mt-1\.5/g, 'mt-4');
                     
                     return `
-                    <div class="relative pl-8 md:pl-10">
+                    <div class="relative pl-10 md:pl-12">
                         <!-- Dot -->
-                        <span class="absolute -left-[9px] top-4 w-4 h-4 rounded-full border-4" 
-                            style="background-color: ${actionColor}; border-color: ${dark ? '#111827' : cardBg};"></span>
+                        <span class="absolute -left-[11px] top-5 w-5 h-5 rounded-full border-[5px]" 
+                            style="background-color: ${actionColor}; border-color: ${dark ? '#111827' : '#f8fafc'}; box-shadow: 0 0 0 1px ${actionColor}40;"></span>
                         
                         <!-- Content Card -->
-                        <div class="p-5 rounded-xl shadow-sm border mb-6 relative group transition-all hover:-translate-y-1" 
-                            style="background: ${cardBg}; border-color: ${borderColor}; color: ${textColor};">
+                        <div class="p-6 md:p-8 rounded-2xl shadow-lg border relative group transition-all hover:-translate-y-1 hover:shadow-xl" 
+                            style="background: ${cardBg}; border-color: ${dark?'#374151':'#f1f5f9'}; color: ${textColor}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 20px 25px -5px rgba(203,213,225,0.3)'};">
                             
                             <!-- Arrow -->
-                            <div class="absolute w-3 h-3 rotate-45 -left-[7px] top-6 border-l border-b" 
-                                style="background: ${cardBg}; border-color: ${borderColor};"></div>
+                            <div class="absolute w-4 h-4 rotate-45 -left-[9px] top-5 border-l border-b" 
+                                style="background: ${cardBg}; border-color: ${dark?'#374151':'#f1f5f9'};"></div>
 
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
-                                <h3 class="text-xl font-bold" style="color: ${actionColor};">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 pb-4 border-b" style="border-color: ${dark?'#374151':'#f1f5f9'};">
+                                <h3 class="text-xl font-black uppercase tracking-wide" style="color: ${actionColor};">
                                     ${h.history_action}
                                 </h3>
-                                <span class="text-sm font-mono px-3 py-1 rounded opacity-80 mt-2 sm:mt-0 w-fit" style="background: ${dark ? '#374151' : '#ffffff'}; border: 1px solid ${dark ? '#4b5563' : '#e5e7eb'};">
+                                <span class="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg opacity-80 mt-3 sm:mt-0 w-fit" style="background: ${dark ? '#374151' : '#f8fafc'}; border: 1px solid ${dark ? '#4b5563' : '#e2e8f0'};">
                                     ${new Date(h.history_date).toLocaleString('th-TH')}
                                 </span>
                             </div>
                             
-                            <div class="text-base opacity-90 leading-relaxed">
+                            <div class="text-base font-medium opacity-90 leading-relaxed">
                                 ${updatedDetails}
                             </div>
                         </div>
@@ -1189,13 +1174,9 @@
       `;
     }
 
-    // ฟังก์ชันสกัดข้อมูลยอดเงินจากประวัติ เพื่อนำมาจัดทำข้อมูลเดินบัญชี
     function getPaymentData() {
-        const history = getHistoryRecords(); // อิงตามสิทธิ์ผู้ใช้งานปัจจุบัน
-        const allCustomers = allRecords.filter(r => r.type === 'customer'); // ดึงข้อมูลลูกค้าเพื่อมาคำนวณต้นทุน
+        const history = getHistoryRecords(); 
         const payments = [];
-        // Regex หาชื่อลูกค้า สินค้า และ จำนวนเงินจากข้อความ
-        // รูปแบบข้อความประวัติ: "พี่เอก ชำระเงินค่า พัดลม งวดที่ 1 ราคา 100 บาท สำเร็จ..."
         const regex = /^(.+?) ชำระเงินค่า (.+?) งวดที่ \d+ ราคา ([\d,]+(\.\d{1,2})?) บาท/;
 
         history.forEach(h => {
@@ -1203,30 +1184,14 @@
                 const match = h.history_details.match(regex);
                 
                 if (match) {
-                    const name = match[1].trim();
-                    const product = match[2].trim();
-                    const amount = parseFloat(match[3].replace(/,/g, ''));
-                    
-                    // คำนวณค่าส่วนต่าง (กำไร) = ค่างวดที่จ่าย - (ราคาทุนสินค้า / จำนวนงวดทั้งหมด)
-                    let profit = 0;
-                    const cust = allCustomers.find(c => c.customer_name === name && c.product === product);
-                    if (cust && cust.product_price && cust.installments) {
-                        const principalPerMonth = cust.product_price / cust.installments;
-                        profit = amount - principalPerMonth;
-                    }
-                    // กันเหนียว กรณีคำนวณแล้วติดลบหรือผิดพลาด
-                    if (isNaN(profit) || profit < 0) profit = 0;
-
                     payments.push({
                         date: new Date(h.history_date),
-                        name: name,
-                        product: product,
-                        amount: amount,
-                        profit: profit, // เก็บค่าส่วนต่างที่คำนวณได้
+                        name: match[1].trim(),
+                        product: match[2].trim(),
+                        amount: parseFloat(match[3].replace(/,/g, '')),
                         raw: h
                     });
                 } else {
-                    // Fallback เผื่อเจอประวัติรูปแบบเก่าที่ไม่มีชื่อสินค้า
                     const nameMatch = h.history_details.match(/^(.+?) ชำระเงินค่า/);
                     const amountMatch = h.history_details.match(/ราคา ([\d,]+(\.\d{1,2})?) บาท/);
                     if (nameMatch && amountMatch) {
@@ -1235,7 +1200,6 @@
                             name: nameMatch[1].trim(),
                             product: 'ไม่ระบุ',
                             amount: parseFloat(amountMatch[1].replace(/,/g, '')),
-                            profit: 0,
                             raw: h
                         });
                     }
@@ -1245,13 +1209,12 @@
         return payments;
     }
 
-    // รวมยอดเงินแบบรายปี
     function getAggregatedStatementData() {
         const payments = getPaymentData();
         let filtered = [];
         let chartLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-        let chartDataAmount = new Array(12).fill(0); // กราฟยอดเงินเข้า
-        let chartDataProfit = new Array(12).fill(0); // กราฟกำไร
+        let chartDataAmount = new Array(12).fill(0); 
+        let chartDataProfit = new Array(12).fill(0); 
         let summaryByCustomer = {};
         let totalAmount = 0;
         let totalProfit = 0;
@@ -1275,7 +1238,6 @@
         return { totalAmount, totalProfit, summaryByCustomer, chartLabels, chartDataAmount, chartDataProfit, filtered, allPayments: payments };
     }
 
-    // ปรับสไตล์กราฟเป็นแท่งคู่ ดูเรียบง่าย คลีน และไม่หนา
     function initStatementChart(labels, dataAmount, dataProfit, primaryColor, textColor, isDark) {
         const ctx = document.getElementById('statementChart');
         if (!ctx) return;
@@ -1292,18 +1254,18 @@
                     {
                         label: 'ยอดเงินเข้ารวม (บาท)',
                         data: dataAmount,
-                        backgroundColor: primaryColor + '99', // สีหลักแบบโปร่งแสง
+                        backgroundColor: primaryColor + '99', 
                         borderColor: primaryColor,
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 6
                     },
                     {
                         label: 'กำไร/ส่วนต่าง (บาท)',
                         data: dataProfit,
-                        backgroundColor: '#10b98199', // สีเขียวแบบโปร่งแสง
+                        backgroundColor: '#10b98199', 
                         borderColor: '#10b981',
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 6
                     }
                 ]
             },
@@ -1313,17 +1275,19 @@
                 plugins: { 
                     legend: { 
                         display: true, 
-                        labels: { color: textColor, font: { family: 'Sarabun', weight: 'normal' }, usePointStyle: true, boxWidth: 10 } 
+                        labels: { color: textColor, font: { family: 'Sarabun', weight: 'bold' }, usePointStyle: true, boxWidth: 10 } 
                     },
                     tooltip: {
-                        backgroundColor: isDark ? '#374151' : '#ffffff',
+                        backgroundColor: isDark ? '#1f2937' : '#ffffff',
                         titleColor: textColor,
                         bodyColor: textColor,
-                        borderColor: isDark ? '#4b5563' : '#e5e7eb',
+                        borderColor: isDark ? '#4b5563' : '#f1f5f9',
                         borderWidth: 1,
-                        padding: 10,
+                        padding: 12,
                         displayColors: true,
-                        boxPadding: 4,
+                        boxPadding: 6,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';
@@ -1337,11 +1301,11 @@
                 scales: {
                     y: { 
                         beginAtZero: true, 
-                        ticks: { color: textColor, font: { weight: 'normal' }, callback: function(val) { return '฿' + val.toLocaleString() } }, 
-                        grid: { display: true, color: isDark ? '#374151' : '#e5e7eb', drawBorder: false } 
+                        ticks: { color: textColor, font: { weight: 'bold' }, callback: function(val) { return '฿' + val.toLocaleString() } }, 
+                        grid: { display: true, color: isDark ? '#374151' : '#e2e8f0', drawBorder: false } 
                     },
                     x: { 
-                        ticks: { color: textColor, font: { weight: 'normal' } }, 
+                        ticks: { color: textColor, font: { weight: 'bold' } }, 
                         grid: { display: false, drawBorder: false } 
                     }
                 },
@@ -1358,81 +1322,81 @@
         const yyyy = stmtSelectedDate.getFullYear();
         let datePickerHtml = '';
 
-        // หาปีต่ำสุดและสูงสุดที่มีในข้อมูลจริง
         let minYear = new Date().getFullYear();
         let maxYear = minYear;
         if (data.allPayments.length > 0) {
             minYear = Math.min(...data.allPayments.map(p => p.date.getFullYear()));
             maxYear = Math.max(...data.allPayments.map(p => p.date.getFullYear()));
         }
-        maxYear = Math.max(new Date().getFullYear(), maxYear); // อย่างน้อยต้องมีปีปัจจุบัน
+        maxYear = Math.max(new Date().getFullYear(), maxYear); 
 
         let options = '';
         for(let i = minYear; i <= maxYear; i++) {
             options += `<option value="${i}" ${i === yyyy ? 'selected' : ''}>ปี ${i + 543}</option>`;
         }
-        datePickerHtml = `<select id="stmt-year-picker" class="px-4 py-2 rounded-lg border text-base font-bold focus:ring-2 outline-none transition-all cursor-pointer shadow-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${primaryColor}; focus:ring-[${primaryColor}] focus:border-[${primaryColor}];">${options}</select>`;
+        datePickerHtml = `<select id="stmt-year-picker" class="px-5 py-3 rounded-xl border text-sm font-bold uppercase tracking-wider focus:ring-4 outline-none transition-all cursor-pointer shadow-sm" style="background: ${surfaceColor}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">${options}</select>`;
 
-        // คำนวณเปอร์เซ็นต์กำไรรวม
         const totalProfitPercent = data.totalAmount > 0 ? ((data.totalProfit / data.totalAmount) * 100).toFixed(1) : 0;
 
         const customers = Object.keys(data.summaryByCustomer).sort((a,b) => data.summaryByCustomer[b].profit - data.summaryByCustomer[a].profit);
         const breakdownHtml = customers.map(name => {
             const cData = data.summaryByCustomer[name];
-            // คำนวณเปอร์เซ็นต์กำไรรายคน
             const custProfitPercent = cData.amount > 0 ? ((cData.profit / cData.amount) * 100).toFixed(1) : 0;
             return `
-            <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer" style="border-color: ${dark ? '#374151' : '#e5e7eb'};" onclick="window.showStatementDetails('${name}')">
+            <div class="flex justify-between items-center p-5 border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group" style="border-color: ${dark ? '#374151' : '#f1f5f9'};" onclick="window.showStatementDetails('${name}')">
                 <div class="flex-1">
-                    <span class="font-normal" style="color: ${textColor};">ลูกค้า: ${name}</span>
+                    <span class="font-bold text-lg group-hover:text-blue-500 transition-colors" style="color: ${textColor};">👤 ลูกค้า: ${name}</span>
                 </div>
                 <div class="text-right flex flex-col">
-                    <span class="font-normal text-sm" style="color: ${primaryColor};">ยอดเข้า: ฿${cData.amount.toLocaleString()}</span>
-                    <span class="font-normal text-base" style="color: #10b981;">กำไร: ฿${Math.round(cData.profit).toLocaleString()} <span class="text-xs opacity-80">(${custProfitPercent}%)</span></span>
+                    <span class="font-bold text-sm opacity-80" style="color: ${textColor};">ยอดเข้า: ฿${cData.amount.toLocaleString()}</span>
+                    <span class="font-black text-lg" style="color: #10b981;">กำไร: ฿${Math.round(cData.profit).toLocaleString()} <span class="text-xs opacity-80 font-bold">(${custProfitPercent}%)</span></span>
                 </div>
-                <span class="ml-3 text-xs opacity-50" style="color: ${textColor};">▶</span>
+                <span class="ml-4 text-sm opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" style="color: ${textColor};">▶</span>
             </div>
             `;
         }).join('');
 
         return `
         <div class="p-4 md:p-8 max-w-6xl mx-auto fade-in">
-            <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
-                <h2 class="text-2xl font-bold" style="color: ${textColor};">${config.menu_statement || 'ข้อมูลเดินบัญชี'}</h2>
+            <div class="flex flex-col sm:flex-row gap-5 justify-between items-start sm:items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight" style="color: ${textColor};">${config.menu_statement || 'ข้อมูลเดินบัญชี'}</h2>
+                    <p class="text-sm font-bold opacity-50 uppercase tracking-widest mt-1" style="color: ${textColor};">Statement & Analytics</p>
+                </div>
                 <div class="w-full sm:w-auto flex justify-end">
                     ${datePickerHtml}
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="p-5 md:p-6 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: ${primaryColor};">
-                    <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">ยอดรวมเงินเข้าทั้งหมด (ปี ${yyyy+543})</p>
-                    <h3 class="text-3xl md:text-4xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="p-6 md:p-8 rounded-2xl shadow-xl flex flex-col items-center justify-center border-l-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: ${primaryColor}; border-top: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.4)'};">
+                    <p class="text-sm font-bold opacity-60 uppercase tracking-widest mb-3" style="color: ${textColor};">ยอดรวมเงินเข้าทั้งหมด (ปี ${yyyy+543})</p>
+                    <h3 class="text-4xl md:text-5xl font-black tracking-tight drop-shadow-sm" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
                 </div>
-                <div class="p-5 md:p-6 rounded-xl shadow-md flex flex-col items-center justify-center border-l-4 transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: #10b981;">
-                    <p class="text-sm font-semibold opacity-70 uppercase mb-2" style="color: ${textColor};">กำไร/ส่วนต่างสุทธิ (ปี ${yyyy+543})</p>
-                    <h3 class="text-3xl md:text-4xl font-black tracking-tight flex items-baseline gap-2" style="color: #10b981;">
+                <div class="p-6 md:p-8 rounded-2xl shadow-xl flex flex-col items-center justify-center border-l-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-left-color: #10b981; border-top: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.4)'};">
+                    <p class="text-sm font-bold opacity-60 uppercase tracking-widest mb-3" style="color: ${textColor};">กำไร/ส่วนต่างสุทธิ (ปี ${yyyy+543})</p>
+                    <h3 class="text-4xl md:text-5xl font-black tracking-tight flex items-baseline gap-3 drop-shadow-sm" style="color: #10b981;">
                         ฿${Math.round(data.totalProfit).toLocaleString()}
-                        <span class="text-lg md:text-xl font-bold opacity-80">(${totalProfitPercent}%)</span>
+                        <span class="text-xl md:text-2xl font-black opacity-80">(${totalProfitPercent}%)</span>
                     </h3>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 p-4 md:p-6 rounded-xl shadow-md custom-surface" style="background: ${surfaceColor}; height: 400px;">
-                    <h3 class="text-lg font-normal mb-4" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
-                    <div style="height: 320px; width: 100%;">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; height: 450px; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};">
+                    <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider" style="color: ${textColor};">กราฟสรุปยอดรายเดือน</h3>
+                    <div style="height: 330px; width: 100%;">
                         <canvas id="statementChart"></canvas>
                     </div>
                 </div>
 
-                <div class="p-4 md:p-6 rounded-xl shadow-md custom-surface flex flex-col h-[400px]" style="background: ${surfaceColor};">
-                    <h3 class="text-lg font-normal mb-4 border-b pb-2 flex justify-between items-center" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#e5e7eb'};">
+                <div class="p-6 md:p-8 rounded-2xl shadow-xl flex flex-col h-[450px]" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};">
+                    <h3 class="text-lg font-bold opacity-90 mb-6 border-b pb-4 flex justify-between items-center uppercase tracking-wider" style="color: ${textColor}; border-color: ${dark ? '#374151' : '#f1f5f9'};">
                         <span>กำไรแยกตามลูกค้า</span>
-                        <span class="text-xs font-normal opacity-60 px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">${customers.length} คน</span>
+                        <span class="text-xs font-black opacity-70 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-700">${customers.length} คน</span>
                     </h3>
                     <div class="flex-1 overflow-y-auto no-scrollbar pr-2 -mx-2 px-2">
-                        ${customers.length > 0 ? breakdownHtml : `<div class="h-full w-full flex items-center justify-center"><p class="text-center opacity-50" style="color: ${textColor};">ไม่มียอดเงินเข้าในปีนี้</p></div>`}
+                        ${customers.length > 0 ? breakdownHtml : `<div class="h-full w-full flex items-center justify-center"><p class="text-center font-bold opacity-40 uppercase tracking-widest" style="color: ${textColor};">ไม่มียอดเงินเข้าในปีนี้</p></div>`}
                     </div>
                 </div>
             </div>
@@ -1452,38 +1416,47 @@
       const currentToastDuration = globalSettings && globalSettings.toast_duration ? (globalSettings.toast_duration / 1000) : 1.5;
       const isAdmin = currentUser && currentUser.isAdmin;
 
-      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เปิดโหมดมืด</span></label></div><div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-2" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"><p class="text-sm mt-2" style="color: ${textColor}; opacity: 0.7;">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระ</p></div>
-      ${isAdmin ? `<div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor}; border: 1px solid ${primaryColor}40;">
-        <h3 class="font-semibold mb-4 flex items-center gap-2" style="color: ${textColor};">
+      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-6 h-6 rounded border-gray-300" style="accent-color: ${primaryColor};"><span class="font-semibold text-lg" style="color: ${textColor};">เปิดโหมดมืด (Dark Mode)</span></label></div><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-3 font-semibold" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-5 py-3 rounded-xl border font-bold text-lg" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"><p class="text-sm mt-3 font-medium opacity-60" style="color: ${textColor};">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระตามจำนวนวันที่ตั้งไว้</p></div>
+      ${isAdmin ? `<div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}40; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};">
+        <h3 class="font-black text-lg mb-6 flex items-center gap-3 uppercase tracking-wider" style="color: ${textColor};">
             🔌 การตั้งค่าระบบ (Admin Only)
         </h3>
-        <div class="space-y-4">
+        <div class="space-y-5">
             <div>
-                <label class="block text-sm font-medium mb-1" style="color: ${textColor};">ระยะเวลาแสดงแจ้งเตือน (วินาที)</label>
-                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-4 py-2 rounded-lg border text-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};">
+                <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">ระยะเวลาแสดงแจ้งเตือน (วินาที)</label>
+                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-5 py-3 rounded-xl border font-semibold" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
             </div>
-            <div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div>
+            <div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div>
             <div>
-                <label class="block text-sm font-medium mb-1" style="color: ${textColor};">Supabase URL</label>
-                <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-4 py-2 rounded-lg border text-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};">
+                <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase URL</label>
+                <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1" style="color: ${textColor};">Supabase Key (Anon/Public)</label>
-                <input type="password" id="setting-supabase-key" value="${supabaseKey}" class="w-full px-4 py-2 rounded-lg border text-sm" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};">
+                <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase Key (Anon/Public)</label>
+                <input type="password" id="setting-supabase-key" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
             </div>
-            <div class="flex gap-2">
-                <button id="save-connection-btn" class="px-4 py-2 rounded-lg font-medium text-sm text-white" style="background: ${primaryColor};">บันทึกและรีโหลด</button>
-                <button id="reset-connection-btn" class="px-4 py-2 rounded-lg font-medium text-sm" style="background: #ef4444; color: white;">รีเซ็ตเป็นค่าเริ่มต้น</button>
+            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <button id="save-connection-btn" class="flex-1 py-3 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor};">บันทึกและรีโหลด</button>
+                <button id="reset-connection-btn" class="flex-1 py-3 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all" style="background: #ef4444;">รีเซ็ตเป็นค่าเริ่มต้น</button>
             </div>
-            <p class="text-xs opacity-60" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่า URL/Key จะทำให้ระบบรีโหลดใหม่ทันทีเพื่อเชื่อมต่อกับฐานข้อมูลใหม่</p>
+            <p class="text-xs font-bold opacity-50 uppercase tracking-widest mt-2" style="color: ${textColor};">⚠️ การเปลี่ยนแปลงค่า URL/Key จะทำให้ระบบรีโหลดใหม่ทันที</p>
         </div>
     </div>
-    <div class="p-6 rounded-xl shadow-md" style="background: ${surfaceColor};"><h3 class="font-semibold mb-4" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-2"><label class="flex items-center gap-3"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-statement" ${currentPermissions.includes('statement') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าข้อมูลเดินบัญชี</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-gray-200 my-2 dark:bg-gray-700"></div><label class="flex items-center gap-3"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-3"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-4 h-4 rounded" style="accent-color: ${primaryColor};"><span style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
-      <button id="save-settings-btn" class="w-full py-3 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึกการตั้งค่า</button></div></div>`;
+    <div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">สิทธิ์ของผู้ไม่มีบัญชี (Guest)</h3><div class="space-y-4"><label class="flex items-center gap-4"><input type="checkbox" id="guest-manage" ${currentPermissions.includes('manage') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าจัดการรายการลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-history" ${currentPermissions.includes('history') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าประวัติการทำรายการ</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-statement" ${currentPermissions.includes('statement') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าข้อมูลเดินบัญชี</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-changelog" ${currentPermissions.includes('changelog') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าประวัติการอัปเดต</span></label><div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div><label class="flex items-center gap-4"><input type="checkbox" id="guest-settings" ${currentPermissions.includes('settings') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าการตั้งค่า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-add" ${currentPermissions.includes('add') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">เข้าถึงหน้าเพิ่มข้อมูลลูกค้า</span></label><label class="flex items-center gap-4"><input type="checkbox" id="guest-edit" ${currentPermissions.includes('edit') ? 'checked' : ''} class="w-5 h-5 rounded" style="accent-color: ${primaryColor};"><span class="font-semibold text-base" style="color: ${textColor};">แก้ไข / ชำระเงิน / ลบข้อมูล</span></label></div></div>` : ''}
+      <button id="save-settings-btn" class="w-full py-4 rounded-xl font-black text-lg transition-all hover:shadow-lg active:scale-[0.98] uppercase tracking-wide mt-4" style="background: ${primaryColor}; color: white; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);">บันทึกการตั้งค่า</button></div></div>`;
     }
 
     function renderChangelog(config, dark, surfaceColor, textColor, primaryColor) {
       const logs = [
+        {
+            version: "V.10.8 (Premium Fintech UI)",
+            date: "09/09/2026",
+            changes: [
+                "อัปเกรดหน้าจอหลักทั้งหมดเข้าสู่ดีไซน์ 'Premium Fintech' (สไตล์ที่ 2) ดูหรูหราและน่าเชื่อถือมากขึ้น",
+                "ปรับปรุงการ์ดข้อมูลลูกค้าให้มีมิติ (Soft Shadows) และขอบโค้งมนแบบแอปการเงินสมัยใหม่",
+                "ปรับโครงสร้างสีและตัวอักษรให้ชัดเจน คลีน และอ่านง่ายขึ้น โดยไม่กระทบกับระบบคำนวณเดิม"
+            ]
+        },
         {
             version: "V.10.5 (Clean Dual Bar Chart)",
             date: "04/03/2026",
@@ -1561,33 +1534,33 @@
         { version: "V.8.6 (Mobile Display Fix)", date: "28/02/2026", changes: ["แก้ไขปัญหาแถบสีดำโผล่ด้านล่างบนจอมือถือ (ซิงค์สีพื้นหลัง Body)", "เพิ่มการเปลี่ยนสีแถบ Status Bar มือถือให้กลืนกับแอป"] },
         { version: "V.8.5 (Remember Me)", date: "28/02/2026", changes: ["เพิ่มปุ่ม 'เข้าสู่ระบบค้างไว้' ในหน้า Login", "เมื่อติ๊กถูก ระบบจะจำการล็อกอินแม้ปิดเว็บไปแล้ว"] }
       ];
-      return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-6">${logs.map((log, index) => `<div class="p-6 rounded-xl shadow-md custom-surface relative overflow-hidden"><div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#374151' : '#e5e7eb')}"></div><div class="flex justify-between items-start mb-4 pl-4"><div><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#e5e7eb')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-2 text-sm opacity-60" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-2 pl-4">${log.changes.map(c => `<li style="color: ${textColor}; opacity: 0.8;">${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
+      return `<div class="p-4 md:p-8 max-w-4xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_changelog}</h2><div class="space-y-8">${logs.map((log, index) => `<div class="p-8 rounded-2xl shadow-xl relative overflow-hidden" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><div class="absolute top-0 left-0 w-3 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#4b5563' : '#e2e8f0')}"></div><div class="flex justify-between items-start mb-6 pl-5"><div><span class="px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-widest" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#f8fafc')}; border: 1px solid ${index === 0 ? primaryColor + '50' : (dark?'#4b5563':'#e2e8f0')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span><span class="ml-3 text-sm font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">${log.date}</span></div></div><ul class="list-disc list-inside space-y-3 pl-6 text-base font-medium opacity-80" style="color: ${textColor};">${log.changes.map(c => `<li>${c}</li>`).join('')}</ul></div>`).join('')}</div></div>`;
     }
 
     function renderAccount(config, dark, surfaceColor, textColor, primaryColor) {
       const role = currentUser.isAdmin ? 'Admin' : (currentUser.isGuestView ? 'Guest' : 'User');
       let permissionText = '';
-      if (currentUser.isAdmin) permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ เข้าถึงทุกเมนูและทุกฟังก์ชัน</li><li>✅ จัดการข้อมูลลูกค้าของทุกคน</li><li>✅ ลบและแก้ไขบัญชีผู้ใช้งานอื่น</li><li>✅ ตั้งค่าการเชื่อมต่อฐานข้อมูล</li></ul>`;
-      else if (currentUser.isGuestView) permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ ดูรายการลูกค้าทั้งหมด</li><li>❌ ไม่สามารถเพิ่มข้อมูลใหม่</li><li>❌ ไม่สามารถแก้ไขหรือลบข้อมูล</li><li>❌ ไม่สามารถเข้าถึงการตั้งค่า</li></ul>`;
-      else permissionText = `<ul class="list-disc list-inside space-y-1 text-sm opacity-80"><li>✅ เพิ่มข้อมูลลูกค้าใหม่</li><li>✅ จัดการ (แก้ไข/ลบ/ชำระเงิน) ลูกค้าของตนเอง</li><li>✅ ดูประวัติการทำรายการของตนเอง</li><li>❌ ไม่สามารถเห็นข้อมูลของผู้อื่น</li></ul>`;
+      if (currentUser.isAdmin) permissionText = `<ul class="list-disc list-inside space-y-2 text-base font-medium opacity-80 mt-4"><li>✅ เข้าถึงทุกเมนูและทุกฟังก์ชัน</li><li>✅ จัดการข้อมูลลูกค้าของทุกคน</li><li>✅ ลบและแก้ไขบัญชีผู้ใช้งานอื่น</li><li>✅ ตั้งค่าการเชื่อมต่อฐานข้อมูล</li></ul>`;
+      else if (currentUser.isGuestView) permissionText = `<ul class="list-disc list-inside space-y-2 text-base font-medium opacity-80 mt-4"><li>✅ ดูรายการลูกค้าทั้งหมด</li><li>❌ ไม่สามารถเพิ่มข้อมูลใหม่</li><li>❌ ไม่สามารถแก้ไขหรือลบข้อมูล</li><li>❌ ไม่สามารถเข้าถึงการตั้งค่า</li></ul>`;
+      else permissionText = `<ul class="list-disc list-inside space-y-2 text-base font-medium opacity-80 mt-4"><li>✅ เพิ่มข้อมูลลูกค้าใหม่</li><li>✅ จัดการ (แก้ไข/ลบ/ชำระเงิน) ลูกค้าของตนเอง</li><li>✅ ดูประวัติการทำรายการของตนเอง</li><li>❌ ไม่สามารถเห็นข้อมูลของผู้อื่น</li></ul>`;
 
-      return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-bold mb-6" style="color: ${textColor};">${config.menu_account}</h2><div class="p-6 rounded-xl shadow-md custom-surface"><div class="flex items-center gap-4 mb-6"><div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style="background: ${primaryColor}20; color: ${primaryColor};">👤</div><div><p class="text-xl font-semibold" style="color: ${textColor};">${currentUser.username}</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">${currentUser.isAdmin ? 'ผู้ดูแลระบบสูงสุด (Super Admin)' : (currentUser.isGuestView ? 'โหมดผู้เยี่ยมชม' : 'บัญชีผู้ใช้')}</p></div></div><div class="space-y-4"><div class="p-4 rounded-lg" style="background: ${dark ? '#374151' : '#f3f4f6'};"><p class="text-sm font-medium mb-1" style="color: ${textColor};">สถิติการใช้งาน</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ลูกค้าทั้งหมด: ${getActiveCustomers().length} รายการ</p><p class="text-sm" style="color: ${textColor}; opacity: 0.7;">ชำระครบแล้ว: ${getCompletedCustomers().length} รายการ</p></div><div class="mt-6 p-4 rounded-lg border border-opacity-20" style="border-color: ${textColor};"><h3 class="font-bold mb-2">สิทธิ์การใช้งาน (${role})</h3>${permissionText}</div></div></div></div>`;
+      return `<div class="p-4 md:p-8 max-w-3xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_account}</h2><div class="p-8 md:p-10 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><div class="flex items-center gap-6 mb-8 pb-8 border-b" style="border-color: ${dark?'#374151':'#f1f5f9'};"><div class="w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-inner border border-white/50" style="background: ${primaryColor}20; color: ${primaryColor};">👤</div><div><p class="text-3xl font-black tracking-tight mb-1" style="color: ${textColor};">${currentUser.username}</p><p class="text-sm font-bold uppercase tracking-widest opacity-60" style="color: ${textColor};">${currentUser.isAdmin ? 'ผู้ดูแลระบบสูงสุด (Super Admin)' : (currentUser.isGuestView ? 'โหมดผู้เยี่ยมชม' : 'บัญชีผู้ใช้')}</p></div></div><div class="space-y-6"><div class="p-6 rounded-2xl border shadow-sm" style="background: ${dark ? '#1f2937' : '#f8fafc'}; border-color: ${dark?'#374151':'#e2e8f0'};"><p class="text-xs font-bold uppercase tracking-widest opacity-50 mb-4" style="color: ${textColor};">สถิติการใช้งาน</p><div class="grid grid-cols-2 gap-4"><div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"><p class="text-2xl font-black text-blue-500">${getActiveCustomers().length}</p><p class="text-xs font-bold uppercase tracking-wider opacity-60 mt-1" style="color: ${textColor};">ลูกค้าทั้งหมด</p></div><div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"><p class="text-2xl font-black text-green-500">${getCompletedCustomers().length}</p><p class="text-xs font-bold uppercase tracking-wider opacity-60 mt-1" style="color: ${textColor};">ชำระครบแล้ว</p></div></div></div><div class="mt-6 p-6 rounded-2xl border border-opacity-20" style="border-color: ${textColor};"><h3 class="font-bold text-lg uppercase tracking-wider">สิทธิ์การใช้งาน (${role})</h3>${permissionText}</div></div></div></div>`;
     }
 
     function renderModal(config, dark, surfaceColor, textColor, primaryColor) {
       if (editingUser) {
           const user = allRecords.find(r => r.id === editingUser); if(!user) return '';
-          return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
+          return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-6"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div class="flex gap-4 pt-2"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
       }
       if (editingCustomer) {
         const customer = allRecords.find(r => r.id === editingCustomer); if (!customer) return '';
-        return `<div class="modal-overlay"><div class="modal-content custom-surface"><h3 class="text-xl font-bold mb-4" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-4"><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div><div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-        <div class="grid grid-cols-2 gap-4">
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">จำนวนงวดรวม</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-            <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">ชำระแล้ว (งวด)</label><input type="number" id="edit-paid-installments" value="${customer.paid_installments || 0}" min="0" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
+        return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 600px;"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-5"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+        <div class="grid grid-cols-2 gap-5">
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">จำนวนงวดรวม</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชำระแล้ว (งวด)</label><input type="number" id="edit-paid-installments" value="${customer.paid_installments || 0}" min="0" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         </div>
-        <div><label class="block text-sm font-medium mb-2" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-4 py-2 rounded-lg border" style="background: ${dark ? '#374151' : 'white'}; border-color: ${dark ? '#4b5563' : '#d1d5db'}; color: ${textColor};"></div>
-        <div class="flex gap-4"><button type="submit" class="flex-1 py-2 rounded-lg font-medium" style="background: ${primaryColor}; color: white;">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-2 rounded-lg font-medium" style="background: ${dark ? '#374151' : '#e5e7eb'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ยืนยันการลบ</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-2 rounded-lg font-medium" style="background: #ef4444; color: white;">ลบข้อมูล</button>`}</form></div></div>`;
+        <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+        <div class="flex gap-4 pt-4"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ยืนยันการลบถาวร</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ลบข้อมูล</button>`}</form></div></div>`;
       }
       if (statementDetailCustomer) {
         const data = getAggregatedStatementData();
@@ -1601,38 +1574,41 @@
 
         return `
         <div class="modal-overlay" onclick="hideModal()">
-            <div class="modal-content custom-surface" onclick="event.stopPropagation()">
-                <div class="flex justify-between items-center mb-4 border-b pb-2" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                    <h3 class="text-xl font-normal" style="color: ${textColor};">รายละเอียด: ${statementDetailCustomer}</h3>
-                    <button onclick="hideModal()" class="text-gray-500 hover:text-gray-700 text-xl font-bold px-2">&times;</button>
+            <div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 600px;" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center mb-6 border-b pb-4" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
+                    <div>
+                        <h3 class="text-2xl font-black tracking-tight" style="color: ${textColor};">รายละเอียด: ${statementDetailCustomer}</h3>
+                        <p class="text-xs font-bold uppercase tracking-widest opacity-50 mt-1" style="color: ${textColor};">ประจำ${periodText}</p>
+                    </div>
+                    <button onclick="hideModal()" class="text-gray-400 hover:text-gray-800 transition-colors text-2xl font-bold px-2">&times;</button>
                 </div>
-                <p class="text-sm opacity-70 mb-4" style="color: ${textColor};">ประจำ${periodText}</p>
-                <div class="space-y-3 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
-                    ${items.length === 0 ? `<p class="text-center opacity-50 py-4" style="color: ${textColor};">ไม่มีข้อมูล</p>` : ''}
+                
+                <div class="space-y-4 max-h-[50vh] overflow-y-auto no-scrollbar pr-2">
+                    ${items.length === 0 ? `<p class="text-center font-bold opacity-40 uppercase tracking-widest py-8" style="color: ${textColor};">ไม่มีข้อมูล</p>` : ''}
                     ${items.map(item => {
                         const itemPercent = item.amount > 0 ? ((item.profit / item.amount) * 100).toFixed(1) : 0;
                         return `
-                        <div class="p-3 rounded-lg border flex flex-col gap-2" style="background: ${dark ? '#374151' : '#f9fafb'}; border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
+                        <div class="p-5 rounded-2xl border flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow" style="background: ${dark ? '#1f2937' : '#ffffff'}; border-color: ${dark ? '#374151' : '#f1f5f9'};">
                             <div class="flex justify-between items-start">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-lg">${getProductIcon(item.product)}</span>
-                                    <span class="font-normal" style="color: ${textColor};">${item.product}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl bg-slate-50 dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">${getProductIcon(item.product)}</span>
+                                    <span class="font-bold text-lg" style="color: ${textColor};">${item.product}</span>
                                 </div>
                                 <div class="flex flex-col items-end">
-                                    <span class="font-normal text-sm" style="color: ${primaryColor};">จ่ายเข้า ฿${item.amount.toLocaleString()}</span>
-                                    <span class="font-normal text-sm" style="color: #10b981;">(กำไร ฿${Math.round(item.profit).toLocaleString()} • ${itemPercent}%)</span>
+                                    <span class="font-black text-lg tracking-tight" style="color: ${primaryColor};">จ่ายเข้า ฿${item.amount.toLocaleString()}</span>
+                                    <span class="font-bold text-sm" style="color: #10b981;">(กำไร ฿${Math.round(item.profit).toLocaleString()} • ${itemPercent}%)</span>
                                 </div>
                             </div>
-                            <div class="text-xs opacity-60 text-right" style="color: ${textColor}; mt-1">
+                            <div class="text-xs font-bold uppercase tracking-widest opacity-40 text-right" style="color: ${textColor};">
                                 ${item.date.toLocaleString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'})} น.
                             </div>
                         </div>
                         `;
                     }).join('')}
                 </div>
-                <div class="mt-4 pt-3 border-t flex justify-between items-center" style="border-color: ${dark ? '#4b5563' : '#e5e7eb'};">
-                    <span class="font-normal" style="color: ${textColor};">กำไรรวมลูกค้ารายนี้</span>
-                    <span class="text-xl font-normal" style="color: #10b981;">฿${Math.round(totalCustProfit).toLocaleString()} <span class="text-sm opacity-80">(${totalCustPercent}%)</span></span>
+                <div class="mt-6 pt-5 border-t flex justify-between items-end" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
+                    <span class="font-bold text-sm uppercase tracking-wider opacity-80" style="color: ${textColor};">กำไรรวมลูกค้ารายนี้</span>
+                    <span class="text-3xl font-black tracking-tight drop-shadow-sm" style="color: #10b981;">฿${Math.round(totalCustProfit).toLocaleString()} <span class="text-lg opacity-80">(${totalCustPercent}%)</span></span>
                 </div>
             </div>
         </div>
@@ -1864,10 +1840,7 @@
               const newInstallments = parseInt(document.getElementById('edit-installments').value);
               const newPaidInstallments = parseInt(document.getElementById('edit-paid-installments').value) || 0;
 
-              // คำนวณวันที่ชำระงวดถัดไปใหม่ โดยนับจากวันที่ทำสัญญา + จำนวนงวดที่จ่ายไปแล้ว + 1
               let nextPaymentDate = addMonthsToDate(newContractDate, newPaidInstallments + 1);
-
-              // ตรวจสอบสถานะว่าจ่ายครบหรือยัง
               let newStatus = newPaidInstallments >= newInstallments ? 'completed' : 'active';
 
               await updateCustomer(editingCustomer, {
@@ -1932,7 +1905,6 @@
           
           if(!url || !key) return showToast('กรุณากรอกข้อมูลให้ครบถ้วน', true);
           
-          // ตัดช่องว่างหน้า/หลัง และลบ slash ตัวสุดท้ายออกเพื่อป้องกัน Failed to fetch
           url = url.trim().replace(/\/$/, "");
           key = key.trim();
           
@@ -1958,7 +1930,6 @@
           }
       });
 
-      // Initialize Chart if on statement view
       if (currentView === 'statement') {
           const config = window.elementSdk?.config || defaultConfig;
           const dark = isDarkMode();
@@ -1966,7 +1937,7 @@
           const data = getAggregatedStatementData();
           setTimeout(() => {
               initStatementChart(data.chartLabels, data.chartDataAmount, data.chartDataProfit, config.primary_color, txtColor, dark);
-          }, 50); // ดีเลย์เล็กน้อยเพื่อให้ Element <canvas> โหลดเสร็จก่อน
+          }, 50); 
       }
     }
 
