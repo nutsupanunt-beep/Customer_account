@@ -19,9 +19,18 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.4";
+    const CURRENT_VERSION = "V.11.5";
     
     const APP_CHANGELOG = [
+        {
+            version: "V.11.5",
+            date: "10/09/2026",
+            changes: [
+                "ซ่อนตัวเลขแจ้งเตือน (Badge สีแดง) ในเมนูจัดการลูกค้า สำหรับโหมด Guest",
+                "เพิ่มคำสั่งบล็อกระบบสแกนรหัสผ่านของ Google Chrome เพื่อแก้ปัญหาป๊อปอัปแจ้งเตือนรหัสผ่านรั่วไหล",
+                "ปรับขนาดตัวอักษร ฟอนต์ และการจัดวางในหน้าจัดการลูกค้า ให้คลีนและใหญ่ขึ้นตามดีไซน์ต้นแบบ"
+            ]
+        },
         {
             version: "V.11.4",
             date: "10/09/2026",
@@ -45,25 +54,8 @@
             date: "10/09/2026",
             changes: [
                 "ปรับปรุงระบบตรวจจับอัปเดต (Live Update) ให้ทะลวง Cache ของบราวเซอร์มือถือได้ 100%",
-                "แก้ไขบั๊กป๊อปอัป 'มีอะไรใหม่' ไม่เด้งในมือถือ โดยเปลี่ยนระบบเวลาให้สัมพันธ์กับการวาดหน้าจอ",
+                "แก้ไขบั๊กป๊อปอัป 'มีอะไรใหม่' ไม่เด้งในมือถือ",
                 "เพิ่มความเสถียรเมื่อเปิดแอปผ่านแอปพลิเคชันแชท (LINE/Messenger)"
-            ]
-        },
-        {
-            version: "V.11.1",
-            date: "09/09/2026",
-            changes: [
-                "เพิ่มระบบป๊อปอัปแจ้งเตือน 'มีอะไรใหม่' (What's New) แสดงผล 5 วินาที",
-                "เพิ่มระบบตรวจจับอัปเดตเบื้องหลัง หากแอปมีเวอร์ชันใหม่จะแจ้งเตือนให้กด 'รีสตาร์ทแอป' ทันที"
-            ]
-        },
-        {
-            version: "V.11.0",
-            date: "09/09/2026",
-            changes: [
-                "เปลี่ยนระบบการนับเวอร์ชันใหม่ (รันเศษถึง .9 แล้วปัดขึ้นเป็นเลขหลักถัดไป)",
-                "ย้ายเมนู 'ประวัติการอัปเดต' ออกจากแถบเมนูหลัก เพื่อเพิ่มพื้นที่การใช้งาน",
-                "เพิ่มปุ่ม ⓘ ท้ายเลขเวอร์ชันด้านล่าง สำหรับดูประวัติแบบป๊อปอัป (Modal)"
             ]
         }
     ];
@@ -274,9 +266,6 @@
     let topChartInstance = null;
     let doughnutChartInstance = null;
 
-    // ==========================================
-    // 🟢 ระบบจัดการการแจ้งเตือนและการอัปเดต 
-    // ==========================================
     let whatsNewTimerInterval = null;
 
     function checkAndShowWhatsNew() {
@@ -375,10 +364,6 @@
         document.body.appendChild(div);
     }
     
-    // ==========================================
-    // 🔴 ระบบคำนวณและแจ้งเตือนยอดครบกำหนดชำระ
-    // ==========================================
-    
     function getDuePaymentsInfo() {
         const customers = getActiveCustomers();
         const daysBefore = getPaymentDaysBefore();
@@ -446,8 +431,6 @@
         const m = document.getElementById('payment-reminder-modal');
         if(m) m.remove();
     }
-
-    // ==========================================
 
     const dataHandler = {
       onDataChanged(data) {
@@ -1000,6 +983,7 @@
     }
 
     function renderLoginPage(config, dark, surfaceColor, textColor, primaryColor) {
+      // 🟢 เติม autocomplete="new-password" ในหน้า Login / Register / Reset ป้องกัน Chrome ตรวจจับว่ารหัสนี้ถูกแฮก
       return `
         <div class="flex items-center justify-center min-h-full p-4 w-full transition-colors duration-300" style="background: ${dark ? '#111827' : '#f8fafc'};">
           <div class="w-full max-w-md p-8 md:p-10 rounded-[2rem] transition-all" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#ffffff'}; box-shadow: ${dark ? '0 25px 50px -12px rgba(0,0,0,0.5)' : '0 25px 50px -12px rgba(0,0,0,0.05), 0 0 40px rgba(59, 130, 246, 0.05)'};">
@@ -1009,11 +993,11 @@
             <div id="login-form" class="space-y-5 pb-2">
               <div>
                   <label class="block text-sm font-semibold mb-2" style="color: ${textColor}; opacity: 0.9;">ชื่อผู้ใช้</label>
-                  <input type="text" id="login-username" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
+                  <input type="text" id="login-username" autocomplete="off" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
               </div>
               <div>
                   <label class="block text-sm font-semibold mb-2" style="color: ${textColor}; opacity: 0.9;">รหัสผ่าน</label>
-                  <input type="password" id="login-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
+                  <input type="password" id="login-password" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
               </div>
               
               <div class="flex items-center mt-4 mb-2">
@@ -1035,15 +1019,15 @@
             </div>
             
             <div id="register-form" class="space-y-4 hidden">
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="register-username" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="register-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="register-username" autocomplete="off" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="register-password" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
               <button id="register-btn" class="w-full py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor}; color: white;">ลงทะเบียน</button>
               <button id="back-to-login-btn" class="w-full py-3 text-sm font-bold opacity-70 hover:opacity-100 transition-all" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
             </div>
             <div id="reset-form" class="space-y-4 hidden">
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="reset-username" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัส Admin</label><input type="text" id="reset-admin" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="reset-newpassword" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="reset-username" autocomplete="off" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัส Admin</label><input type="password" id="reset-admin" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="reset-newpassword" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
               <button id="reset-btn" class="w-full py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor}; color: white;">รีเซ็ตรหัสผ่าน</button>
               <button id="back-to-login-btn2" class="w-full py-3 text-sm font-bold opacity-70 hover:opacity-100 transition-all" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
             </div>
@@ -1091,9 +1075,9 @@
                     : `background: transparent; color: ${textColor};`;
                 const hoverStyle = isActive ? '' : 'hover:bg-slate-50 dark:hover:bg-gray-800';
                 
-                // 🔴 แปะตัวเลขสีแดงที่เมนูจัดการลูกค้า แบบไม่ให้ทับตัวอักษร (ใช้ Flexbox แทน Absolute)
+                // 🟢 เงื่อนไขไม่โชว์ Badge แดงให้ Guest เห็น
                 let badgeHtml = '';
-                if (v.id === 'manage' && dueInfo.count > 0) {
+                if (v.id === 'manage' && dueInfo.count > 0 && currentUser && !currentUser.isGuestView) {
                     badgeHtml = `<span class="bg-red-500 text-white text-[11px] font-black px-2 py-1 rounded-full shadow-sm leading-none flex-shrink-0 ml-auto border border-white/20">${dueInfo.count}</span>`;
                 }
 
@@ -1183,6 +1167,7 @@
       </form></div></div>`;
     }
 
+    // 🟢 ปรับดีไซน์หน้าจัดการลูกค้า ให้ตัวอักษรใหญ่และคลีนตามรูป
     function renderManageCustomers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       let customers = getActiveCustomers();
       
@@ -1215,15 +1200,16 @@
         </div>
 
         <div class="mb-6">
-            <div class="p-6 md:p-8 rounded-2xl shadow-xl transition-all mb-8" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.4)'}; border-top: 4px solid ${primaryColor};">
+            <!-- 🟢 ปรับขนาดตัวอักษรและสีกล่องนี้ให้เหมือนในรูปเป๊ะ -->
+            <div class="p-6 md:p-8 rounded-2xl shadow-xl transition-all mb-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 border-t-[4px] border-t-blue-500">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                     <div>
-                        <h3 class="text-lg font-bold opacity-90 mb-1" style="color: ${textColor};">สรุปยอดตามลูกค้า</h3>
-                        <p class="text-sm font-medium opacity-60 uppercase tracking-widest" style="color: ${textColor};">Overview</p>
+                        <h3 class="text-xl font-black text-gray-800 dark:text-gray-100 mb-1">สรุปยอดตามลูกค้า</h3>
+                        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">OVERVIEW</p>
                     </div>
                     <div class="text-left sm:text-right mt-4 sm:mt-0">
-                        <p class="text-sm font-bold opacity-60 uppercase tracking-widest mb-1" style="color: ${textColor};">ยอดรวมที่ต้องชำระทั้งหมด</p>
-                        <p class="text-4xl md:text-5xl font-black tracking-tight" style="color: ${primaryColor}; drop-shadow-sm;">฿${grandTotal.toLocaleString()}</p>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">ยอดรวมที่ต้องชำระทั้งหมด</p>
+                        <p class="text-5xl md:text-6xl font-black tracking-tighter text-blue-500 drop-shadow-sm">฿${grandTotal.toLocaleString()}</p>
                     </div>
                 </div>
             </div>
@@ -1251,30 +1237,31 @@
                   let breakdownHtml = '';
                   const lenders = Object.keys(s.lenderTotals).sort((a, b) => a.localeCompare(b, 'th'));
 
+                  // 🟢 ปรับตารางแจกแจงรายคน ให้มีขนาดเล็กลง สีเทา คลีนๆ เหมือนรูป
                   if (isSpecialView) {
                       breakdownHtml = `
                           <div class="w-full flex flex-col items-end">
-                              <div class="flex items-center justify-end gap-3 mb-2 w-full border-b pb-2" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
-                                  <span class="text-xs font-bold uppercase tracking-wider opacity-50" style="color: ${textColor};">ผู้ให้บริการ</span>
-                                  <span class="text-xs font-bold uppercase tracking-wider opacity-50 w-24 text-right" style="color: ${textColor};">ยอดรวม</span>
+                              <div class="flex items-center justify-end gap-4 mb-2 w-full pb-2">
+                                  <span class="text-[11px] font-bold text-gray-400">ผู้ให้บริการ</span>
+                                  <span class="text-[11px] font-bold text-gray-400 w-20 text-right">ยอดรวม</span>
                               </div>
                       `;
 
                       breakdownHtml += lenders.map(lender => {
                           const lenderColor = getLenderColor(lender, dark);
                           return `
-                          <div class="flex items-center justify-end gap-3 mb-2 w-full">
-                              <span class="text-base font-bold tracking-wide" style="color: ${lenderColor};">${lender}</span>
-                              <span class="text-xl font-black w-24 text-right" style="color: ${textColor};">฿${s.lenderTotals[lender].toLocaleString()}</span>
+                          <div class="flex items-center justify-end gap-4 mb-1.5 w-full">
+                              <span class="text-sm font-bold" style="color: ${lenderColor};">${lender}</span>
+                              <span class="text-lg font-black w-20 text-right text-gray-800 dark:text-gray-100">฿${s.lenderTotals[lender].toLocaleString()}</span>
                           </div>
                           `;
                       }).join('');
                       
                       if (lenders.length > 1) {
                           breakdownHtml += `
-                                  <div class="flex items-center justify-end gap-3 mt-3 pt-3 border-t w-full" style="border-color: ${dark ? '#4b5563' : '#e2e8f0'};">
-                                      <span class="text-sm font-bold uppercase tracking-wider opacity-70" style="color: ${textColor};">รวมทุกสัญญา</span>
-                                      <span class="text-2xl font-black w-24 text-right" style="color: ${primaryColor};">฿${s.totalNextMonth.toLocaleString()}</span>
+                                  <div class="flex items-center justify-end gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 w-full">
+                                      <span class="text-sm font-bold text-gray-500">รวมทุกสัญญา</span>
+                                      <span class="text-xl font-black w-24 text-right text-blue-500">฿${s.totalNextMonth.toLocaleString()}</span>
                                   </div>
                           `;
                       }
@@ -1283,27 +1270,27 @@
                   } else {
                       breakdownHtml = `
                           <div class="flex flex-col items-end">
-                              <span class="text-xs font-bold uppercase tracking-widest opacity-60 mb-1" style="color: ${textColor};">ยอดเรียกเก็บงวดถัดไป</span>
+                              <span class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">ยอดเรียกเก็บงวดถัดไป</span>
                               <p class="text-3xl font-black tracking-tight" style="color: #10b981;">฿${s.totalNextMonth.toLocaleString()}</p>
                           </div>
                       `;
                   }
 
                   let html = `
-                  <div class="rounded-2xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl group" style="border: 1px solid ${dark?'#374151':'#f1f5f9'}; background: ${dark?'#1f2937':'#ffffff'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};">
+                  <div class="rounded-2xl overflow-hidden transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl group" style="border: 1px solid ${dark?'#374151':'#f1f5f9'}; background: ${dark?'#1f2937':'#ffffff'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 10px 15px -3px rgba(0,0,0,0.05)'};">
                     <div class="py-6 px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center cursor-pointer" onclick="window.toggleCustomerExpand('${s.name}')">
                         
                         <div class="flex items-center gap-5 sm:gap-6 mb-4 sm:mb-0 w-full sm:w-auto">
                             <div class="flex flex-col justify-center shrink-0">
-                                <p class="font-black text-xl flex items-center gap-3 tracking-wide group-hover:text-blue-500 transition-colors" style="color: ${textColor};">
+                                <p class="font-black text-xl flex items-center gap-3 tracking-wide group-hover:text-blue-500 transition-colors text-gray-900 dark:text-gray-100">
                                     ${s.name}
-                                    <span class="text-xs opacity-40 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}">▼</span>
+                                    <span class="text-[10px] text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}">▼</span>
                                 </p>
                             </div>
-                            <div class="flex flex-row sm:flex-col items-baseline sm:items-start gap-2 sm:gap-0 border-l-2 pl-5 sm:pl-6" style="border-color: ${dark ? '#374151' : '#f1f5f9'};">
-                                <span class="text-[10px] font-bold opacity-50 uppercase tracking-widest sm:mb-1 whitespace-nowrap" style="color: ${textColor};">จำนวนรายการ</span>
-                                <p class="font-black text-lg whitespace-nowrap" style="color: ${primaryColor};">
-                                    ${s.count} <span class="text-xs font-bold opacity-60 uppercase tracking-wider" style="color: ${textColor};">สัญญา</span>
+                            <div class="flex flex-row sm:flex-col items-baseline sm:items-start gap-1 sm:gap-0 border-l-2 pl-4 sm:pl-5 border-gray-200 dark:border-gray-700">
+                                <span class="text-[10px] font-bold text-gray-400 mb-0.5">จำนวนรายการ</span>
+                                <p class="font-black text-base text-blue-500">
+                                    ${s.count} <span class="text-sm font-medium text-gray-500">สัญญา</span>
                                 </p>
                             </div>
                         </div>
@@ -1312,7 +1299,7 @@
                             <div class="text-right w-full flex flex-col items-end">
                                 ${breakdownHtml}
                             </div>
-                            ${canEditData() ? `<button data-pay-all="${s.name}" onclick="event.stopPropagation();" class="px-6 py-3 rounded-xl text-sm font-bold shadow-md transition-all uppercase tracking-wider ${hasDueItems ? 'hover:-translate-y-0.5 hover:shadow-lg' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? (dark ? '#3b82f6' : '#1e293b') : '#9ca3af'}; color: white;" ${hasDueItems ? '' : 'disabled'}>💳 ชำระทั้งหมด</button>` : ''}
+                            ${canEditData() ? `<button data-pay-all="${s.name}" onclick="event.stopPropagation();" class="px-6 py-3 rounded-xl text-sm font-bold shadow-sm transition-all ${hasDueItems ? 'hover:-translate-y-0.5 hover:shadow-md' : 'payment-disabled cursor-not-allowed'}" style="background: ${hasDueItems ? (dark ? '#374151' : '#1e293b') : '#e2e8f0'}; color: ${hasDueItems ? 'white' : '#64748b'};" ${hasDueItems ? '' : 'disabled'}>💳 ชำระทั้งหมด</button>` : ''}
                         </div>
                     </div>
                   `;
@@ -1793,7 +1780,7 @@
             </div>
             <div>
                 <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase Key (Anon/Public)</label>
-                <input type="password" id="setting-supabase-key" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
+                <input type="password" id="setting-supabase-key" autocomplete="new-password" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
             </div>
             <div class="flex flex-col sm:flex-row gap-3 pt-2">
                 <button id="save-connection-btn" class="flex-1 py-3 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor};">บันทึกและรีโหลด</button>
@@ -1819,7 +1806,7 @@
     function renderModal(config, dark, surfaceColor, textColor, primaryColor) {
       if (editingUser) {
           const user = allRecords.find(r => r.id === editingUser); if(!user) return '';
-          return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-6"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="text" id="admin-new-pass" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div class="flex gap-4 pt-2"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
+          return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-6"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="admin-new-pass" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div class="flex gap-4 pt-2"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
       }
       if (editingCustomer) {
         const customer = allRecords.find(r => r.id === editingCustomer); if (!customer) return '';
