@@ -19,9 +19,17 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.3";
+    const CURRENT_VERSION = "V.11.4";
     
     const APP_CHANGELOG = [
+        {
+            version: "V.11.4",
+            date: "10/09/2026",
+            changes: [
+                "แก้ไขบั๊ก UI ตัวเลขแจ้งเตือน (Badge) สีแดงทับตัวอักษรในเมนูจัดการรายการลูกค้า",
+                "ปรับปรุงการจัดเรียงเมนูด้านซ้ายด้วย Flexbox ให้รองรับข้อความยาวได้ดีขึ้นโดยไม่ทับซ้อนกัน"
+            ]
+        },
         {
             version: "V.11.3",
             date: "10/09/2026",
@@ -315,12 +323,12 @@
                     }
                 }, 1000);
                 
-                return true; // บอกว่ามีการโชว์ What's new นะ
+                return true; 
             }
         } catch(e) {
             console.warn("Storage access restricted", e);
         }
-        return false; // ไม่ได้โชว์
+        return false; 
     }
 
     window.closeWhatsNew = function() {
@@ -329,7 +337,6 @@
         const m = document.getElementById('whats-new-modal');
         if(m) m.remove();
         
-        // 🔴 ระบบคิว: เมื่อปิดป๊อปอัปแจ้งอัปเดตแล้ว ให้หน่วงเวลา 0.5 วิ แล้วเช็คป๊อปอัปทวงเงินต่อเลย (จะไม่ชนกัน)
         setTimeout(checkAndShowPaymentReminder, 500);
     };
 
@@ -372,7 +379,6 @@
     // 🔴 ระบบคำนวณและแจ้งเตือนยอดครบกำหนดชำระ
     // ==========================================
     
-    // ฟังก์ชันคำนวณจำนวนรายการที่ถึงกำหนดชำระทั้งหมด
     function getDuePaymentsInfo() {
         const customers = getActiveCustomers();
         const daysBefore = getPaymentDaysBefore();
@@ -389,20 +395,16 @@
         return { count, totalAmount };
     }
 
-    // ฟังก์ชันโชว์ป๊อปอัปแจ้งเตือนเก็บเงิน
     function checkAndShowPaymentReminder() {
-        // 1. ถ้าไม่ได้ล็อกอิน หรือเป็นแค่โหมด Guest ให้ข้ามไปเลย ไม่ต้องแจ้งเตือนทวงเงิน
         if (!currentUser || currentUser.isGuestView) return; 
         
-        // 2. เช็คว่ามีรายการค้างจ่ายไหม
         const dueInfo = getDuePaymentsInfo();
         if (dueInfo.count === 0) return;
 
-        // 3. แจ้งแค่วันละครั้ง เช็คจาก LocalStorage
         const todayStr = new Date().toLocaleDateString('th-TH');
         try {
             const lastDate = localStorage.getItem('app_last_reminder_date');
-            if (lastDate === todayStr) return; // วันนี้แจ้งไปแล้ว ปิดจ๊อบ
+            if (lastDate === todayStr) return; 
         } catch(e) {}
 
         const modalId = 'payment-reminder-modal';
@@ -1061,7 +1063,6 @@
       ];
       if (currentUser && currentUser.isAdmin) views.splice(5, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
 
-      // 🔴 คำนวณตัวเลขแจ้งเตือนเพื่อแสดงในเมนูด้านซ้าย
       const dueInfo = getDuePaymentsInfo();
 
       const baseClasses = "w-64 p-6 flex flex-col z-40 transition-all duration-300 ease-in-out h-full overflow-x-hidden custom-sidebar border-r";
@@ -1090,13 +1091,17 @@
                     : `background: transparent; color: ${textColor};`;
                 const hoverStyle = isActive ? '' : 'hover:bg-slate-50 dark:hover:bg-gray-800';
                 
-                // 🔴 แปะตัวเลขสีแดงที่เมนูจัดการลูกค้า ถ้ามียอดค้างชำระ
+                // 🔴 แปะตัวเลขสีแดงที่เมนูจัดการลูกค้า แบบไม่ให้ทับตัวอักษร (ใช้ Flexbox แทน Absolute)
                 let badgeHtml = '';
                 if (v.id === 'manage' && dueInfo.count > 0) {
-                    badgeHtml = `<span class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full border border-white dark:border-gray-800 shadow-sm leading-none z-10">${dueInfo.count}</span>`;
+                    badgeHtml = `<span class="bg-red-500 text-white text-[11px] font-black px-2 py-1 rounded-full shadow-sm leading-none flex-shrink-0 ml-auto border border-white/20">${dueInfo.count}</span>`;
                 }
 
-                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3.5 rounded-xl font-semibold flex items-center gap-3 transition-all relative ${hoverStyle}" style="${activeStyle}"><span class="text-xl">${v.icon}</span>${v.label}${badgeHtml}</button>`;
+                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3.5 rounded-xl font-semibold flex items-center transition-all ${hoverStyle}" style="${activeStyle}">
+                    <span class="text-xl mr-3 flex-shrink-0">${v.icon}</span>
+                    <span class="truncate flex-1">${v.label}</span>
+                    ${badgeHtml}
+                </button>`;
             }).join('')}
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#f1f5f9'};">
