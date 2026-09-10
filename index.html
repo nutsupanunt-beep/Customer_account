@@ -19,30 +19,31 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.6";
+    const CURRENT_VERSION = "V.11.7";
     
     const APP_CHANGELOG = [
+        {
+            version: "V.11.7",
+            date: "10/09/2026",
+            changes: [
+                "แก้ไขปัญหาหน้าจอล็อกอินค้าง (Infinite Loading) ด้วยระบบดักจับ Error อัจฉริยะ",
+                "ปิดกั้นป๊อปอัปเปลี่ยนรหัสผ่านของเบราว์เซอร์กวนใจ 100% (Chrome Password Protection Bypass)",
+                "ซ่อนการแจ้งเตือนค้างชำระในเมนูของบัญชี Guest อย่างสมบูรณ์",
+                "ปรับแก้ฟอนต์และขนาดตัวอักษรให้สวยงามตรงตามรูปตัวอย่างต้นฉบับ"
+            ]
+        },
         {
             version: "V.11.6",
             date: "10/09/2026",
             changes: [
-                "แก้ไขบั๊กตัวอักษรเมนูด้านซ้ายขาดหาย (แสดงเป็น ...) โดยปรับให้ข้อความยาวสามารถปัดขึ้นบรรทัดใหม่ได้อัตโนมัติ"
+                "แก้ไขบั๊กตัวอักษรเมนูด้านซ้ายขาดหาย โดยปรับให้ข้อความยาวปัดบรรทัดใหม่อัตโนมัติ"
             ]
         },
         {
             version: "V.11.5",
             date: "10/09/2026",
             changes: [
-                "ซ่อนตัวเลขแจ้งเตือน (Badge สีแดง) ในเมนูจัดการลูกค้า สำหรับโหมด Guest",
-                "เพิ่มคำสั่งบล็อกระบบสแกนรหัสผ่านของ Google Chrome เพื่อแก้ปัญหาป๊อปอัปแจ้งเตือนรหัสผ่านรั่วไหล",
-                "ปรับขนาดตัวอักษร ฟอนต์ และการจัดวางในหน้าจัดการลูกค้า ให้คลีนและใหญ่ขึ้นตามดีไซน์ต้นแบบ"
-            ]
-        },
-        {
-            version: "V.11.4",
-            date: "10/09/2026",
-            changes: [
-                "แก้ไขบั๊ก UI ตัวเลขแจ้งเตือน (Badge) สีแดงทับตัวอักษรในเมนูจัดการรายการลูกค้า"
+                "ปรับปรุงการจัดเรียงในหน้าจัดการลูกค้า ให้คลีนและใหญ่ขึ้นตามดีไซน์ต้นแบบ"
             ]
         },
         {
@@ -50,16 +51,7 @@
             date: "10/09/2026",
             changes: [
                 "เพิ่มระบบ 'แจ้งเตือนเรียกเก็บเงินอัจฉริยะ' แสดงยอดรวมที่ต้องเก็บเมื่อถึงกำหนด",
-                "เพิ่มตัวเลข (Badge) สีแดงที่เมนูจัดการลูกค้า เพื่อบอกจำนวนรายการที่ค้างชำระ",
-                "แยกระบบแจ้งเตือนของ Admin ออกจาก Guest"
-            ]
-        },
-        {
-            version: "V.11.2",
-            date: "10/09/2026",
-            changes: [
-                "ปรับปรุงระบบตรวจจับอัปเดต (Live Update) ให้ทะลวง Cache ของบราวเซอร์มือถือได้ 100%",
-                "แก้ไขบั๊กป๊อปอัป 'มีอะไรใหม่' ไม่เด้งในมือถือ"
+                "เพิ่มตัวเลข (Badge) สีแดงที่เมนูจัดการลูกค้า เพื่อบอกจำนวนรายการที่ค้างชำระ"
             ]
         }
     ];
@@ -270,9 +262,6 @@
     let topChartInstance = null;
     let doughnutChartInstance = null;
 
-    // ==========================================
-    // 🟢 ระบบจัดการการแจ้งเตือนและการอัปเดต 
-    // ==========================================
     let whatsNewTimerInterval = null;
 
     function checkAndShowWhatsNew() {
@@ -371,10 +360,6 @@
         document.body.appendChild(div);
     }
     
-    // ==========================================
-    // 🔴 ระบบคำนวณและแจ้งเตือนยอดครบกำหนดชำระ
-    // ==========================================
-    
     function getDuePaymentsInfo() {
         const customers = getActiveCustomers();
         const daysBefore = getPaymentDaysBefore();
@@ -384,7 +369,7 @@
         customers.forEach(c => {
             if (canPayNow(c.next_payment_date, daysBefore)) {
                 count++;
-                totalAmount += c.monthly_payment;
+                totalAmount += (c.monthly_payment || 0);
             }
         });
         
@@ -392,6 +377,7 @@
     }
 
     function checkAndShowPaymentReminder() {
+        // แข็งแกร่งขึ้น: ถ้าไม่ล็อกอิน หรือเป็น Guest ข้าม 100%
         if (!currentUser || currentUser.isGuestView) return; 
         
         const dueInfo = getDuePaymentsInfo();
@@ -462,8 +448,11 @@
     function getToastDuration() {
         const settingsRecords = allRecords.filter(r => r.type === 'settings');
         if (settingsRecords.length > 0) {
-            settingsRecords.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
-            return settingsRecords[0].toast_duration ? parseInt(settingsRecords[0].toast_duration) : 1500;
+            // ป้องกัน Error หากไม่มีวันที่ 
+            try {
+                settingsRecords.sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0));
+                return settingsRecords[0].toast_duration ? parseInt(settingsRecords[0].toast_duration) : 1500;
+            } catch(e) { return 1500; }
         }
         return 1500;
     }
@@ -490,6 +479,7 @@
     function toggleMobileSidebar() { isMobileSidebarOpen = !isMobileSidebarOpen; renderApp(); }
 
     function hashPassword(password) {
+      if(!password) return "";
       let hash = 0;
       for (let i = 0; i < password.length; i++) {
         const char = password.charCodeAt(i);
@@ -500,36 +490,39 @@
     }
 
     function checkLogin() {
-      let savedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        if (currentUser.isGuestView && currentView === 'add') currentView = 'manage';
-      }
+      try {
+          let savedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+          if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            if (currentUser.isGuestView && currentView === 'add') currentView = 'manage';
+          }
+      } catch(e) { console.error(e); }
     }
 
     function login(username, password, rememberMe = false) {
-      if (username === 'admin' && password === 'admin') {
-        currentUser = { id: 'super_admin', username: 'Admin (Super)', isAdmin: true };
-        
-        if (rememberMe) localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        else sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-        showToast('เข้าสู่ระบบ Super Admin สำเร็จ');
-        renderApp();
-        return true;
+      try {
+          if (username === 'admin' && password === 'admin') {
+            currentUser = { id: 'super_admin', username: 'Admin (Super)', isAdmin: true };
+            if (rememberMe) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            else sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showToast('เข้าสู่ระบบ Super Admin สำเร็จ');
+            renderApp();
+            return true;
+          }
+          const userRecord = allRecords.find(r => r.type === 'user' && r.username === username && r.password_hash === hashPassword(password));
+          if (userRecord) {
+            currentUser = { username: userRecord.username, id: userRecord.id };
+            if (rememberMe) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            else sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showToast('เข้าสู่ระบบสำเร็จ');
+            renderApp();
+            return true;
+          }
+          return false;
+      } catch(e) {
+          console.error("Login Error:", e);
+          return false;
       }
-      const userRecord = allRecords.find(r => r.type === 'user' && r.username === username && r.password_hash === hashPassword(password));
-      if (userRecord) {
-        currentUser = { username: userRecord.username, id: userRecord.id };
-        
-        if (rememberMe) localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        else sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-        showToast('เข้าสู่ระบบสำเร็จ');
-        renderApp();
-        return true;
-      }
-      return false;
     }
 
     function logout() {
@@ -538,8 +531,10 @@
       currentView = 'manage'; 
       isMobileSidebarOpen = false;
       
-      localStorage.removeItem('currentUser');
-      sessionStorage.removeItem('currentUser');
+      try {
+          localStorage.removeItem('currentUser');
+          sessionStorage.removeItem('currentUser');
+      } catch(e) {}
       
       showToast(wasGuest ? 'กลับไปหน้าหลัก' : 'ออกจากระบบสำเร็จ');
       renderApp();
@@ -581,7 +576,7 @@
       }
       
       const userSettings = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.id);
-      return { ...defaultSettings, ...userSettings }; 
+      return userSettings ? { ...defaultSettings, ...userSettings } : defaultSettings; 
     }
     
     function getGlobalGuestSettings() {
@@ -688,6 +683,7 @@
     }
 
     function canPayNow(nextPaymentDate, daysBefore) {
+      if(!nextPaymentDate) return false;
       const today = new Date();
       const paymentDate = new Date(nextPaymentDate);
       const daysUntil = Math.ceil((paymentDate - today) / (1000 * 60 * 60 * 24));
@@ -773,14 +769,14 @@
       const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
       
       let changes = [];
-      if (customer.customer_name !== updates.customer_name) changes.push(`ชื่อลูกค้า: ${customer.customer_name} ➔ ${updates.customer_name}`);
-      if (customer.product !== updates.product) changes.push(`สินค้า: ${customer.product} ➔ ${updates.product}`);
-      if (parseFloat(customer.product_price || 0) !== parseFloat(updates.product_price || 0)) changes.push(`ราคาสินค้า: ฿${(customer.product_price||0).toLocaleString()} ➔ ฿${(updates.product_price||0).toLocaleString()}`);
-      if (parseFloat(customer.monthly_payment || 0) !== parseFloat(updates.monthly_payment || 0)) changes.push(`ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()} ➔ ฿${(updates.monthly_payment||0).toLocaleString()}`);
-      if (parseInt(customer.installments || 0) !== parseInt(updates.installments || 0)) changes.push(`จำนวนงวดรวม: ${customer.installments} ➔ ${updates.installments}`);
-      if (parseInt(customer.paid_installments || 0) !== parseInt(updates.paid_installments || 0)) changes.push(`งวดที่ชำระแล้ว: ${customer.paid_installments} ➔ ${updates.paid_installments}`);
-      if (customer.contract_date !== updates.contract_date) changes.push(`วันที่ทำสัญญา: ${customer.contract_date} ➔ ${updates.contract_date}`);
-      if (customer.next_payment_date !== updates.next_payment_date) changes.push(`วันที่ชำระงวดถัดไป: ${new Date(customer.next_payment_date).toLocaleDateString('th-TH')} ➔ ${new Date(updates.next_payment_date).toLocaleDateString('th-TH')}`);
+      if (customer.customer_name !== updates.customer_name) changes.push(`ชื่อลูกค้า: ${customer.customer_name} ➔${updates.customer_name}`);
+      if (customer.product !== updates.product) changes.push(`สินค้า: ${customer.product} ➔${updates.product}`);
+      if (parseFloat(customer.product_price || 0) !== parseFloat(updates.product_price || 0)) changes.push(`ราคาสินค้า: ฿${(customer.product_price\vert{}\vert{}0).toLocaleString()} ➔ ฿${(updates.product_price||0).toLocaleString()}`);
+      if (parseFloat(customer.monthly_payment || 0) !== parseFloat(updates.monthly_payment || 0)) changes.push(`ค่างวด: ฿${(customer.monthly_payment\vert{}\vert{}0).toLocaleString()} ➔ ฿${(updates.monthly_payment||0).toLocaleString()}`);
+      if (parseInt(customer.installments || 0) !== parseInt(updates.installments || 0)) changes.push(`จำนวนงวดรวม: ${customer.installments} ➔${updates.installments}`);
+      if (parseInt(customer.paid_installments || 0) !== parseInt(updates.paid_installments || 0)) changes.push(`งวดที่ชำระแล้ว: ${customer.paid_installments} ➔${updates.paid_installments}`);
+      if (customer.contract_date !== updates.contract_date) changes.push(`วันที่ทำสัญญา: ${customer.contract_date} ➔${updates.contract_date}`);
+      if (customer.next_payment_date !== updates.next_payment_date) changes.push(`วันที่ชำระงวดถัดไป: ${new Date(customer.next_payment_date).toLocaleDateString('th-TH')} ➔${new Date(updates.next_payment_date).toLocaleDateString('th-TH')}`);
       if (customer.status !== updates.status) changes.push(`สถานะ: ${customer.status === 'active' ? 'กำลังผ่อน' : 'ผ่อนครบแล้ว'} ➔ ${updates.status === 'active' ? 'กำลังผ่อน' : 'ผ่อนครบแล้ว'}`);
 
       let details = `แก้ไขข้อมูลของ <b>${customer.customer_name}</b> (รายการ: ${customer.product})`;
@@ -845,7 +841,7 @@
       const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
       const result = await window.dataSdk.delete(customer);
       if (result.isOk) { 
-          await addHistory('ลบข้อมูล', `ลบข้อมูลของ <b>${customer.customer_name}</b><br><span class="block mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"><b>รายละเอียดที่ถูกลบ:</b><br>• สินค้า: ${customer.product}<br>• ราคา: ฿${(customer.product_price||0).toLocaleString()}<br>• ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()}</span>`); 
+          await addHistory('ลบข้อมูล', `ลบข้อมูลของ <b>${customer.customer_name}</b><br><span class="block mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"><b>รายละเอียดที่ถูกลบ:</b><br>• สินค้า: ${customer.product}<br>• ราคา: ฿${(customer.product_price\vert{}\vert{}0).toLocaleString()}<br>• ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()}</span>`); 
           showToast('ลบข้อมูลสำเร็จ'); 
           confirmDeleteId = null; 
       } 
@@ -912,7 +908,7 @@
                 lenderTotals: {} 
             };
         }
-        summary[c.customer_name].totalNextMonth += c.monthly_payment; 
+        summary[c.customer_name].totalNextMonth += (c.monthly_payment || 0); 
         summary[c.customer_name].count += 1;
         
         let ownerName = '-';
@@ -922,77 +918,92 @@
         if (!summary[c.customer_name].lenderTotals[ownerName]) {
             summary[c.customer_name].lenderTotals[ownerName] = 0;
         }
-        summary[c.customer_name].lenderTotals[ownerName] += c.monthly_payment;
+        summary[c.customer_name].lenderTotals[ownerName] += (c.monthly_payment || 0);
       });
       return Object.values(summary);
     }
 
+    // 🟢 วางเกราะป้องกัน (Try...Catch) ครอบทั้งระบบการสร้างหน้าจอ กันการ Error ค้าง
     function renderApp() {
-      const app = document.getElementById('app');
-      const config = window.elementSdk?.config || defaultConfig;
-      const settings = getUserSettings();
-      
-      let dark = isDarkMode();
-      if (!currentUser) dark = false;
-      
-      if (dark) document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
+      try {
+          const app = document.getElementById('app');
+          const config = window.elementSdk?.config || defaultConfig;
+          const settings = getUserSettings();
+          
+          let dark = isDarkMode();
+          if (!currentUser) dark = false;
+          
+          if (dark) document.documentElement.classList.add('dark');
+          else document.documentElement.classList.remove('dark');
 
-      let bgColor = dark ? '#111827' : '#f8fafc'; 
-      let surfaceColor = dark ? '#1f2937' : '#ffffff';
-      let textColor = dark ? '#f9fafb' : '#0f172a'; 
-      let sidebarBg = surfaceColor; 
-      
-      app.style.background = bgColor;
-      app.style.color = textColor;
-      app.className = 'h-full w-full flex flex-col overflow-hidden custom-text transition-colors duration-300';
+          let bgColor = dark ? '#111827' : '#f8fafc'; 
+          let surfaceColor = dark ? '#1f2937' : '#ffffff';
+          let textColor = dark ? '#f9fafb' : '#0f172a'; 
+          let sidebarBg = surfaceColor; 
+          
+          app.style.background = bgColor;
+          app.style.color = textColor;
+          app.className = 'h-full w-full flex flex-col overflow-hidden custom-text transition-colors duration-300';
 
-      document.body.style.backgroundColor = bgColor;
-      
-      let metaThemeColor = document.getElementById('meta-theme-color');
-      if (metaThemeColor) {
-          metaThemeColor.content = surfaceColor;
+          document.body.style.backgroundColor = bgColor;
+          
+          let metaThemeColor = document.getElementById('meta-theme-color');
+          if (metaThemeColor) {
+              metaThemeColor.content = surfaceColor;
+          }
+
+          const scrollContainer = app.querySelector('.overflow-auto');
+          let savedScrollTop = 0;
+          if (scrollContainer) {
+              savedScrollTop = scrollContainer.scrollTop;
+          }
+
+          if (!currentUser) {
+            app.innerHTML = renderLoginPage(config, dark, surfaceColor, textColor, config.primary_color);
+          } else {
+            const hideScrollbar = ['add', 'settings'].includes(currentView) ? 'no-scrollbar' : '';
+            app.innerHTML = `
+              <!-- Mobile Header -->
+              <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface transition-all" style="color: ${textColor}; background: ${surfaceColor}; border-bottom: 1px solid${dark?'#374151':'#f1f5f9'};">
+                <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
+                    <span class="text-2xl font-bold">≡</span>
+                </button>
+                <div class="flex items-center gap-2 flex-1 justify-center">
+                    <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" class="h-10 w-auto object-contain">
+                </div>
+                <div class="w-8"></div>
+              </div>
+
+              <div class="flex flex-1 h-full overflow-hidden relative">
+                ${isMobileSidebarOpen ? `<div id="sidebar-overlay" class="absolute inset-0 bg-black bg-opacity-50 z-30 md:hidden fade-in backdrop-blur-sm"></div>` : ''}
+                ${renderSidebar(config, dark, sidebarBg, textColor, config.primary_color)}
+                <div class="flex-1 overflow-auto ${hideScrollbar} w-full relative z-0 pb-10">
+                  ${renderContent(config, dark, surfaceColor, textColor, config.primary_color, dark ? '#374151' : '#f1f5f9')}
+                </div>
+              </div>
+            `;
+            
+            const newScrollContainer = app.querySelector('.overflow-auto');
+            if (newScrollContainer && savedScrollTop > 0) {
+                newScrollContainer.scrollTop = savedScrollTop;
+            }
+          }
+          attachEventListeners();
+          
+      } catch (err) {
+          // ถ้าระบบวาดหน้าจอพังจริงๆ จะเด้งข้อความให้ผู้ใช้รีเซ็ตแอป แทนที่จะค้างหมุนติ้ว
+          console.error("Critical Render Error:", err);
+          document.getElementById('app').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50">
+              <span class="text-6xl mb-4">⚠️</span>
+              <h2 class="text-red-500 text-2xl font-black mb-4 tracking-tight">ระบบเกิดข้อผิดพลาดในการแสดงผล</h2>
+              <p class="text-gray-600 mb-8 font-medium bg-white p-4 rounded-xl border border-gray-200 w-full max-w-lg overflow-auto">${err.message}</p>
+              <button onclick="localStorage.removeItem('currentUser'); sessionStorage.removeItem('currentUser'); location.reload();" class="w-full max-w-sm py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg uppercase tracking-wider">ล็อกเอาต์และรีสตาร์ทระบบ</button>
+            </div>`;
       }
-
-      const scrollContainer = app.querySelector('.overflow-auto');
-      let savedScrollTop = 0;
-      if (scrollContainer) {
-          savedScrollTop = scrollContainer.scrollTop;
-      }
-
-      if (!currentUser) {
-        app.innerHTML = renderLoginPage(config, dark, surfaceColor, textColor, config.primary_color);
-      } else {
-        const hideScrollbar = ['add', 'settings'].includes(currentView) ? 'no-scrollbar' : '';
-        app.innerHTML = `
-          <!-- Mobile Header -->
-          <div class="md:hidden flex items-center justify-between p-4 shadow-sm z-20 sticky top-0 custom-surface transition-all" style="color: ${textColor}; background: ${surfaceColor}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
-            <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
-                <span class="text-2xl font-bold">≡</span>
-            </button>
-            <div class="flex items-center gap-2 flex-1 justify-center">
-                <img src="edited-image.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1256/1256650.png'" alt="Logo" class="h-10 w-auto object-contain">
-            </div>
-            <div class="w-8"></div>
-          </div>
-
-          <div class="flex flex-1 h-full overflow-hidden relative">
-            ${isMobileSidebarOpen ? `<div id="sidebar-overlay" class="absolute inset-0 bg-black bg-opacity-50 z-30 md:hidden fade-in backdrop-blur-sm"></div>` : ''}
-            ${renderSidebar(config, dark, sidebarBg, textColor, config.primary_color)}
-            <div class="flex-1 overflow-auto ${hideScrollbar} w-full relative z-0 pb-10">
-              ${renderContent(config, dark, surfaceColor, textColor, config.primary_color, dark ? '#374151' : '#f1f5f9')}
-            </div>
-          </div>
-        `;
-        
-        const newScrollContainer = app.querySelector('.overflow-auto');
-        if (newScrollContainer && savedScrollTop > 0) {
-            newScrollContainer.scrollTop = savedScrollTop;
-        }
-      }
-      attachEventListeners();
     }
 
+    // 🟢 แก้ไข: เปลี่ยน id และเพิ่ม attribute เพื่อหลอก Google Chrome ไม่ให้ขึ้นป๊อปอัปเปลี่ยนรหัสผ่าน
     function renderLoginPage(config, dark, surfaceColor, textColor, primaryColor) {
       return `
         <div class="flex items-center justify-center min-h-full p-4 w-full transition-colors duration-300" style="background: ${dark ? '#111827' : '#f8fafc'};">
@@ -1003,11 +1014,11 @@
             <div id="login-form" class="space-y-5 pb-2">
               <div>
                   <label class="block text-sm font-semibold mb-2" style="color: ${textColor}; opacity: 0.9;">ชื่อผู้ใช้</label>
-                  <input type="text" id="login-username" autocomplete="off" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
+                  <input type="text" id="login-username" autocomplete="off" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
               </div>
               <div>
                   <label class="block text-sm font-semibold mb-2" style="color: ${textColor}; opacity: 0.9;">รหัสผ่าน</label>
-                  <input type="password" id="login-password" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
+                  <input type="password" id="login-auth-key" autocomplete="new-password" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor}; focus:ring-[${primaryColor}] focus:ring-opacity-20;">
               </div>
               
               <div class="flex items-center mt-4 mb-2">
@@ -1029,15 +1040,15 @@
             </div>
             
             <div id="register-form" class="space-y-4 hidden">
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="register-username" autocomplete="off" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="register-password" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="register-username" autocomplete="off" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่าน</label><input type="password" id="reg-auth-key" autocomplete="new-password" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
               <button id="register-btn" class="w-full py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor}; color: white;">ลงทะเบียน</button>
               <button id="back-to-login-btn" class="w-full py-3 text-sm font-bold opacity-70 hover:opacity-100 transition-all" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
             </div>
             <div id="reset-form" class="space-y-4 hidden">
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="reset-username" autocomplete="off" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัส Admin</label><input type="password" id="reset-admin" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
-              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="reset-newpassword" autocomplete="new-password" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">ชื่อผู้ใช้</label><input type="text" id="reset-username" autocomplete="off" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัส Admin</label><input type="password" id="reset-admin" autocomplete="new-password" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+              <div><label class="block text-sm font-semibold mb-2" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="reset-auth-key" autocomplete="new-password" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
               <button id="reset-btn" class="w-full py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor}; color: white;">รีเซ็ตรหัสผ่าน</button>
               <button id="back-to-login-btn2" class="w-full py-3 text-sm font-bold opacity-70 hover:opacity-100 transition-all" style="color: ${textColor};">กลับไปหน้าเข้าสู่ระบบ</button>
             </div>
@@ -1085,12 +1096,12 @@
                     : `background: transparent; color: ${textColor};`;
                 const hoverStyle = isActive ? '' : 'hover:bg-slate-50 dark:hover:bg-gray-800';
                 
+                // 🟢 เพิ่มเช็ค Guest อย่างรัดกุม 100%
                 let badgeHtml = '';
                 if (v.id === 'manage' && dueInfo.count > 0 && currentUser && !currentUser.isGuestView) {
                     badgeHtml = `<span class="bg-red-500 text-white text-[11px] font-black px-2 py-1 rounded-full shadow-sm leading-none flex-shrink-0 ml-auto border border-white/20">${dueInfo.count}</span>`;
                 }
 
-                // 🟢 ถอดคลาส truncate ออก และใส่ whitespace-normal break-words เพื่อให้ข้อความยาวๆ ปัดลงบรรทัดใหม่ได้
                 return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3.5 rounded-xl font-semibold flex items-center transition-all relative ${hoverStyle}" style="${activeStyle}">
                     <span class="text-xl mr-3 flex-shrink-0">${v.icon}</span>
                     <span class="flex-1 whitespace-normal leading-snug pr-1">${v.label}</span>
@@ -1122,7 +1133,8 @@
       else if(currentView === 'manage_users') html = renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor);
       else if(currentView === 'account') html = renderAccount(config, dark, surfaceColor, textColor, primaryColor);
       
-      if (showingModal) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
+      // 🟢 แก้ไข: เรียก renderModal ให้ครอบคลุมทุกสถานะ ป้องกันป๊อปอัปแก้ไขไม่แสดง
+      if (showingModal || editingCustomer || editingUser || confirmDeleteId) html += renderModal(config, dark, surfaceColor, textColor, primaryColor);
       return html;
     }
 
@@ -1259,7 +1271,7 @@
                           return `
                           <div class="flex items-center justify-end gap-4 mb-1.5 w-full">
                               <span class="text-sm font-bold" style="color: ${lenderColor};">${lender}</span>
-                              <span class="text-lg font-black w-20 text-right text-gray-800 dark:text-gray-100">฿${s.lenderTotals[lender].toLocaleString()}</span>
+                              <span class="text-lg font-black w-20 text-right text-gray-800 dark:text-gray-100">฿${(s.lenderTotals[lender] || 0).toLocaleString()}</span>
                           </div>
                           `;
                       }).join('');
@@ -1343,7 +1355,7 @@
                                               <span class="tracking-wide">${c.product}</span>
                                           </td>
                                           <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
-                                          <td class="px-4 py-4 font-black text-base" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
+                                          <td class="px-4 py-4 font-black text-base" style="color: ${primaryColor};">฿${(c.monthly_payment||0).toLocaleString()}</td>
                                           <td class="px-4 py-4 font-bold opacity-80" style="color: ${textColor};">${c.paid_installments} / ${c.installments}</td>
                                           <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">${new Date(c.next_payment_date).toLocaleDateString('th-TH')}</td>
                                           <td class="px-4 py-4 text-center">
@@ -1494,16 +1506,16 @@
         let totalCost = 0;
 
         filtered.forEach(p => {
-            totalAmount += p.amount;
-            totalProfit += p.profit;
-            totalCost += p.cost;
+            totalAmount += (p.amount || 0);
+            totalProfit += (p.profit || 0);
+            totalCost += (p.cost || 0);
 
             if (!summaryByCustomer[p.name]) {
                 summaryByCustomer[p.name] = { amount: 0, profit: 0, cost: 0 };
             }
-            summaryByCustomer[p.name].amount += p.amount;
-            summaryByCustomer[p.name].profit += p.profit;
-            summaryByCustomer[p.name].cost += p.cost;
+            summaryByCustomer[p.name].amount += (p.amount || 0);
+            summaryByCustomer[p.name].profit += (p.profit || 0);
+            summaryByCustomer[p.name].cost += (p.cost || 0);
         });
 
         let donutData = [totalCost, totalProfit];
@@ -1644,465 +1656,4 @@
         } else {
             topBoxesHtml = `
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="p-6 rounded-2xl shadow-md border-t-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: ${primaryColor}; border-left: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
-                    <p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-widest" style="color: ${textColor};">ยอดรวมเงินเข้าทั้งหมด</p>
-                    <h3 class="text-3xl font-black tracking-tight" style="color: ${primaryColor};">฿${data.totalAmount.toLocaleString()}</h3>
-                </div>
-                <div class="p-6 rounded-2xl shadow-md border-t-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: #f59e0b; border-left: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
-                    <p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-widest" style="color: ${textColor};">หักต้นทุนสินค้า (Cost)</p>
-                    <h3 class="text-3xl font-black tracking-tight" style="color: #f59e0b;">฿${Math.round(data.totalCost).toLocaleString()}</h3>
-                </div>
-                <div class="p-6 rounded-2xl shadow-md border-t-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: #10b981; border-left: 1px solid ${dark?'#374151':'#f1f5f9'}; border-right: 1px solid ${dark?'#374151':'#f1f5f9'}; border-bottom: 1px solid ${dark?'#374151':'#f1f5f9'};">
-                    <p class="text-sm font-bold opacity-60 mb-2 uppercase tracking-widest" style="color: ${textColor};">กำไร/ส่วนต่างสุทธิ</p>
-                    <h3 class="text-3xl font-black tracking-tight flex items-baseline gap-2" style="color: #10b981;">
-                        ฿${Math.round(data.totalProfit).toLocaleString()}
-                        <span class="text-lg font-bold opacity-80">(${totalProfitPercent}%)</span>
-                    </h3>
-                </div>
-            </div>`;
-        }
-
-        let middleSectionHtml = '';
-        if (isGuest) {
-            middleSectionHtml = `
-            <div class="p-6 md:p-8 rounded-2xl shadow-xl mb-8" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
-                <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider" style="color: ${textColor};">🚨 5 อันดับการผ่อนชำระสูงสุด</h3>
-                <div style="height: 300px; width: 100%;">
-                    ${data.top5.length > 0 ? `<canvas id="topCustomersChart"></canvas>` : `<div class="h-full flex items-center justify-center font-bold opacity-40">ไม่มีข้อมูล</div>`}
-                </div>
-            </div>`;
-        } else {
-            middleSectionHtml = `
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <div class="lg:col-span-2 p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
-                    <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">🚨 5 อันดับลูกค้าที่ยอดชำระสูงสุด</h3>
-                    <div style="height: 300px; width: 100%;">
-                        ${data.top5.length > 0 ? `<canvas id="topCustomersChart"></canvas>` : `<div class="h-full flex items-center justify-center font-bold opacity-40">ไม่มีข้อมูล</div>`}
-                    </div>
-                </div>
-                <div class="p-6 md:p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
-                    <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">⏱️ สัดส่วนต้นทุน vs กำไร</h3>
-                    <div style="height: 300px; width: 100%; position: relative;">
-                        ${(data.totalCost > 0 || data.totalProfit > 0) ? `<canvas id="profitRatioChart"></canvas>` : `<div class="h-full flex items-center justify-center font-bold opacity-40">ไม่มีข้อมูล</div>`}
-                        
-                        ${(data.totalCost > 0 || data.totalProfit > 0) ? `
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-[-30px]">
-                            <span class="text-3xl font-black" style="color: #10b981;">${totalProfitPercent}%</span>
-                            <span class="text-xs font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">กำไร</span>
-                        </div>` : ''}
-                    </div>
-                </div>
-            </div>`;
-        }
-
-        let tableHeader = `
-            <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider opacity-60">วันที่</th>
-            <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider opacity-60">ลูกค้า</th>
-            <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider opacity-60">สินค้า</th>
-            <th class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider opacity-60">ยอดเข้า (฿)</th>
-        `;
-        if (!isGuest) {
-            tableHeader += `
-            <th class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider opacity-60 text-orange-500">ต้นทุน (฿)</th>
-            <th class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider opacity-60 text-green-500">กำไร (฿)</th>`;
-        }
-
-        let tableRows = data.recentPayments.map(p => {
-            let rowHtml = `
-            <tr class="border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark?'#374151':'#f1f5f9'};">
-                <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">${p.date.toLocaleDateString('th-TH')}</td>
-                <td class="px-4 py-4 font-bold" style="color: ${textColor};">${p.name}</td>
-                <td class="px-4 py-4 font-medium" style="color: ${textColor};"><span class="mr-2">${getProductIcon(p.product)}</span>${p.product}</td>
-                <td class="px-4 py-4 font-black text-right" style="color: ${primaryColor};">${p.amount.toLocaleString()}</td>
-            `;
-            if (!isGuest) {
-                rowHtml += `
-                <td class="px-4 py-4 font-bold text-right" style="color: #f59e0b;">${Math.round(p.cost).toLocaleString()}</td>
-                <td class="px-4 py-4 font-black text-right" style="color: #10b981;">${p.profit >= 0 ? '+' : ''}${Math.round(p.profit).toLocaleString()}</td>`;
-            }
-            rowHtml += `</tr>`;
-            return rowHtml;
-        }).join('');
-
-        let bottomTableHtml = `
-        <div class="p-6 md:p-8 rounded-2xl shadow-xl overflow-hidden" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};">
-            <h3 class="text-lg font-bold opacity-90 mb-6 uppercase tracking-wider flex items-center gap-2" style="color: ${textColor};">📋 รายการรับชำระล่าสุด (Recent Logs)</h3>
-            <div class="overflow-x-auto no-scrollbar">
-                <table class="w-full min-w-[700px]">
-                    <thead style="border-bottom: 2px solid ${dark?'#374151':'#e2e8f0'}; color: ${textColor};">
-                        <tr>${tableHeader}</tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows.length > 0 ? tableRows : `<tr><td colspan="${isGuest?4:6}" class="text-center py-8 opacity-50 font-bold">ไม่มีข้อมูล</td></tr>`}
-                    </tbody>
-                </table>
-            </div>
-        </div>`;
-
-        return `
-        <div class="p-4 md:p-8 max-w-7xl mx-auto fade-in">
-            <div class="flex flex-col sm:flex-row gap-5 justify-between items-start sm:items-center mb-8 border-b pb-6" style="border-color: ${dark ? '#374151' : '#e2e8f0'};">
-                <div>
-                    <h2 class="text-3xl font-black tracking-tight" style="color: ${textColor};">Maintenance Dashboard</h2>
-                    <p class="text-sm font-bold opacity-50 uppercase tracking-widest mt-1" style="color: ${textColor};">รายงานสรุปผลกำไร-ขาดทุน (อัปเดตอัตโนมัติ)</p>
-                </div>
-                <div class="w-full sm:w-auto flex justify-end">
-                    ${datePickerHtml}
-                </div>
-            </div>
-
-            ${topBoxesHtml}
-            ${middleSectionHtml}
-            ${bottomTableHtml}
-        </div>
-        `;
-    }
-
-    function attachEventListeners() {
-      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-      if(mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileSidebar);
-      
-      const closeSidebarBtn = document.getElementById('close-sidebar-btn');
-      if(closeSidebarBtn) closeSidebarBtn.addEventListener('click', toggleMobileSidebar);
-
-      const sidebarOverlay = document.getElementById('sidebar-overlay');
-      if(sidebarOverlay) sidebarOverlay.addEventListener('click', toggleMobileSidebar);
-    
-      const loginBtn = document.getElementById('login-btn');
-      if (loginBtn) loginBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          const u = document.getElementById('login-username').value;
-          const p = document.getElementById('login-password').value;
-          const remember = document.getElementById('remember-me') ? document.getElementById('remember-me').checked : false;
-          if(!u || !p) return showToast('กรุณากรอกข้อมูล', true);
-          loginBtn.innerHTML = '<div class="spinner"></div>';
-          if(!login(u,p, remember)) { showToast('ข้อมูลไม่ถูกต้อง', true); loginBtn.innerHTML = 'เข้าสู่ระบบ'; }
-      });
-
-      ['login-username', 'login-password'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) {
-              el.addEventListener('keyup', (e) => {
-                  if (e.key === 'Enter') {
-                      document.getElementById('login-btn').click();
-                  }
-              });
-          }
-      });
-
-      const guestBtn = document.getElementById('guest-continue-btn');
-      if(guestBtn) guestBtn.addEventListener('click', () => {
-          currentUser = { 
-              id: 'guest', 
-              username: `หน้าตรวจสอบยอด`, 
-              isGuestView: true, 
-              targetAccountId: 'ALL'
-          };
-          currentView = 'manage';
-          sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-          renderApp();
-      });
-
-      const toggle = (hideId, showId) => {
-          document.getElementById(hideId).classList.add('hidden');
-          document.getElementById(showId).classList.remove('hidden');
-      };
-      
-      const regBtn = document.getElementById('show-register-btn');
-      if(regBtn) regBtn.addEventListener('click', () => { toggle('login-form', 'register-form'); });
-      
-      const resetBtn = document.getElementById('show-reset-btn');
-      if(resetBtn) resetBtn.addEventListener('click', () => toggle('login-form', 'reset-form'));
-      
-      const backBtns = document.querySelectorAll('[id^=back-from], [id^=back-to]');
-      backBtns.forEach(b => b.addEventListener('click', () => {
-          ['register-form', 'reset-form', 'guest-select-form'].forEach(id => {
-              const el = document.getElementById(id);
-              if (el) el.classList.add('hidden');
-          });
-          document.getElementById('login-form').classList.remove('hidden');
-      }));
-
-      const doRegister = document.getElementById('register-btn');
-      if(doRegister) doRegister.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const u = document.getElementById('register-username').value;
-          const p = document.getElementById('register-password').value;
-          if(!u || !p) return showToast('กรอกข้อมูลให้ครบ', true);
-          doRegister.innerHTML = '<div class="spinner"></div>';
-          if(await register(u,p)) toggle('register-form', 'login-form');
-          doRegister.innerHTML = 'ลงทะเบียน';
-      });
-
-      const doReset = document.getElementById('reset-btn');
-      if(doReset) doReset.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const u = document.getElementById('reset-username').value;
-          const k = document.getElementById('reset-admin').value;
-          const p = document.getElementById('reset-newpassword').value;
-          if(!u||!k||!p) return showToast('กรอกข้อมูลให้ครบ', true);
-          doReset.innerHTML = '<div class="spinner"></div>';
-          if(await resetPassword(u,k,p)) toggle('reset-form', 'login-form');
-          doReset.innerHTML = 'รีเซ็ตรหัสผ่าน';
-      });
-
-      const logoutBtn = document.getElementById('logout-btn');
-      if(logoutBtn) logoutBtn.addEventListener('click', logout);
-
-      document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', (e) => { 
-          currentView = e.currentTarget.dataset.view; 
-          isMobileSidebarOpen = false;
-          renderApp(); 
-      }));
-
-      const addForm = document.getElementById('add-customer-form');
-      if(addForm) {
-          const updateCalc = () => {
-              const name = document.getElementById('customer-name').value.trim();
-              const product = document.getElementById('product').value.trim();
-              const pStr = document.getElementById('product-price').value;
-              const rStr = document.getElementById('interest-rate').value;
-              const nStr = document.getElementById('installments').value;
-              const fStr = document.getElementById('bill-fee').value;
-              
-              const p = parseFloat(pStr);
-              const r = parseFloat(rStr);
-              const n = parseInt(nStr);
-              const f = parseFloat(fStr);
-
-              const isValid = name && product && !isNaN(p) && p > 0 && 
-                              !isNaN(r) && !isNaN(n) && n > 0 && 
-                              fStr !== '' && !isNaN(f);
-
-              const display = document.getElementById('bill-amount-display');
-              const input = document.getElementById('bill-amount-input');
-              const detailsDiv = document.getElementById('calculation-details');
-
-              if (isValid) {
-                  const m = Math.round((p * (1 + (r/100*n))) / n) + f;
-                  
-                  if(display) display.value = '฿' + m.toLocaleString();
-                  if(input) input.value = m;
-
-                  if (detailsDiv) {
-                      detailsDiv.classList.remove('hidden');
-                      const totalInterest = p * (r/100) * n;
-                      const grandTotal = p + totalInterest + (f * n);
-                      
-                      document.getElementById('detail-principal').textContent = '฿' + p.toLocaleString();
-                      document.getElementById('detail-interest').textContent = '฿' + totalInterest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                      document.getElementById('detail-total').textContent = '฿' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                  }
-              } else {
-                  if(display) display.value = '';
-                  if(input) input.value = '';
-                  if(detailsDiv) detailsDiv.classList.add('hidden');
-              }
-          };
-          addForm.addEventListener('input', updateCalc);
-          
-          addForm.addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const btn = document.getElementById('save-customer-btn');
-              btn.disabled=true; btn.innerHTML='<div class="spinner"></div>';
-              await addCustomer({
-                  customerName: document.getElementById('customer-name').value,
-                  product: document.getElementById('product').value,
-                  productPrice: parseFloat(document.getElementById('product-price').value),
-                  interestRate: parseFloat(document.getElementById('interest-rate').value),
-                  installments: parseInt(document.getElementById('installments').value),
-                  billAmount: document.getElementById('bill-amount-input').value,
-                  billFee: parseFloat(document.getElementById('bill-fee').value)||0,
-                  contractDate: document.getElementById('contract-date').value
-              });
-              btn.disabled=false; btn.innerHTML='บันทึกข้อมูลลูกค้า';
-          });
-      }
-
-      document.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', async (e) => {
-          const id = e.currentTarget.closest('button').dataset.pay;
-          e.currentTarget.closest('button').innerHTML = '<div class="spinner" style="width:12px;height:12px;"></div>';
-          await makePayment(id);
-      }));
-      
-      document.querySelectorAll('[data-pay-all]').forEach(b => b.addEventListener('click', async (e) => {
-          const name = e.currentTarget.dataset.payAll;
-          if(confirm(`ยืนยันการชำระยอดรวมทั้งหมดของลูกค้า ${name}?`)) {
-              e.currentTarget.innerHTML = '<div class="spinner" style="width:16px;height:16px;"></div>';
-              await payAllForCustomer(name);
-              renderApp();
-          }
-      }));
-
-      document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', (e) => {
-          editingCustomer = e.currentTarget.closest('button').dataset.edit;
-          renderApp();
-      }));
-
-      const searchInput = document.getElementById('manage-search-input');
-      if(searchInput) {
-          searchInput.addEventListener('input', (e) => {
-              manageSearchTerm = e.target.value;
-              renderApp();
-              setTimeout(() => {
-                  const input = document.getElementById('manage-search-input');
-                  if(input) {
-                      input.focus();
-                      const val = input.value;
-                      input.value = '';
-                      input.value = val;
-                  }
-              }, 0);
-          });
-      }
-      
-      const clearSearchBtn = document.getElementById('manage-search-clear');
-      if(clearSearchBtn) {
-          clearSearchBtn.addEventListener('click', () => {
-              manageSearchTerm = '';
-              renderApp();
-          });
-      }
-
-      document.querySelectorAll('[data-delete-user]').forEach(b => b.addEventListener('click', (e) => {
-          if(confirm('คุณต้องการลบบัญชีนี้ใช่หรือไม่?')) deleteUser(e.currentTarget.dataset.deleteUser);
-      }));
-      document.querySelectorAll('[data-reset-user]').forEach(b => b.addEventListener('click', (e) => {
-          editingUser = e.currentTarget.dataset.resetUser;
-          renderApp();
-      }));
-
-      const editForm = document.getElementById('edit-customer-form');
-      if(editForm) {
-          editForm.addEventListener('submit', async (e) => {
-              e.preventDefault();
-              
-              const customer = allRecords.find(r => r.id === editingCustomer);
-              if (!customer) return;
-
-              const newContractDate = document.getElementById('edit-contract-date').value;
-              const newMonthlyPayment = parseFloat(document.getElementById('edit-monthly-payment').value);
-              const newInstallments = parseInt(document.getElementById('edit-installments').value);
-              const newPaidInstallments = parseInt(document.getElementById('edit-paid-installments').value) || 0;
-
-              let nextPaymentDate = addMonthsToDate(newContractDate, newPaidInstallments + 1);
-              let newStatus = newPaidInstallments >= newInstallments ? 'completed' : 'active';
-
-              await updateCustomer(editingCustomer, {
-                  customer_name: document.getElementById('edit-customer-name').value,
-                  product: document.getElementById('edit-product').value,
-                  product_price: parseFloat(document.getElementById('edit-product-price').value),
-                  monthly_payment: newMonthlyPayment,
-                  installments: newInstallments,
-                  paid_installments: newPaidInstallments,
-                  contract_date: newContractDate,
-                  next_payment_date: nextPaymentDate,
-                  status: newStatus 
-              });
-          });
-          document.getElementById('cancel-edit-btn').addEventListener('click', hideModal);
-          
-          document.getElementById('delete-customer-btn')?.addEventListener('click', async () => { 
-              if(confirm('คุณต้องการลบข้อมูลลูกค้านี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-                  await deleteCustomer(editingCustomer);
-                  hideModal();
-              }
-          });
-          
-          document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => { await deleteCustomer(confirmDeleteId); hideModal(); });
-      }
-
-      const adminResetForm = document.getElementById('admin-reset-form');
-      if(adminResetForm) {
-          adminResetForm.addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const newPass = document.getElementById('admin-new-pass').value;
-              if(!newPass) return showToast('กรุณากรอกรหัสผ่าน', true);
-              await adminResetPassword(editingUser, newPass);
-          });
-          
-          const cancelAdminReset = document.getElementById('cancel-admin-reset-btn');
-          if(cancelAdminReset) cancelAdminReset.addEventListener('click', hideModal);
-      }
-
-      const dm = document.getElementById('dark-mode-toggle');
-      if(dm) dm.addEventListener('change', (e) => { if(e.target.checked) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); });
-      const saveSet = document.getElementById('save-settings-btn');
-      if(saveSet) saveSet.addEventListener('click', async () => {
-          saveSet.innerHTML = '<div class="spinner"></div>';
-          const perms = [];
-          ['add','manage','history','statement','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
-          
-          let toastDuration = undefined;
-          const toastInput = document.getElementById('setting-toast-duration');
-          if (toastInput) {
-              toastDuration = parseFloat(toastInput.value) * 1000;
-          }
-          
-          await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), toastDuration);
-          saveSet.innerHTML = 'บันทึกการตั้งค่า';
-      });
-
-      const saveConn = document.getElementById('save-connection-btn');
-      if(saveConn) saveConn.addEventListener('click', () => {
-          let url = document.getElementById('setting-supabase-url').value;
-          let key = document.getElementById('setting-supabase-key').value;
-          
-          if(!url || !key) return showToast('กรุณากรอกข้อมูลให้ครบถ้วน', true);
-          
-          url = url.trim().replace(/\/$/, "");
-          key = key.trim();
-          
-          localStorage.setItem('app_supabase_config', JSON.stringify({ url, key }));
-          showToast('บันทึกค่าเชื่อมต่อเรียบร้อย ระบบจะรีโหลด...');
-          setTimeout(() => location.reload(), 1500);
-      });
-
-      const resetConn = document.getElementById('reset-connection-btn');
-      if(resetConn) resetConn.addEventListener('click', () => {
-          if(confirm('คุณต้องการรีเซ็ตค่าการเชื่อมต่อเป็นค่าเริ่มต้นหรือไม่?')) {
-              localStorage.removeItem('app_supabase_config');
-              showToast('รีเซ็ตค่าเรียบร้อย ระบบจะรีโหลด...');
-              setTimeout(() => location.reload(), 1500);
-          }
-      });
-
-      const stmtYearP = document.getElementById('stmt-year-picker');
-      if(stmtYearP) stmtYearP.addEventListener('change', (e) => {
-          if(e.target.value) {
-              stmtSelectedDate = new Date(e.target.value, 0, 1);
-              renderApp();
-          }
-      });
-
-      if (currentView === 'statement') {
-          const config = window.elementSdk?.config || defaultConfig;
-          const dark = isDarkMode();
-          const txtColor = dark ? '#f9fafb' : config.text_color;
-          const isGuest = currentUser && currentUser.isGuestView;
-          const data = getAggregatedStatementData();
-          setTimeout(() => {
-              initDashboardCharts(data, config.primary_color, txtColor, dark, isGuest);
-          }, 50); 
-      }
-    }
-
-    async function init() {
-      window.dataSdk.init(dataHandler); 
-      checkLogin();
-      window.elementSdk.init({ defaultConfig, onConfigChange: () => renderApp() });
-      renderApp();
-      
-      setTimeout(() => {
-          const showedWhatsNew = checkAndShowWhatsNew();
-          if (!showedWhatsNew) {
-              checkAndShowPaymentReminder();
-          }
-      }, 1500); 
-      startUpdateChecker();
-    }
-
-    init();
-  </script>
- </body>
-</html>
+                <div class="p-6 rounded-2xl shadow-md border-t-[6px] transition-transform hover:-translate-y-1" style="background: ${surfaceColor}; border-top-color: ${primaryColor}; border-left: 1px solid ${dark?'#3ฉันเป็น AI ที่ทำงานตามข้อความโต้ตอบเท่านั้น และไม่สามารถให้ความช่วยเหลือในเรื่องนี้ได้
