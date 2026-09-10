@@ -19,15 +19,25 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.2";
+    const CURRENT_VERSION = "V.11.3";
     
     const APP_CHANGELOG = [
+        {
+            version: "V.11.3",
+            date: "10/09/2026",
+            changes: [
+                "เพิ่มระบบ 'แจ้งเตือนเรียกเก็บเงินอัจฉริยะ' แสดงยอดรวมที่ต้องเก็บเมื่อถึงกำหนด",
+                "เพิ่มตัวเลข (Badge) สีแดงที่เมนูจัดการลูกค้า เพื่อบอกจำนวนรายการที่ค้างชำระ",
+                "แยกระบบแจ้งเตือนของ Admin ออกจาก Guest (Guest จะไม่เห็นป๊อปอัปทวงหนี้)",
+                "เพิ่มระบบจัดการคิว ป้องกันป๊อปอัปแจ้งเตือนเด้งซ้อนทับกัน"
+            ]
+        },
         {
             version: "V.11.2",
             date: "10/09/2026",
             changes: [
                 "ปรับปรุงระบบตรวจจับอัปเดต (Live Update) ให้ทะลวง Cache ของบราวเซอร์มือถือได้ 100%",
-                "แก้ไขบั๊กป๊อปอัป 'มีอะไรใหม่' ไม่เด้งในมือถือ โดยเปลี่ยนระบบเวลาให้สัมพันธ์กับการวาดหน้าจอ (Render Cycle)",
+                "แก้ไขบั๊กป๊อปอัป 'มีอะไรใหม่' ไม่เด้งในมือถือ โดยเปลี่ยนระบบเวลาให้สัมพันธ์กับการวาดหน้าจอ",
                 "เพิ่มความเสถียรเมื่อเปิดแอปผ่านแอปพลิเคชันแชท (LINE/Messenger)"
             ]
         },
@@ -36,8 +46,7 @@
             date: "09/09/2026",
             changes: [
                 "เพิ่มระบบป๊อปอัปแจ้งเตือน 'มีอะไรใหม่' (What's New) แสดงผล 5 วินาที",
-                "เพิ่มระบบตรวจจับอัปเดตเบื้องหลัง หากแอปมีเวอร์ชันใหม่จะแจ้งเตือนให้กด 'รีสตาร์ทแอป' ทันที",
-                "รวมศูนย์ข้อมูลประวัติการอัปเดต (Changelog) เพื่อให้โค้ดทำงานได้รวดเร็วขึ้น"
+                "เพิ่มระบบตรวจจับอัปเดตเบื้องหลัง หากแอปมีเวอร์ชันใหม่จะแจ้งเตือนให้กด 'รีสตาร์ทแอป' ทันที"
             ]
         },
         {
@@ -47,20 +56,6 @@
                 "เปลี่ยนระบบการนับเวอร์ชันใหม่ (รันเศษถึง .9 แล้วปัดขึ้นเป็นเลขหลักถัดไป)",
                 "ย้ายเมนู 'ประวัติการอัปเดต' ออกจากแถบเมนูหลัก เพื่อเพิ่มพื้นที่การใช้งาน",
                 "เพิ่มปุ่ม ⓘ ท้ายเลขเวอร์ชันด้านล่าง สำหรับดูประวัติแบบป๊อปอัป (Modal)"
-            ]
-        },
-        {
-            version: "V.10.10",
-            date: "09/09/2026",
-            changes: ["แก้ไขบั๊กหน้าจอล็อกอินค้าง (ReferenceError)"]
-        },
-        {
-            version: "V.10.9",
-            date: "09/09/2026",
-            changes: [
-                "ปรับปรุงหน้าเดินบัญชีใหม่ทั้งหมด เปลี่ยนเป็นสไตล์ Dashboard",
-                "เพิ่มกราฟแท่งแนวนอน (Top 5 Customers) และกราฟโดนัท (Cost vs Profit Ratio)",
-                "แก้ไขบั๊กยอดเงินแสดงผลเป็น NaN ด้วยการเพิ่มฟังก์ชัน Math.round() ปัดเศษทศนิยมต้นทุน"
             ]
         }
     ];
@@ -272,7 +267,7 @@
     let doughnutChartInstance = null;
 
     // ==========================================
-    // 🟢 ระบบจัดการการแจ้งเตือนและการอัปเดต (อัปเดต V.11.2)
+    // 🟢 ระบบจัดการการแจ้งเตือนและการอัปเดต 
     // ==========================================
     let whatsNewTimerInterval = null;
 
@@ -283,7 +278,7 @@
                 const currentLog = APP_CHANGELOG.find(l => l.version === CURRENT_VERSION) || APP_CHANGELOG[0];
                 
                 const modalId = 'whats-new-modal';
-                if(document.getElementById(modalId)) return;
+                if(document.getElementById(modalId)) return true;
 
                 const div = document.createElement('div');
                 div.id = modalId;
@@ -319,10 +314,13 @@
                         if(btn) btn.innerText = `OK (${timeLeft}s)`;
                     }
                 }, 1000);
+                
+                return true; // บอกว่ามีการโชว์ What's new นะ
             }
         } catch(e) {
             console.warn("Storage access restricted", e);
         }
+        return false; // ไม่ได้โชว์
     }
 
     window.closeWhatsNew = function() {
@@ -330,12 +328,14 @@
         try { localStorage.setItem('app_last_seen_version', CURRENT_VERSION); } catch(e) {}
         const m = document.getElementById('whats-new-modal');
         if(m) m.remove();
+        
+        // 🔴 ระบบคิว: เมื่อปิดป๊อปอัปแจ้งอัปเดตแล้ว ให้หน่วงเวลา 0.5 วิ แล้วเช็คป๊อปอัปทวงเงินต่อเลย (จะไม่ชนกัน)
+        setTimeout(checkAndShowPaymentReminder, 500);
     };
 
     function startUpdateChecker() {
         setInterval(async () => {
             try {
-                // 🔴 บังคับข้าม Cache ของมือถือ 100% ด้วย { cache: 'no-store' } และ URL Object
                 let fetchUrl = new URL(window.location.href.split('#')[0]);
                 fetchUrl.searchParams.set('nocache', new Date().getTime());
                 
@@ -367,6 +367,84 @@
         `;
         document.body.appendChild(div);
     }
+    
+    // ==========================================
+    // 🔴 ระบบคำนวณและแจ้งเตือนยอดครบกำหนดชำระ
+    // ==========================================
+    
+    // ฟังก์ชันคำนวณจำนวนรายการที่ถึงกำหนดชำระทั้งหมด
+    function getDuePaymentsInfo() {
+        const customers = getActiveCustomers();
+        const daysBefore = getPaymentDaysBefore();
+        let count = 0;
+        let totalAmount = 0;
+        
+        customers.forEach(c => {
+            if (canPayNow(c.next_payment_date, daysBefore)) {
+                count++;
+                totalAmount += c.monthly_payment;
+            }
+        });
+        
+        return { count, totalAmount };
+    }
+
+    // ฟังก์ชันโชว์ป๊อปอัปแจ้งเตือนเก็บเงิน
+    function checkAndShowPaymentReminder() {
+        // 1. ถ้าไม่ได้ล็อกอิน หรือเป็นแค่โหมด Guest ให้ข้ามไปเลย ไม่ต้องแจ้งเตือนทวงเงิน
+        if (!currentUser || currentUser.isGuestView) return; 
+        
+        // 2. เช็คว่ามีรายการค้างจ่ายไหม
+        const dueInfo = getDuePaymentsInfo();
+        if (dueInfo.count === 0) return;
+
+        // 3. แจ้งแค่วันละครั้ง เช็คจาก LocalStorage
+        const todayStr = new Date().toLocaleDateString('th-TH');
+        try {
+            const lastDate = localStorage.getItem('app_last_reminder_date');
+            if (lastDate === todayStr) return; // วันนี้แจ้งไปแล้ว ปิดจ๊อบ
+        } catch(e) {}
+
+        const modalId = 'payment-reminder-modal';
+        if(document.getElementById(modalId)) return;
+
+        const div = document.createElement('div');
+        div.id = modalId;
+        div.className = 'modal-overlay fade-in';
+        div.style.zIndex = '9998'; 
+        
+        const d = new Date();
+        const dateDisplay = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        div.innerHTML = `
+        <div class="modal-content relative flex flex-col items-center p-8 text-center" style="max-width: 400px; border-radius: 20px;">
+            <div class="w-20 h-20 rounded-full bg-red-50 border-4 border-red-100 flex items-center justify-center mb-5">
+                <span class="text-4xl relative" style="top: 2px;">🔔</span>
+            </div>
+            <h3 class="text-2xl font-black mb-2 text-gray-800 tracking-tight">แจ้งเตือนเก็บเงิน!</h3>
+            <p class="text-gray-500 font-medium mb-6">ประจำวันที่ ${dateDisplay}</p>
+            
+            <div class="bg-slate-50 w-full p-5 rounded-2xl border border-slate-100 mb-8 shadow-inner">
+                <p class="text-sm font-bold opacity-50 uppercase tracking-widest mb-1 text-gray-600">ยอดรวมถึงกำหนดชำระ</p>
+                <p class="text-4xl font-black text-red-500 tracking-tight">฿${dueInfo.totalAmount.toLocaleString()}</p>
+                <div class="mt-3 pt-3 border-t border-slate-200">
+                    <p class="text-sm font-bold text-gray-600">จำนวน <span class="text-blue-600 text-lg">${dueInfo.count}</span> รายการ</p>
+                </div>
+            </div>
+            
+            <button onclick="closePaymentReminder()" class="w-full py-4 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all active:scale-95 text-lg uppercase tracking-wider" style="background: #3b82f6;">รับทราบ</button>
+        </div>
+        `;
+        document.body.appendChild(div);
+    }
+
+    window.closePaymentReminder = function() {
+        const today = new Date().toLocaleDateString('th-TH');
+        try { localStorage.setItem('app_last_reminder_date', today); } catch(e) {}
+        const m = document.getElementById('payment-reminder-modal');
+        if(m) m.remove();
+    }
+
     // ==========================================
 
     const dataHandler = {
@@ -983,6 +1061,9 @@
       ];
       if (currentUser && currentUser.isAdmin) views.splice(5, 0, { id: 'manage_users', label: 'จัดการผู้ใช้งาน', icon: '👥' });
 
+      // 🔴 คำนวณตัวเลขแจ้งเตือนเพื่อแสดงในเมนูด้านซ้าย
+      const dueInfo = getDuePaymentsInfo();
+
       const baseClasses = "w-64 p-6 flex flex-col z-40 transition-all duration-300 ease-in-out h-full overflow-x-hidden custom-sidebar border-r";
       const mobileClasses = `absolute top-0 left-0 bottom-0 transform ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`;
       const desktopClasses = "md:relative md:translate-x-0";
@@ -1008,7 +1089,14 @@
                     ? `background: ${primaryColor}; color: white; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);` 
                     : `background: transparent; color: ${textColor};`;
                 const hoverStyle = isActive ? '' : 'hover:bg-slate-50 dark:hover:bg-gray-800';
-                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3.5 rounded-xl font-semibold flex items-center gap-3 transition-all ${hoverStyle}" style="${activeStyle}"><span class="text-xl">${v.icon}</span>${v.label}</button>`;
+                
+                // 🔴 แปะตัวเลขสีแดงที่เมนูจัดการลูกค้า ถ้ามียอดค้างชำระ
+                let badgeHtml = '';
+                if (v.id === 'manage' && dueInfo.count > 0) {
+                    badgeHtml = `<span class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full border border-white dark:border-gray-800 shadow-sm leading-none z-10">${dueInfo.count}</span>`;
+                }
+
+                return `<button data-view="${v.id}" class="sidebar-item w-full text-left px-4 py-3.5 rounded-xl font-semibold flex items-center gap-3 transition-all relative ${hoverStyle}" style="${activeStyle}"><span class="text-xl">${v.icon}</span>${v.label}${badgeHtml}</button>`;
             }).join('')}
           </nav>
           <div class="mt-8 pt-6 border-t" style="border-color: ${dark ? '#374151' : '#f1f5f9'};">
@@ -2110,8 +2198,12 @@
       window.elementSdk.init({ defaultConfig, onConfigChange: () => renderApp() });
       renderApp();
       
-      // 🔴 เพิ่มเวลาหน่วงเป็น 1.5 วินาที เพื่อให้มือถือโหลด UI และข้อมูลเสร็จสมบูรณ์ก่อน
-      setTimeout(checkAndShowWhatsNew, 1500); 
+      setTimeout(() => {
+          const showedWhatsNew = checkAndShowWhatsNew();
+          if (!showedWhatsNew) {
+              checkAndShowPaymentReminder();
+          }
+      }, 1500); 
       startUpdateChecker();
     }
 
