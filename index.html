@@ -19,10 +19,25 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.0";
+    const CURRENT_VERSION = "V.11.2";
     
-    // เคลียร์ประวัติ เริ่มต้น Baseline ใหม่
     const APP_CHANGELOG = [
+        {
+            version: "V.11.2",
+            date: "28/09/2026",
+            changes: [
+                "แก้ไขบั๊กปุ่มเข้าสู่ระบบ (Login) ไม่ทำงาน เนื่องจากปัญหาการอ้างอิง ID ของช่องรหัสผ่านไม่ตรงกัน",
+                "แก้ไขบั๊กปุ่มลงทะเบียนและปุ่มรีเซ็ตรหัสผ่าน ให้ทำงานได้ตามปกติ"
+            ]
+        },
+        {
+            version: "V.11.1",
+            date: "28/09/2026",
+            changes: [
+                "เพิ่มระบบจัดเรียง (Sort) ข้อมูลในตารางรายละเอียดลูกค้ารายคน",
+                "สามารถคลิกที่หัวตาราง (รายการสินค้า, ราคาสินค้า, ค่างวด, งวดทั้งหมด) เพื่อเรียงลำดับข้อมูล มาก-น้อย / น้อย-มาก ได้"
+            ]
+        },
         {
             version: "V.11.0",
             date: "12/09/2026",
@@ -236,24 +251,194 @@
     let manageSearchTerm = '';
     let expandedCustomerName = null;
     
+    let tableSortCol = ''; 
+    let tableSortAsc = true; 
+
     let stmtSelectedDate = new Date();
     let topChartInstance = null;
     let doughnutChartInstance = null;
+
+    window.sortTable = function(col) {
+        if (tableSortCol === col) {
+            tableSortAsc = !tableSortAsc; 
+        } else {
+            tableSortCol = col;
+            tableSortAsc = true; 
+        }
+        renderApp();
+    };
+
+    let whatsNewTimerInterval = null;
+
+    function checkAndShowWhatsNew() {
+        try {
+            const lastSeen = localStorage.getItem('app_last_seen_version');
+            if (lastSeen !== CURRENT_VERSION) {
+                const currentLog = APP_CHANGELOG.find(l => l.version === CURRENT_VERSION) || APP_CHANGELOG[0];
+                
+                const modalId = 'whats-new-modal';
+                if(document.getElementById(modalId)) return true;
+
+                const div = document.createElement('div');
+                div.id = modalId;
+                div.className = 'modal-overlay fade-in';
+                div.style.zIndex = '10000'; 
+                
+                div.innerHTML = `
+                <div class="modal-content relative flex flex-col items-center p-8 text-center" style="max-width: 500px; border-radius: 20px;">
+                    <div class="w-24 h-24 rounded-full border-[3px] flex items-center justify-center mb-6" style="border-color: #0ea5e9;">
+                        <span class="text-6xl font-light relative" style="color: #0ea5e9; top: -2px;">i</span>
+                    </div>
+                    
+                    <h3 class="text-3xl font-black mb-6 text-gray-800 tracking-tight">มีอะไรใหม่ ${CURRENT_VERSION}?</h3>
+                    
+                    <ul class="text-left w-full space-y-3 mb-8 text-gray-600 font-medium text-base list-disc list-inside px-2">
+                        ${currentLog.changes.map(c => `<li>${c}</li>`).join('')}
+                    </ul>
+                    
+                    <button id="whats-new-btn" onclick="closeWhatsNew()" class="w-40 py-3 rounded-xl font-bold text-white shadow-md transition-all active:scale-95 text-lg uppercase tracking-wider" style="background: #0ea5e9;">OK (5s)</button>
+                </div>
+                `;
+                document.body.appendChild(div);
+
+                let timeLeft = 5;
+                const btn = document.getElementById('whats-new-btn');
+                
+                whatsNewTimerInterval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(whatsNewTimerInterval);
+                        closeWhatsNew();
+                    } else {
+                        if(btn) btn.innerText = `OK (${timeLeft}s)`;
+                    }
+                }, 1000);
+                
+                return true; 
+            }
+        } catch(e) {
+            console.warn("Storage access restricted", e);
+        }
+        return false; 
+    }
+
+    window.closeWhatsNew = function() {
+        if(whatsNewTimerInterval) clearInterval(whatsNewTimerInterval);
+        try { localStorage.setItem('app_last_seen_version', CURRENT_VERSION); } catch(e) {}
+        const m = document.getElementById('whats-new-modal');
+        if(m) m.remove();
+        
+        setTimeout(checkAndShowPaymentReminder, 500);
+    };
+
+    function startUpdateChecker() {
+        setInterval(async () => {
+            try {
+                let fetchUrl = new URL(window.location.href.split('#')[0]);
+                fetchUrl.searchParams.set('nocache', new Date().getTime());
+                
+                const response = await fetch(fetchUrl.toString(), { cache: 'no-store' });
+                const htmlText = await response.text();
+                
+                const match = htmlText.match(/const CURRENT_VERSION\s*=\s*['"]([^'"]+)['"]/);
+                if (match && match[1] && match[1] !== CURRENT_VERSION) {
+                    showUpdateAvailableModal(match[1]);
+                }
+            } catch(e) {}
+        }, 60000); 
+    }
+
+    function showUpdateAvailableModal(newVersion) {
+        if(document.getElementById('update-available-modal')) return;
+        const modalId = 'update-available-modal';
+        const div = document.createElement('div');
+        div.id = modalId;
+        div.className = 'modal-overlay fade-in';
+        div.style.zIndex = '10001'; 
+        div.innerHTML = `
+            <div class="modal-content text-center p-8" style="max-width: 450px; border-radius: 20px;">
+                <div class="text-6xl mb-6">🔄</div>
+                <h3 class="text-2xl font-black mb-3 text-gray-800 tracking-tight">มีเวอร์ชันใหม่อัปเดต!</h3>
+                <p class="text-gray-600 mb-8 font-medium">ระบบได้รับการอัปเดตเป็น <span class="font-bold text-blue-600">${newVersion}</span><br>กรุณากดปุ่มด้านล่างเพื่อรีสตาร์ทและรับฟีเจอร์ล่าสุด</p>
+                <button onclick="window.location.reload(true)" class="w-full py-4 rounded-xl font-bold text-white shadow-lg bg-blue-600 hover:bg-blue-700 transition-all text-lg uppercase tracking-wider active:scale-95">รีสตาร์ทแอปเดี๋ยวนี้</button>
+            </div>
+        `;
+        document.body.appendChild(div);
+    }
+    
+    function getDuePaymentsInfo() {
+        const customers = getActiveCustomers();
+        const daysBefore = getPaymentDaysBefore();
+        let count = 0;
+        let totalAmount = 0;
+        
+        customers.forEach(c => {
+            if (canPayNow(c.next_payment_date, daysBefore)) {
+                count++;
+                totalAmount += (c.monthly_payment || 0);
+            }
+        });
+        
+        return { count, totalAmount };
+    }
+
+    function checkAndShowPaymentReminder() {
+        if (!currentUser || currentUser.isGuestView) return; 
+        
+        const dueInfo = getDuePaymentsInfo();
+        if (dueInfo.count === 0) return;
+
+        const todayStr = new Date().toLocaleDateString('th-TH');
+        try {
+            const lastDate = localStorage.getItem('app_last_reminder_date');
+            if (lastDate === todayStr) return; 
+        } catch(e) {}
+
+        const modalId = 'payment-reminder-modal';
+        if(document.getElementById(modalId)) return;
+
+        const div = document.createElement('div');
+        div.id = modalId;
+        div.className = 'modal-overlay fade-in';
+        div.style.zIndex = '9998'; 
+        
+        const d = new Date();
+        const dateDisplay = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        div.innerHTML = `
+        <div class="modal-content relative flex flex-col items-center p-8 text-center" style="max-width: 400px; border-radius: 20px;">
+            <div class="w-20 h-20 rounded-full bg-red-50 border-4 border-red-100 flex items-center justify-center mb-5">
+                <span class="text-4xl relative" style="top: 2px;">🔔</span>
+            </div>
+            <h3 class="text-2xl font-black mb-2 text-gray-800 tracking-tight">แจ้งเตือนเก็บเงิน!</h3>
+            <p class="text-gray-500 font-medium mb-6">ประจำวันที่ ${dateDisplay}</p>
+            
+            <div class="bg-slate-50 w-full p-5 rounded-2xl border border-slate-100 mb-8 shadow-inner">
+                <p class="text-sm font-bold opacity-50 uppercase tracking-widest mb-1 text-gray-600">ยอดรวมถึงกำหนดชำระ</p>
+                <p class="text-4xl font-black text-red-500 tracking-tight">฿${dueInfo.totalAmount.toLocaleString()}</p>
+                <div class="mt-3 pt-3 border-t border-slate-200">
+                    <p class="text-sm font-bold text-gray-600">จำนวน <span class="text-blue-600 text-lg">${dueInfo.count}</span> รายการ</p>
+                </div>
+            </div>
+            
+            <button onclick="closePaymentReminder()" class="w-full py-4 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all active:scale-95 text-lg uppercase tracking-wider" style="background: #3b82f6;">รับทราบ</button>
+        </div>
+        `;
+        document.body.appendChild(div);
+    }
+
+    window.closePaymentReminder = function() {
+        const today = new Date().toLocaleDateString('th-TH');
+        try { localStorage.setItem('app_last_reminder_date', today); } catch(e) {}
+        const m = document.getElementById('payment-reminder-modal');
+        if(m) m.remove();
+    }
 
     const dataHandler = {
       onDataChanged(data) {
         allRecords = data || [];
         renderApp();
       }
-    };
-
-    window.toggleCustomerExpand = function(name) {
-        if (expandedCustomerName === name) {
-            expandedCustomerName = null; 
-        } else {
-            expandedCustomerName = name; 
-        }
-        renderApp();
     };
 
     function getToastDuration() {
@@ -906,7 +1091,7 @@
                 const hoverStyle = isActive ? '' : 'hover:bg-slate-50 dark:hover:bg-gray-800';
                 
                 let badgeHtml = '';
-                if (v.id === 'manage' && dueInfo.count > 0) {
+                if (v.id === 'manage' && dueInfo.count > 0 && currentUser && !currentUser.isGuestView) {
                     badgeHtml = `<span class="bg-red-500 text-white text-[11px] font-black px-2 py-1 rounded-full shadow-sm leading-none flex-shrink-0 ml-auto border border-white/20">${dueInfo.count}</span>`;
                 }
 
@@ -1017,7 +1202,9 @@
       const isSpecialView = isAdmin || isGuestView;
       
       return `<div class="p-4 md:p-8">
-        <h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_manage_customer}</h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+            <h2 class="text-2xl font-black tracking-tight" style="color: ${textColor};">${config.menu_manage_customer}</h2>
+        </div>
         
         <div class="relative mb-8">
             <input type="text" id="manage-search-input" value="${manageSearchTerm}" placeholder="ค้นหาชื่อลูกค้า หรือ สินค้า..." 
@@ -1044,18 +1231,27 @@
             <div class="flex flex-col space-y-4">
             ${summary.length===0?`<p class="text-center py-8 font-medium opacity-50 bg-white dark:bg-gray-800 rounded-2xl border" style="border-color: ${dark?'#374151':'#f1f5f9'}; color: ${textColor};">ไม่พบข้อมูล</p>`:''}
             ${summary.map(s=>{
-                  const customerItems = customers.filter(c => c.customer_name === s.name);
+                  let customerItems = customers.filter(c => c.customer_name === s.name);
                   
                   customerItems.sort((a, b) => {
-                      let ownerA = '-';
-                      const userA = allRecords.find(r => r.type === 'user' && r.id === a.account_id);
-                      if(userA) ownerA = userA.username;
-                      
-                      let ownerB = '-';
-                      const userB = allRecords.find(r => r.type === 'user' && r.id === b.account_id);
-                      if(userB) ownerB = userB.username;
-                      
-                      return ownerA.localeCompare(ownerB, 'th');
+                      let valA, valB;
+                      if (tableSortCol === 'product') {
+                          valA = a.product || ''; valB = b.product || '';
+                          return tableSortAsc ? valA.localeCompare(valB, 'th') : valB.localeCompare(valA, 'th');
+                      } else if (tableSortCol === 'price') {
+                          valA = parseFloat(a.product_price) || 0; valB = parseFloat(b.product_price) || 0;
+                          return tableSortAsc ? valA - valB : valB - valA;
+                      } else if (tableSortCol === 'payment') {
+                          valA = parseFloat(a.monthly_payment) || 0; valB = parseFloat(b.monthly_payment) || 0;
+                          return tableSortAsc ? valA - valB : valB - valA;
+                      } else if (tableSortCol === 'installments') {
+                          valA = parseInt(a.installments) || 0; valB = parseInt(b.installments) || 0;
+                          return tableSortAsc ? valA - valB : valB - valA;
+                      } else {
+                          let ownerA = '-'; const userA = allRecords.find(r => r.type === 'user' && r.id === a.account_id); if(userA) ownerA = userA.username;
+                          let ownerB = '-'; const userB = allRecords.find(r => r.type === 'user' && r.id === b.account_id); if(userB) ownerB = userB.username;
+                          return ownerA.localeCompare(ownerB, 'th');
+                      }
                   });
 
                   const hasDueItems = customerItems.some(c => canPayNow(c.next_payment_date, daysBefore));
@@ -1136,10 +1332,19 @@
                           <table class="w-full min-w-[700px]">
                               <thead style="border-bottom: 2px solid ${dark?'#374151':'#e2e8f0'};">
                                   <tr>
-                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">รายการสินค้า</th>
-                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">ราคาสินค้า</th>
-                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">ค่างวด</th>
-                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">งวดทั้งหมด</th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors select-none group" style="color: ${textColor};" onclick="window.sortTable('product')">
+                                          รายการสินค้า ${tableSortCol === 'product' ? (tableSortAsc ? '▲' : '▼') : '<span class="opacity-30 group-hover:opacity-100">↕</span>'}
+                                      </th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors select-none group" style="color: ${textColor};" onclick="window.sortTable('price')">
+                                          ราคาสินค้า ${tableSortCol === 'price' ? (tableSortAsc ? '▲' : '▼') : '<span class="opacity-30 group-hover:opacity-100">↕</span>'}
+                                      </th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors select-none group" style="color: ${textColor};" onclick="window.sortTable('payment')">
+                                          ค่างวด ${tableSortCol === 'payment' ? (tableSortAsc ? '▲' : '▼') : '<span class="opacity-30 group-hover:opacity-100">↕</span>'}
+                                      </th>
+                                      <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors select-none group" style="color: ${textColor};" onclick="window.sortTable('installments')">
+                                          งวดทั้งหมด ${tableSortCol === 'installments' ? (tableSortAsc ? '▲' : '▼') : '<span class="opacity-30 group-hover:opacity-100">↕</span>'}
+                                      </th>
+                                      
                                       <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">งวดถัดไป</th>
                                       <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider opacity-60" style="color: ${textColor};">${canEditData() ? 'การจัดการ' : 'ผู้ให้บริการ'}</th>
                                   </tr>
@@ -1162,7 +1367,7 @@
                                               <span class="tracking-wide">${c.product}</span>
                                           </td>
                                           <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">฿${(c.product_price||0).toLocaleString()}</td>
-                                          <td class="px-4 py-4 font-black text-base" style="color: ${primaryColor};">฿${c.monthly_payment.toLocaleString()}</td>
+                                          <td class="px-4 py-4 font-black text-base" style="color: ${primaryColor};">฿${(c.monthly_payment||0).toLocaleString()}</td>
                                           <td class="px-4 py-4 font-bold opacity-80" style="color: ${textColor};">${c.paid_installments} / ${c.installments}</td>
                                           <td class="px-4 py-4 font-medium opacity-80" style="color: ${textColor};">${new Date(c.next_payment_date).toLocaleDateString('th-TH')}</td>
                                           <td class="px-4 py-4 text-center">
@@ -1644,40 +1849,6 @@
         <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         <div class="flex gap-4 pt-4"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ยืนยันการลบถาวร</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ลบข้อมูล</button>`}</form></div></div>`;
       }
-      
-      if (showingModal === 'changelog') {
-          let logsHtml = APP_CHANGELOG.map((log, index) => `
-              <div class="p-6 rounded-2xl shadow-sm relative overflow-hidden mb-5" style="background: ${dark?'#1f2937':'#f8fafc'}; border: 1px solid ${dark?'#374151':'#e2e8f0'};">
-                  <div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#4b5563' : '#cbd5e1')}"></div>
-                  <div class="flex justify-between items-start mb-4 pl-4">
-                      <div>
-                          <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#f1f5f9')}; border: 1px solid ${index === 0 ? primaryColor + '50' : (dark?'#4b5563':'#e2e8f0')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span>
-                          <span class="ml-3 text-xs font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">${log.date}</span>
-                      </div>
-                  </div>
-                  <ul class="list-disc list-inside space-y-2 pl-4 text-sm font-medium opacity-80" style="color: ${textColor};">
-                      ${log.changes.map(c => `<li>${c}</li>`).join('')}
-                  </ul>
-              </div>
-          `).join('');
-
-          return `
-          <div class="modal-overlay" onclick="hideModal()">
-              <div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 650px;" onclick="event.stopPropagation()">
-                  <div class="flex justify-between items-center mb-6 border-b pb-4" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
-                      <div>
-                          <h3 class="text-2xl font-black tracking-tight" style="color: ${textColor};">ประวัติการอัปเดต</h3>
-                          <p class="text-xs font-bold uppercase tracking-widest opacity-50 mt-1" style="color: ${textColor};">Changelog & Release Notes</p>
-                      </div>
-                      <button onclick="hideModal()" class="text-gray-400 hover:text-gray-800 transition-colors text-2xl font-bold px-2">&times;</button>
-                  </div>
-                  <div class="max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
-                      ${logsHtml}
-                  </div>
-              </div>
-          </div>
-          `;
-      }
       return '';
     }
 
@@ -1695,14 +1866,16 @@
       if (loginBtn) loginBtn.addEventListener('click', (e) => {
           e.preventDefault();
           const u = document.getElementById('login-username').value;
-          const p = document.getElementById('login-password').value;
+          // 🟢 แก้ไขตรงนี้ให้รับค่าจาก 'login-auth-key' ที่เปลี่ยน ID ไป
+          const p = document.getElementById('login-auth-key').value;
           const remember = document.getElementById('remember-me') ? document.getElementById('remember-me').checked : false;
           if(!u || !p) return showToast('กรุณากรอกข้อมูล', true);
           loginBtn.innerHTML = '<div class="spinner"></div>';
           if(!login(u,p, remember)) { showToast('ข้อมูลไม่ถูกต้อง', true); loginBtn.innerHTML = 'เข้าสู่ระบบ'; }
       });
 
-      ['login-username', 'login-password'].forEach(id => {
+      // 🟢 อัปเดตฝั่ง Listener ตอนกดปุ่ม Enter ให้ตรวจจับ 'login-auth-key' ด้วย
+      ['login-username', 'login-auth-key'].forEach(id => {
           const el = document.getElementById(id);
           if (el) {
               el.addEventListener('keyup', (e) => {
@@ -1750,7 +1923,8 @@
       if(doRegister) doRegister.addEventListener('click', async (e) => {
           e.preventDefault();
           const u = document.getElementById('register-username').value;
-          const p = document.getElementById('register-password').value;
+          // 🟢 แก้ไขตรงนี้ให้ตรงกับหน้า Register
+          const p = document.getElementById('reg-auth-key').value;
           if(!u || !p) return showToast('กรอกข้อมูลให้ครบ', true);
           doRegister.innerHTML = '<div class="spinner"></div>';
           if(await register(u,p)) toggle('register-form', 'login-form');
@@ -1762,11 +1936,12 @@
           e.preventDefault();
           const u = document.getElementById('reset-username').value;
           const k = document.getElementById('reset-admin').value;
-          const p = document.getElementById('reset-newpassword').value;
+          // 🟢 แก้ไขตรงนี้ให้ตรงกับหน้า Reset
+          const p = document.getElementById('reset-auth-key').value;
           if(!u||!k||!p) return showToast('กรอกข้อมูลให้ครบ', true);
           doReset.innerHTML = '<div class="spinner"></div>';
           if(await resetPassword(u,k,p)) toggle('reset-form', 'login-form');
-          doReset.innerHTML = 'รีเซรหัสผ่าน';
+          doReset.innerHTML = 'รีเซ็ตรหัสผ่าน';
       });
 
       const logoutBtn = document.getElementById('logout-btn');
@@ -1963,7 +2138,7 @@
           }
           
           await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), toastDuration);
-          saveSet.innerHTML = 'บันทึกการตั้งค่า';
+          saveSet.innerHTML = 'บันึกการตั้งค่า';
       });
 
       const saveConn = document.getElementById('save-connection-btn');
