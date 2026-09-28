@@ -19,9 +19,16 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.2";
+    const CURRENT_VERSION = "V.11.3";
     
     const APP_CHANGELOG = [
+        {
+            version: "V.11.3",
+            date: "28/09/2026",
+            changes: [
+                "แก้ไขบั๊กหน้าจัดการลูกค้าไม่สามารถกางดูรายละเอียดสัญญาได้ (สาเหตุจากฟังก์ชันสูญหายในเวอร์ชันก่อนหน้า)"
+            ]
+        },
         {
             version: "V.11.2",
             date: "28/09/2026",
@@ -257,6 +264,18 @@
     let stmtSelectedDate = new Date();
     let topChartInstance = null;
     let doughnutChartInstance = null;
+
+    // 🟢 1. นำฟังก์ชัน toggleCustomerExpand กลับมา เพื่อให้กาง/หุบรายละเอียดลูกค้าได้
+    window.toggleCustomerExpand = function(name) {
+        if (expandedCustomerName === name) {
+            expandedCustomerName = null; 
+        } else {
+            expandedCustomerName = name; 
+        }
+        tableSortCol = '';
+        tableSortAsc = true;
+        renderApp();
+    };
 
     window.sortTable = function(col) {
         if (tableSortCol === col) {
@@ -1202,9 +1221,7 @@
       const isSpecialView = isAdmin || isGuestView;
       
       return `<div class="p-4 md:p-8">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-            <h2 class="text-2xl font-black tracking-tight" style="color: ${textColor};">${config.menu_manage_customer}</h2>
-        </div>
+        <h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_manage_customer}</h2>
         
         <div class="relative mb-8">
             <input type="text" id="manage-search-input" value="${manageSearchTerm}" placeholder="ค้นหาชื่อลูกค้า หรือ สินค้า..." 
@@ -1849,6 +1866,40 @@
         <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         <div class="flex gap-4 pt-4"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ยืนยันการลบถาวร</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ลบข้อมูล</button>`}</form></div></div>`;
       }
+      
+      if (showingModal === 'changelog') {
+          let logsHtml = APP_CHANGELOG.map((log, index) => `
+              <div class="p-6 rounded-2xl shadow-sm relative overflow-hidden mb-5" style="background: ${dark?'#1f2937':'#f8fafc'}; border: 1px solid ${dark?'#374151':'#e2e8f0'};">
+                  <div class="absolute top-0 left-0 w-2 h-full" style="background: ${index === 0 ? primaryColor : (dark ? '#4b5563' : '#cbd5e1')}"></div>
+                  <div class="flex justify-between items-start mb-4 pl-4">
+                      <div>
+                          <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest" style="background: ${index === 0 ? primaryColor + '20' : (dark ? '#374151' : '#f1f5f9')}; border: 1px solid ${index === 0 ? primaryColor + '50' : (dark?'#4b5563':'#e2e8f0')}; color: ${index === 0 ? primaryColor : textColor};">${log.version}</span>
+                          <span class="ml-3 text-xs font-bold opacity-50 uppercase tracking-widest" style="color: ${textColor};">${log.date}</span>
+                      </div>
+                  </div>
+                  <ul class="list-disc list-inside space-y-2 pl-4 text-sm font-medium opacity-80" style="color: ${textColor};">
+                      ${log.changes.map(c => `<li>${c}</li>`).join('')}
+                  </ul>
+              </div>
+          `).join('');
+
+          return `
+          <div class="modal-overlay" onclick="hideModal()">
+              <div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 650px;" onclick="event.stopPropagation()">
+                  <div class="flex justify-between items-center mb-6 border-b pb-4" style="border-color: ${dark ? '#4b5563' : '#f1f5f9'};">
+                      <div>
+                          <h3 class="text-2xl font-black tracking-tight" style="color: ${textColor};">ประวัติการอัปเดต</h3>
+                          <p class="text-xs font-bold uppercase tracking-widest opacity-50 mt-1" style="color: ${textColor};">Changelog & Release Notes</p>
+                      </div>
+                      <button onclick="hideModal()" class="text-gray-400 hover:text-gray-800 transition-colors text-2xl font-bold px-2">&times;</button>
+                  </div>
+                  <div class="max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                      ${logsHtml}
+                  </div>
+              </div>
+          </div>
+          `;
+      }
       return '';
     }
 
@@ -1866,7 +1917,6 @@
       if (loginBtn) loginBtn.addEventListener('click', (e) => {
           e.preventDefault();
           const u = document.getElementById('login-username').value;
-          // 🟢 แก้ไขตรงนี้ให้รับค่าจาก 'login-auth-key' ที่เปลี่ยน ID ไป
           const p = document.getElementById('login-auth-key').value;
           const remember = document.getElementById('remember-me') ? document.getElementById('remember-me').checked : false;
           if(!u || !p) return showToast('กรุณากรอกข้อมูล', true);
@@ -1874,7 +1924,6 @@
           if(!login(u,p, remember)) { showToast('ข้อมูลไม่ถูกต้อง', true); loginBtn.innerHTML = 'เข้าสู่ระบบ'; }
       });
 
-      // 🟢 อัปเดตฝั่ง Listener ตอนกดปุ่ม Enter ให้ตรวจจับ 'login-auth-key' ด้วย
       ['login-username', 'login-auth-key'].forEach(id => {
           const el = document.getElementById(id);
           if (el) {
@@ -1923,7 +1972,6 @@
       if(doRegister) doRegister.addEventListener('click', async (e) => {
           e.preventDefault();
           const u = document.getElementById('register-username').value;
-          // 🟢 แก้ไขตรงนี้ให้ตรงกับหน้า Register
           const p = document.getElementById('reg-auth-key').value;
           if(!u || !p) return showToast('กรอกข้อมูลให้ครบ', true);
           doRegister.innerHTML = '<div class="spinner"></div>';
@@ -1936,7 +1984,6 @@
           e.preventDefault();
           const u = document.getElementById('reset-username').value;
           const k = document.getElementById('reset-admin').value;
-          // 🟢 แก้ไขตรงนี้ให้ตรงกับหน้า Reset
           const p = document.getElementById('reset-auth-key').value;
           if(!u||!k||!p) return showToast('กรอกข้อมูลให้ครบ', true);
           doReset.innerHTML = '<div class="spinner"></div>';
@@ -2138,7 +2185,7 @@
           }
           
           await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), toastDuration);
-          saveSet.innerHTML = 'บันึกการตั้งค่า';
+          saveSet.innerHTML = 'บันทึกการตั้งค่า';
       });
 
       const saveConn = document.getElementById('save-connection-btn');
