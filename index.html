@@ -42,8 +42,8 @@
     [hidden] { display:none!important; }
     @media(max-width:767px) { .sidebar { display:none; } }
   </style>
-  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
   <script src="/_sdk/263f7f1ec427fef1.data_sdk.js" type="text/javascript" integrity="sha512-G5r5+ZpgQ1ELqZ8tI9imlWClKvYZ57SrzbGr898u8le5l2OuBwnWDOf9qbb9mCGSCmLi/3zszXyL+nX96lu7Lg=="></script>
   <script src="/_sdk/7f51878a26dda571.editing_sdk.js" type="text/javascript" integrity="sha512-lv2tc4rONGhIWbY0ih8IjIqw943uiwvC9BM8dCj48SpTnOr728gJkoyMnfD0Yfa9KbBgBGdq6uAFyQuDfezvEg=="></script>
   <script src="/_sdk/221ab7571fc66e1b.resizing_sdk.js" type="text/javascript" integrity="sha512-brXJ8PEVMWyvFfRXR3J+lXcBL9xcTCDHg4wYW7JDpQNdbOBkBezAQsQLUeUc2BOFREYS4N9GREjyhzX1N1VFdA=="></script>
@@ -99,76 +99,61 @@
      <section id="view-customers" class="view space-y-5" hidden="" aria-labelledby="customers-heading">
       <h2 id="customers-heading" data-template-id="customers-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">จัดการลูกค้า</h2>
       <form id="customer-form" novalidate="" class="panel p-5 grid md:grid-cols-3 gap-4">
-       <div>
-        <label data-template-id="customer-name-label" for="customer-name" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ชื่อลูกค้า</label><input id="customer-name" class="field" maxlength="90">
+       <div><label data-template-id="customer-name-label" for="customer-name" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ชื่อลูกค้า</label><input id="customer-name" class="field" maxlength="90">
         <p id="customer-name-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="customer-phone-label" for="customer-phone" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เบอร์โทรศัพท์</label><input id="customer-phone" class="field" type="tel" inputmode="numeric" maxlength="20">
+       <div><label data-template-id="customer-phone-label" for="customer-phone" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เบอร์โทรศัพท์</label><input id="customer-phone" class="field" type="tel" inputmode="numeric" maxlength="20">
         <p id="customer-phone-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="customer-note-label" for="customer-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="customer-note" class="field" maxlength="180">
+       <div><label data-template-id="customer-note-label" for="customer-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="customer-note" class="field" maxlength="180">
        </div><button type="submit" data-template-id="add-customer-button" class="canva-button primary rounded-xl px-5 py-3 font-bold md:col-span-3 md:justify-self-start" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">+ เพิ่มลูกค้า</button>
       </form>
-      <div class="panel p-5"><label data-template-id="customer-search-label" for="customer-search" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาลูกค้า</label> <input id="customer-search" type="search" class="field max-w-md">
+      <div class="panel p-5">
+       <label data-template-id="customer-search-label" for="customer-search" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาลูกค้า</label> <input id="customer-search" type="search" class="field max-w-md">
        <div id="customer-list" class="table-wrap mt-4"></div>
       </div>
      </section>
      <section id="view-contracts" class="view space-y-5" hidden="" aria-labelledby="contracts-heading">
       <h2 id="contracts-heading" data-template-id="contracts-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">บันทึกรายการผ่อน</h2>
       <form id="contract-form" novalidate="" class="panel p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-       <div>
-        <label data-template-id="contract-id-label" for="contract-id" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เลขที่รายการ</label><input id="contract-id" class="field" maxlength="40">
+       <div><label data-template-id="contract-id-label" for="contract-id" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เลขที่รายการ</label><input id="contract-id" class="field" maxlength="40">
         <p id="contract-id-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="contract-customer-label" for="contract-customer" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ลูกค้า</label><select id="contract-customer" class="field"></select>
+       <div><label data-template-id="contract-customer-label" for="contract-customer" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ลูกค้า</label><select id="contract-customer" class="field"></select>
         <p id="contract-customer-error" class="error"></p>
        </div>
-       <div class="sm:col-span-2">
-        <label data-template-id="contract-items-label" for="contract-items" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการสิ่งของ (หนึ่งรายการต่อหนึ่งบรรทัด)</label><textarea id="contract-items" class="field" rows="2" maxlength="500" placeholder="หนึ่งรายการต่อหนึ่งบรรทัด"></textarea>
+       <div class="sm:col-span-2"><label data-template-id="contract-items-label" for="contract-items" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการสิ่งของ (หนึ่งรายการต่อหนึ่งบรรทัด)</label><textarea id="contract-items" class="field" rows="2" maxlength="500" placeholder="หนึ่งรายการต่อหนึ่งบรรทัด"></textarea>
         <p id="contract-items-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="item-count-label" for="item-count" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนสิ่งของ</label><input id="item-count" class="field" type="number" min="1" step="1" value="1">
+       <div><label data-template-id="item-count-label" for="item-count" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนสิ่งของ</label><input id="item-count" class="field" type="number" min="1" step="1" value="1">
         <p id="item-count-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="total-label" for="total" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ยอดรวม (บาท)</label><input id="total" class="field" type="number" min="0.01" step="0.01">
+       <div><label data-template-id="total-label" for="total" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ยอดรวม (บาท)</label><input id="total" class="field" type="number" min="0.01" step="0.01">
         <p id="total-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="down-label" for="down" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เงินดาวน์ (บาท)</label><input id="down" class="field" type="number" min="0" step="0.01" value="0">
+       <div><label data-template-id="down-label" for="down" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เงินดาวน์ (บาท)</label><input id="down" class="field" type="number" min="0" step="0.01" value="0">
         <p id="down-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="installments-label" for="installments" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนงวด</label><input id="installments" class="field" type="number" min="1" step="1">
+       <div><label data-template-id="installments-label" for="installments" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนงวด</label><input id="installments" class="field" type="number" min="1" step="1">
         <p id="installments-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="start-label" for="start-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่เริ่มผ่อน</label><input id="start-date" class="field" type="date">
+       <div><label data-template-id="start-label" for="start-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่เริ่มผ่อน</label><input id="start-date" class="field" type="date">
         <p id="start-date-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="end-label" for="end-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันครบกำหนด</label><input id="end-date" class="field" type="date">
+       <div><label data-template-id="end-label" for="end-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันครบกำหนด</label><input id="end-date" class="field" type="date">
         <p id="end-date-error" class="error"></p>
        </div>
-       <div class="sm:col-span-2">
-        <label data-template-id="contract-note-label" for="contract-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="contract-note" class="field" maxlength="180">
+       <div class="sm:col-span-2"><label data-template-id="contract-note-label" for="contract-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="contract-note" class="field" maxlength="180">
        </div>
        <p id="calculated-payment" class="sm:col-span-2 self-center muted" aria-live="polite"></p><button type="submit" data-template-id="add-contract-button" class="canva-button primary rounded-xl px-5 py-3 font-bold lg:col-span-4 lg:justify-self-start" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">+ สร้างรายการผ่อน</button>
       </form>
       <div class="panel p-5">
        <div class="grid sm:grid-cols-3 gap-3">
-        <div>
-         <label data-template-id="contract-search-label" for="contract-search" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาเลขที่รายการ ลูกค้า หรือสิ่งของ</label><input id="contract-search" type="search" class="field">
+        <div><label data-template-id="contract-search-label" for="contract-search" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาเลขที่รายการ ลูกค้า หรือสิ่งของ</label><input id="contract-search" type="search" class="field">
         </div>
-        <div>
-         <label data-template-id="status-filter-label" for="status-filter" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">สถานะ</label><select id="status-filter" class="field"><option value="all">ทุกสถานะ</option><option value="active">กำลังผ่อน</option><option value="soon">ใกล้ครบกำหนด</option><option value="late">ค้างชำระ</option><option value="done">ปิดยอดแล้ว</option></select>
+        <div><label data-template-id="status-filter-label" for="status-filter" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">สถานะ</label><select id="status-filter" class="field"><option value="all">ทุกสถานะ</option><option value="active">กำลังผ่อน</option><option value="soon">ใกล้ครบกำหนด</option><option value="late">ค้างชำระ</option><option value="done">ปิดยอดแล้ว</option></select>
         </div>
-        <div>
-         <label data-template-id="sort-label" for="sort-order" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เรียงลำดับ</label><select id="sort-order" class="field"><option value="new">ใหม่ล่าสุด</option><option value="due">ครบกำหนดใกล้ที่สุด</option><option value="balance">ยอดคงเหลือสูงสุด</option></select>
+        <div><label data-template-id="sort-label" for="sort-order" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เรียงลำดับ</label><select id="sort-order" class="field"><option value="new">ใหม่ล่าสุด</option><option value="due">ครบกำหนดใกล้ที่สุด</option><option value="balance">ยอดคงเหลือสูงสุด</option></select>
         </div>
        </div>
        <div id="contract-list" class="table-wrap mt-4"></div>
@@ -177,20 +162,16 @@
      <section id="view-payments" class="view space-y-5" hidden="" aria-labelledby="payments-heading">
       <h2 id="payments-heading" data-template-id="payments-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">รับชำระเงิน</h2>
       <form id="payment-form" novalidate="" class="panel p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-       <div>
-        <label data-template-id="payment-contract-label" for="payment-contract" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการผ่อน</label><select id="payment-contract" class="field"></select>
+       <div><label data-template-id="payment-contract-label" for="payment-contract" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการผ่อน</label><select id="payment-contract" class="field"></select>
         <p id="payment-contract-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="payment-date-label" for="payment-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่ชำระ</label><input id="payment-date" type="date" class="field">
+       <div><label data-template-id="payment-date-label" for="payment-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่ชำระ</label><input id="payment-date" type="date" class="field">
         <p id="payment-date-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="payment-amount-label" for="payment-amount" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนเงิน (บาท)</label><input id="payment-amount" type="number" min="0.01" step="0.01" class="field">
+       <div><label data-template-id="payment-amount-label" for="payment-amount" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนเงิน (บาท)</label><input id="payment-amount" type="number" min="0.01" step="0.01" class="field">
         <p id="payment-amount-error" class="error"></p>
        </div>
-       <div>
-        <label data-template-id="payment-note-label" for="payment-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="payment-note" maxlength="180" class="field">
+       <div><label data-template-id="payment-note-label" for="payment-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="payment-note" maxlength="180" class="field">
        </div><button type="submit" data-template-id="save-payment-button" class="canva-button primary rounded-xl px-5 py-3 font-bold lg:col-span-4 lg:justify-self-start" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">บันทึกการชำระ</button>
       </form>
       <article class="panel p-5">
@@ -201,11 +182,9 @@
      <section id="view-reports" class="view space-y-5" hidden="" aria-labelledby="reports-heading">
       <h2 id="reports-heading" data-template-id="reports-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">รายงานสรุป</h2>
       <div class="panel p-5 grid sm:grid-cols-2 gap-4">
-       <div>
-        <label data-template-id="report-from-label" for="report-from" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ตั้งแต่วันที่</label><input id="report-from" type="date" class="field">
+       <div><label data-template-id="report-from-label" for="report-from" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ตั้งแต่วันที่</label><input id="report-from" type="date" class="field">
        </div>
-       <div>
-        <label data-template-id="report-to-label" for="report-to" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ถึงวันที่</label><input id="report-to" type="date" class="field">
+       <div><label data-template-id="report-to-label" for="report-to" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ถึงวันที่</label><input id="report-to" type="date" class="field">
        </div>
       </div>
       <div id="report-summary" class="grid sm:grid-cols-3 gap-4"></div>
@@ -218,8 +197,7 @@
       <h2 id="check-heading" data-template-id="check-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">ตรวจสอบยอดชำระ</h2>
       <p data-template-id="check-disclosure" class="canva-text rounded-xl p-4 border" style="background: var(--soft); border-color: var(--border); color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">สำหรับตรวจดูข้อมูลภายในพื้นที่ทำงานเท่านั้น ไม่ใช่การยืนยันตัวตนหรือหน้าตรวจสอบสำหรับลูกค้าภายนอก</p>
       <form id="check-form" class="panel p-5 flex flex-wrap items-end gap-3">
-       <div class="flex-1 min-w-48">
-        <label data-template-id="check-id-label" for="check-id" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เลขที่รายการ</label><input id="check-id" class="field">
+       <div class="flex-1 min-w-48"><label data-template-id="check-id-label" for="check-id" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เลขที่รายการ</label><input id="check-id" class="field">
        </div><button type="submit" data-template-id="check-button" class="canva-button primary rounded-xl px-5 py-3" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหา</button> <button type="button" id="clear-check" data-template-id="clear-check-button" class="canva-button secondary rounded-xl px-5 py-3" style="background: rgb(255, 255, 255); color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ล้างข้อมูล</button>
       </form>
       <div id="check-result" class="panel p-5" aria-live="polite"></div>
@@ -230,14 +208,13 @@
        <h3 data-template-id="theme-heading" class="canva-text font-bold mb-4" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">เลือกธีม</h3>
        <div id="theme-grid" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3"></div>
        <div class="grid sm:grid-cols-2 gap-5 mt-6">
-        <div>
-         <label data-template-id="mode-label" for="mode-select" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">โหมดการแสดงผล</label><select id="mode-select" class="field"><option value="light">สว่าง</option><option value="dark">มืด</option><option value="auto">ตามอุปกรณ์</option></select>
+        <div><label data-template-id="mode-label" for="mode-select" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">โหมดการแสดงผล</label><select id="mode-select" class="field"><option value="light">สว่าง</option><option value="dark">มืด</option><option value="auto">ตามอุปกรณ์</option></select>
         </div>
-        <div class="flex items-center gap-3 pt-6">
-         <input id="motion-toggle" type="checkbox" checked="" class="w-5 h-5"><label data-template-id="motion-label" for="motion-toggle" class="canva-text font-semibold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เปิดภาพเคลื่อนไหว</label>
+        <div class="flex items-center gap-3 pt-6"><input id="motion-toggle" type="checkbox" checked="" class="w-5 h-5"><label data-template-id="motion-label" for="motion-toggle" class="canva-text font-semibold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เปิดภาพเคลื่อนไหว</label>
         </div>
        </div>
-       <div class="flex flex-wrap gap-3 mt-6"><button id="save-settings" type="button" data-template-id="save-settings-button" class="canva-button primary rounded-xl px-5 py-3 font-bold" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">บันทึกการตั้งค่า</button> <button id="reset-settings" type="button" data-template-id="reset-settings-button" class="canva-button secondary rounded-xl px-5 py-3" style="background: rgb(255, 255, 255); color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">คืนค่าเดิม</button>
+       <div class="flex flex-wrap gap-3 mt-6">
+        <button id="save-settings" type="button" data-template-id="save-settings-button" class="canva-button primary rounded-xl px-5 py-3 font-bold" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">บันทึกการตั้งค่า</button> <button id="reset-settings" type="button" data-template-id="reset-settings-button" class="canva-button secondary rounded-xl px-5 py-3" style="background: rgb(255, 255, 255); color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">คืนค่าเดิม</button>
        </div>
       </div>
      </section>
@@ -256,7 +233,7 @@
     {id:"gradient",name:"Modern Gradient",base:"#f2f5fc",surface:"#ffffff",ink:"#243454",accent:"#5268c7",soft:"#e9edff"},
     {id:"warm",name:"Warm Premium",base:"#faf5ed",surface:"#fffdfa",ink:"#453328",accent:"#a66530",soft:"#f8e9d5"}
   ];
-  let records=[], ready=false, timer, page="dashboard", selected={theme:"blue",mode:"light",motion:true}, lastSettingId=null;
+  let records=[], ready=false, timer, page="dashboard", selected={theme:"blue",mode:"light",motion:true}, lastSettingId=null, editingContractId=null;
   const money = n => new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB"}).format(Number(n)||0);
   const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
   const date = s => s ? new Intl.DateTimeFormat("th-TH",{day:"numeric",month:"short",year:"numeric"}).format(new Date(s+"T12:00:00")) : "—";
@@ -369,7 +346,7 @@
         progress.append(node("p","text-xs muted",`${installment}/${c.contract_installments} งวด · ${Math.min(100,Math.round(paid(c.contract_id)/Math.max(net(c),0.01)*100))}%`),badge);
         const actions=node("div","flex flex-wrap gap-1");
         actions.append(action("ดูรายละเอียด",()=>{$("contract-search").value=c.contract_id;renderContracts();notify(`${c.contract_id}: ยอดสุทธิ ${money(net(c))}, ชำระแล้ว ${money(paid(c.contract_id))}, คงเหลือ ${money(balance(c))}, ครบกำหนด ${date(due(c))}${c.contract_note?" · "+c.contract_note:""}`)}));
-        if(withActions)actions.append(action("รับชำระ",()=>openPayment(c.contract_id)),removeControl(c,()=>payments().some(p=>p.payment_contract_id===c.contract_id)));
+        if(withActions)actions.append(action("แก้ไข",()=>editContract(c)),action("รับชำระ",()=>openPayment(c.contract_id)),removeControl(c,()=>payments().some(p=>p.payment_contract_id===c.contract_id)));
         return [`${c.contract_id} · ${customerName(c.contract_customer_id)}`,`${c.contract_items} (${c.contract_item_count} ชิ้น)`,
           `${money(paid(c.contract_id))} / ${money(balance(c))}`,progress,actions];
       }));
@@ -421,6 +398,24 @@
       onSuccess?.();notify("บันทึกข้อมูลสำเร็จ");
     }catch{notify("ไม่สามารถยืนยันการบันทึกได้ กรุณาตรวจสอบการเชื่อมต่อ",true)}
     finally{button.disabled=false;button.removeAttribute("aria-busy")}
+  }
+  async function updateRecord(record,button,onSuccess) {
+    const current=records.find(r=>r.__backendId===record.__backendId);
+    if(!current){notify("ไม่พบรายการล่าสุด กรุณาโหลดข้อมูลใหม่",true);return}
+    button.disabled=true;button.setAttribute("aria-busy","true");
+    try {
+      const result=await window.dataSdk.update({...current,...record});
+      if(!result.isOk){notify("ไม่สามารถยืนยันการแก้ไขได้ กรุณาลองใหม่",true);return}
+      editingContractId=null;onSuccess?.();notify("แก้ไขข้อมูลสำเร็จ");
+    } catch { notify("ไม่สามารถบันทึกการแก้ไขได้ กรุณาตรวจสอบการเชื่อมต่อ",true); }
+    finally {button.disabled=false;button.removeAttribute("aria-busy")}
+  }
+  function editContract(c) {
+    editingContractId=c.__backendId;
+    $("contract-id").value=c.contract_id;$("contract-customer").value=c.contract_customer_id;$("contract-items").value=c.contract_items;
+    $("item-count").value=c.contract_item_count;$("total").value=c.contract_total;$("down").value=c.contract_down_payment;
+    $("installments").value=c.contract_installments;$("start-date").value=c.contract_start_date;$("end-date").value=c.contract_end_date;$("contract-note").value=c.contract_note||"";
+    calculate();showPage("contracts");$("contract-id").focus();notify("กำลังแก้ไขรายการ "+c.contract_id);
   }
   function calculate() {
     const t=Number($("total").value),d=Number($("down").value),n=Number($("installments").value);
@@ -500,7 +495,10 @@
       fieldError("end-date",!end||!!start&&end<=start?"วันครบกำหนดต้องหลังวันที่เริ่ม":"")
     ];
     if(errors.some(Boolean))return;
-    await create({record_type:"contract",contract_id:id,contract_customer_id:$("contract-customer").value,contract_items:items,contract_item_count:count,contract_total:total,contract_down_payment:down,contract_installments:n,contract_per_installment:Math.round((total-down)/n*100)/100,contract_start_date:start,contract_end_date:end,contract_note:$("contract-note").value.trim(),contract_status:"active",created_at:new Date().toISOString()},e.submitter,()=>{e.target.reset();$("item-count").value=1;$("down").value=0;calculate()});
+    const contractPayload={record_type:"contract",contract_id:id,contract_customer_id:$("contract-customer").value,contract_items:items,contract_item_count:count,contract_total:total,contract_down_payment:down,contract_installments:n,contract_per_installment:Math.round((total-down)/n*100)/100,contract_start_date:start,contract_end_date:end,contract_note:$("contract-note").value.trim(),contract_status:"active",created_at:new Date().toISOString()};
+    const saved=()=>{e.target.reset();editingContractId=null;$("item-count").value=1;$("down").value=0;calculate()};
+    if(editingContractId){const existing=contracts().find(c=>c.__backendId===editingContractId);if(existing)await updateRecord({...contractPayload,__backendId:editingContractId},e.submitter,saved);else notify("ไม่พบรายการที่ต้องการแก้ไข",true)}
+    else await create(contractPayload,e.submitter,saved);
   };
   $("payment-form").onsubmit=async e=>{
     e.preventDefault();clearErrors(e.currentTarget);
