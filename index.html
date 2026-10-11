@@ -5,194 +5,201 @@
   <title>ระบบจัดการรายการผ่อน</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Work+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
   <style>
-    :root { --base:#f3f7fa; --surface:#fff; --ink:#172b3d; --muted:#627587; --accent:#1468a8; --accent-soft:#e5f2fc; --border:#dce7ed; }
+    :root { --base:#f3f7fa; --surface:#fff; --ink:#172b3d; --muted:#627587; --accent:#1468a8; --soft:#e5f2fc; --border:#dce7ed; }
     * { box-sizing:border-box; }
-    body { font-family:"DM Sans",sans-serif; color:var(--ink); background:var(--base); }
+    body { margin:0; width:100%; background:var(--base); color:var(--ink); font-family:"DM Sans",sans-serif; }
     h1,h2,h3 { font-family:"Work Sans",sans-serif; }
     .app-shell { width:100%; min-height:100%; }
     .sidebar { background:#122f45; color:#e9f6fb; }
+    .nav-button { width:100%; text-align:left; padding:11px 14px; border-radius:12px; font-weight:600; }
     .sidebar .nav-button { color:#d5e5ed; }
-    .sidebar .nav-button.active { background:#ffffff20; color:white; box-shadow:inset 3px 0 var(--accent); }
+    .sidebar .nav-button:hover,.sidebar .nav-button.active { background:#ffffff20; color:white; }
+    .mobile-nav .nav-button { width:auto; white-space:nowrap; border:1px solid var(--border); }
+    .mobile-nav .nav-button.active { background:var(--soft); color:var(--accent); }
     .panel { background:var(--surface); border:1px solid var(--border); border-radius:20px; box-shadow:0 12px 35px #16344b0b; }
+    .field { width:100%; padding:11px 13px; border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--ink); }
+    .field:focus,button:focus-visible { outline:3px solid #e8a84c; outline-offset:2px; }
+    .primary { background:var(--accent); color:#fff; }
+    .secondary { border:1px solid var(--border); background:var(--surface); color:var(--ink); }
+    button { transition:opacity .2s,transform .2s; }
+    button:hover:not(:disabled) { opacity:.85; }
+    button:disabled { opacity:.55; cursor:wait; }
     .muted { color:var(--muted); }
     .accent { color:var(--accent); }
-    .soft { background:var(--accent-soft); }
-    .primary { background:var(--accent); color:white; }
-    .field { width:100%; background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:12px; padding:11px 13px; outline:none; }
-    .field:focus,button:focus-visible { outline:3px solid #e8a84c; outline-offset:2px; }
-    .nav-button { border-radius:12px; padding:11px 14px; text-align:left; transition:background .2s; }
-    .nav-button:hover { background:#ffffff1b; }
-    .mobile-nav .nav-button { color:var(--ink); white-space:nowrap; border:1px solid var(--border); }
-    .mobile-nav .nav-button.active { background:var(--accent-soft); color:var(--accent); }
-    .badge { display:inline-flex; border-radius:999px; padding:5px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
-    .good { background:#d9f5e8; color:#155d3b; } .soon { background:#fff0cf; color:#784c03; }
-    .late { background:#ffe2dc; color:#9b3526; } .done { background:#e4eaf8; color:#344d8c; }
-    .table-wrap { overflow:auto; } table { width:100%; border-collapse:collapse; min-width:680px; }
+    .error { color:#a63329; font-size:12px; min-height:18px; margin-top:4px; }
+    .table-wrap { overflow:auto; }
+    table { width:100%; min-width:670px; border-collapse:collapse; }
     th,td { padding:13px 12px; border-bottom:1px solid var(--border); text-align:left; vertical-align:middle; }
-    th { color:var(--muted); font-size:12px; font-weight:700; }
+    th { color:var(--muted); font-size:12px; }
+    .badge { display:inline-block; border-radius:999px; padding:5px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+    .active-badge { background:#d9f5e8; color:#155d3b; }
+    .soon-badge { background:#fff0cf; color:#784c03; }
+    .late-badge { background:#ffe2dc; color:#9b3526; }
+    .done-badge { background:#e4eaf8; color:#344d8c; }
     .theme-card { border:2px solid var(--border); border-radius:16px; padding:12px; text-align:left; background:var(--surface); }
-    .theme-card.selected { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
-    .skeleton { background:linear-gradient(90deg,#e4ebf0 20%,#f7fafb 50%,#e4ebf0 80%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:10px; }
-    @keyframes shimmer { to { background-position-x:-200%; } }
-    .no-motion *, .no-motion *::before, .no-motion *::after { animation:none!important; transition:none!important; }
+    .theme-card.selected { border-color:var(--accent); box-shadow:0 0 0 3px var(--soft); }
+    .no-motion *, .no-motion *::before,.no-motion *::after { animation:none!important; transition:none!important; }
     [hidden] { display:none!important; }
     @media(max-width:767px) { .sidebar { display:none; } }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js" type="text/javascript"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js" type="text/javascript"></script>
   <script src="/_sdk/263f7f1ec427fef1.data_sdk.js" type="text/javascript" integrity="sha512-G5r5+ZpgQ1ELqZ8tI9imlWClKvYZ57SrzbGr898u8le5l2OuBwnWDOf9qbb9mCGSCmLi/3zszXyL+nX96lu7Lg=="></script>
   <script src="/_sdk/7f51878a26dda571.editing_sdk.js" type="text/javascript" integrity="sha512-lv2tc4rONGhIWbY0ih8IjIqw943uiwvC9BM8dCj48SpTnOr728gJkoyMnfD0Yfa9KbBgBGdq6uAFyQuDfezvEg=="></script>
   <script src="/_sdk/221ab7571fc66e1b.resizing_sdk.js" type="text/javascript" integrity="sha512-brXJ8PEVMWyvFfRXR3J+lXcBL9xcTCDHg4wYW7JDpQNdbOBkBezAQsQLUeUc2BOFREYS4N9GREjyhzX1N1VFdA=="></script>
  </head>
  <body data-template-id="__page-root" class="w-full" style="background: rgb(243, 247, 250);">
-  <div id="app-shell" class="app-shell md:flex">
-   <aside class="sidebar md:w-60 md:shrink-0 md:min-h-screen p-5">
-    <div class="mb-10 pt-3">
+  <div class="app-shell md:flex">
+   <aside class="sidebar md:w-60 md:shrink-0 p-5">
+    <div class="mb-9 pt-3">
      <div class="w-10 h-10 rounded-xl bg-cyan-300 text-slate-900 grid place-items-center font-bold mb-4" aria-hidden="true">
       ฿
      </div>
-     <p data-template-id="brand-name" class="canva-text font-bold leading-snug" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: 16px;">ระบบจัดการรายการผ่อน</p>
+     <p data-template-id="brand-name" class="canva-text font-bold" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: 16px;">ระบบจัดการรายการผ่อน</p>
      <p data-template-id="brand-caption" class="canva-text opacity-70 mt-1" style="color: rgb(213, 229, 237); font-weight: 400; font-style: normal; font-size: 16px;">พื้นที่ทำงานด้านการผ่อนชำระ</p>
     </div>
-    <nav aria-label="เมนูหลัก" id="desktop-nav" class="flex flex-col gap-1"></nav>
-    <div class="mt-12 border-t border-white/20 pt-5 text-xs opacity-70">
-     <p data-template-id="access-note" class="canva-text" style="color: rgb(213, 229, 237); font-weight: 400; font-style: normal; font-size: 16px;">ข้อมูลในหน้านี้ใช้ร่วมกันโดยผู้ที่เข้าถึงหน้าได้</p>
-    </div>
+    <nav id="desktop-nav" class="flex flex-col gap-1" aria-label="เมนูหลัก"></nav>
+    <p data-template-id="access-note" class="canva-text text-xs opacity-70 mt-10 border-t border-white/20 pt-5" style="color: rgb(213, 229, 237); font-weight: 400; font-style: normal; font-size: 16px;">ข้อมูลในหน้านี้ใช้ร่วมกันโดยผู้ที่เข้าถึงหน้าได้ · ไม่ใช่ระบบแยกสิทธิ์ผู้ขาย</p>
    </aside>
    <div class="min-w-0 flex-1">
-    <header class="px-5 md:px-9 py-5 flex items-center justify-between gap-4 border-b" style="border-color:var(--border);background:var(--surface)">
+    <header class="px-5 md:px-9 py-5 flex items-center justify-between gap-3 border-b" style="background:var(--surface);border-color:var(--border)">
      <div>
-      <p data-template-id="header-kicker" class="canva-text accent font-bold tracking-widest uppercase" style="color: rgb(20, 104, 168); font-weight: 400; font-style: normal; font-size: 11px;">INSTALLMENT STUDIO</p>
-      <h1 data-template-id="page-title" class="canva-text font-bold leading-tight mt-1" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 32px;">ระบบจัดการรายการผ่อน</h1>
-     </div>
-     <div class="rounded-full soft accent px-4 py-2 text-sm font-semibold" id="today-label"></div>
+      <p data-template-id="header-kicker" class="canva-text accent font-bold tracking-widest" style="color: rgb(20, 104, 168); font-weight: 400; font-style: normal; font-size: 11px;">INSTALLMENT STUDIO</p>
+      <h1 data-template-id="page-title" class="canva-text font-bold mt-1" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 32px;">ระบบจัดการรายการผ่อน</h1>
+     </div><span id="today-label" class="rounded-full px-3 py-2 text-sm font-semibold accent" style="background:var(--soft)"></span>
     </header>
-    <nav aria-label="เมนูบนมือถือ" id="mobile-nav" class="mobile-nav md:hidden flex gap-2 overflow-x-auto p-4"></nav>
-    <main class="p-4 md:p-9 max-w-[1500px] mx-auto space-y-7">
-     <div id="notification" role="status" aria-live="polite" class="hidden rounded-xl px-4 py-3 font-semibold"></div>
-     <div id="loading" class="space-y-5" aria-label="กำลังโหลดข้อมูล">
-      <div class="skeleton h-8 w-56"></div>
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-       <div class="skeleton h-28"></div>
-       <div class="skeleton h-28"></div>
-       <div class="skeleton h-28"></div>
-       <div class="skeleton h-28"></div>
-      </div>
-      <div class="skeleton h-52"></div>
+    <nav id="mobile-nav" class="mobile-nav md:hidden flex gap-2 overflow-x-auto p-4" aria-label="เมนูมือถือ"></nav>
+    <main class="max-w-[1500px] mx-auto p-4 md:p-9 space-y-6">
+     <div id="notice" role="status" aria-live="polite" hidden="" class="rounded-xl px-4 py-3 font-semibold"></div>
+     <div id="loading" class="panel p-6">
+      กำลังโหลดข้อมูล…
      </div>
      <div id="load-error" hidden="" class="panel p-6">
       <h2 data-template-id="load-error-title" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 24px;">โหลดข้อมูลไม่สำเร็จ</h2>
       <p data-template-id="load-error-description" class="canva-text muted mt-2" style="color: rgb(98, 117, 135); font-weight: 400; font-style: normal; font-size: 16px;">ตรวจสอบการเชื่อมต่อแล้วกดลองใหม่อีกครั้ง</p><button id="retry" type="button" data-template-id="retry-button" class="canva-button primary rounded-xl px-5 py-2 mt-4" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">ลองใหม่</button>
      </div>
-     <section id="view-dashboard" class="view space-y-6" hidden="" aria-labelledby="dashboard-heading">
-      <div>
-       <p data-template-id="dashboard-eyebrow" class="canva-text accent font-bold" style="color: rgb(20, 104, 168); font-weight: 400; font-style: normal; font-size: 12px;">DASHBOARD / ภาพรวม</p>
-       <h2 id="dashboard-heading" data-template-id="dashboard-heading" class="canva-text font-bold mt-1" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">สรุปภาพรวม</h2>
-      </div>
-      <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-5" id="metrics"></div>
+     <section id="view-dashboard" class="view space-y-5" hidden="" aria-labelledby="dashboard-heading">
+      <h2 id="dashboard-heading" data-template-id="dashboard-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">สรุปภาพรวม</h2>
+      <div id="metrics" class="grid grid-cols-2 xl:grid-cols-4 gap-3"></div>
       <div class="grid lg:grid-cols-5 gap-5">
        <article class="panel p-5 lg:col-span-3">
-        <h3 data-template-id="chart-title" class="canva-text font-bold mb-5" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">ยอดรับชำระ 6 เดือนล่าสุด</h3>
-        <div id="chart" class="flex items-end gap-3 h-44" aria-label="กราฟยอดรับชำระหกเดือนล่าสุด"></div>
+        <h3 data-template-id="chart-title" class="canva-text font-bold mb-4" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">ยอดรับชำระ 6 เดือนล่าสุด</h3>
+        <div id="chart" class="flex items-end gap-3 h-44" aria-label="ยอดรับชำระหกเดือนล่าสุด"></div>
        </article>
        <article class="panel p-5 lg:col-span-2">
         <h3 data-template-id="activity-title" class="canva-text font-bold mb-4" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">กิจกรรมล่าสุด</h3>
-        <div id="activity" class="space-y-3"></div>
+        <div id="activity" class="space-y-2"></div>
        </article>
       </div>
       <article class="panel p-5">
-       <h3 data-template-id="dashboard-table-title" class="canva-text font-bold mb-4" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">รายการผ่อนล่าสุด</h3>
-       <div id="dashboard-contracts" class="table-wrap"></div>
+       <h3 data-template-id="dashboard-table-title" class="canva-text font-bold mb-3" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">รายการที่ควรติดตาม</h3>
+       <div id="dashboard-list" class="table-wrap"></div>
       </article>
      </section>
      <section id="view-customers" class="view space-y-5" hidden="" aria-labelledby="customers-heading">
-      <h2 id="customers-heading" data-template-id="customers-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 24px;">จัดการลูกค้า</h2>
-      <form id="customer-form" class="panel p-5 grid md:grid-cols-3 gap-4">
+      <h2 id="customers-heading" data-template-id="customers-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">จัดการลูกค้า</h2>
+      <form id="customer-form" novalidate="" class="panel p-5 grid md:grid-cols-3 gap-4">
        <div>
-        <label data-template-id="customer-name-label" class="canva-text block font-semibold mb-2" for="customer-name" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ชื่อลูกค้า</label><input id="customer-name" class="field" maxlength="90" required="">
+        <label data-template-id="customer-name-label" for="customer-name" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ชื่อลูกค้า</label><input id="customer-name" class="field" maxlength="90">
+        <p id="customer-name-error" class="error"></p>
        </div>
        <div>
-        <label data-template-id="customer-contact-label" class="canva-text block font-semibold mb-2" for="customer-contact" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ช่องทางติดต่อ</label><input id="customer-contact" class="field" maxlength="100" required="">
+        <label data-template-id="customer-phone-label" for="customer-phone" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เบอร์โทรศัพท์</label><input id="customer-phone" class="field" type="tel" inputmode="numeric" maxlength="20">
+        <p id="customer-phone-error" class="error"></p>
        </div>
        <div>
-        <label data-template-id="customer-note-label" class="canva-text block font-semibold mb-2" for="customer-note" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="customer-note" class="field" maxlength="180">
+        <label data-template-id="customer-note-label" for="customer-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="customer-note" class="field" maxlength="180">
        </div><button type="submit" data-template-id="add-customer-button" class="canva-button primary rounded-xl px-5 py-3 font-bold md:col-span-3 md:justify-self-start" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">+ เพิ่มลูกค้า</button>
       </form>
-      <div class="panel p-5">
-       <label data-template-id="customer-search-label" class="canva-text block font-semibold mb-2" for="customer-search" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาลูกค้า</label><input id="customer-search" class="field max-w-md" type="search">
+      <div class="panel p-5"><label data-template-id="customer-search-label" for="customer-search" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาลูกค้า</label> <input id="customer-search" type="search" class="field max-w-md">
        <div id="customer-list" class="table-wrap mt-4"></div>
       </div>
      </section>
      <section id="view-contracts" class="view space-y-5" hidden="" aria-labelledby="contracts-heading">
-      <h2 id="contracts-heading" data-template-id="contracts-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 24px;">รายการผ่อน</h2>
-      <form id="contract-form" class="panel p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <h2 id="contracts-heading" data-template-id="contracts-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">บันทึกรายการผ่อน</h2>
+      <form id="contract-form" novalidate="" class="panel p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
        <div>
-        <label for="contract-id" data-template-id="contract-id-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เลขที่รายการ</label><input id="contract-id" class="field" maxlength="40" required="">
+        <label data-template-id="contract-id-label" for="contract-id" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เลขที่รายการ</label><input id="contract-id" class="field" maxlength="40">
+        <p id="contract-id-error" class="error"></p>
        </div>
        <div>
-        <label for="contract-customer" data-template-id="contract-customer-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ลูกค้า</label><select id="contract-customer" class="field" required=""></select>
+        <label data-template-id="contract-customer-label" for="contract-customer" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ลูกค้า</label><select id="contract-customer" class="field"></select>
+        <p id="contract-customer-error" class="error"></p>
        </div>
        <div class="sm:col-span-2">
-        <label for="contract-items" data-template-id="contract-items-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการสิ่งของ</label><input id="contract-items" class="field" maxlength="180" required="">
+        <label data-template-id="contract-items-label" for="contract-items" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการสิ่งของ (หนึ่งรายการต่อหนึ่งบรรทัด)</label><textarea id="contract-items" class="field" rows="2" maxlength="500" placeholder="หนึ่งรายการต่อหนึ่งบรรทัด"></textarea>
+        <p id="contract-items-error" class="error"></p>
        </div>
        <div>
-        <label for="item-count" data-template-id="item-count-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนสิ่งของ</label><input id="item-count" class="field" type="number" min="1" step="1" value="1" required="">
+        <label data-template-id="item-count-label" for="item-count" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนสิ่งของ</label><input id="item-count" class="field" type="number" min="1" step="1" value="1">
+        <p id="item-count-error" class="error"></p>
        </div>
        <div>
-        <label for="total" data-template-id="total-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ยอดรวม (บาท)</label><input id="total" class="field" type="number" min="0.01" step="0.01" required="">
+        <label data-template-id="total-label" for="total" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ยอดรวม (บาท)</label><input id="total" class="field" type="number" min="0.01" step="0.01">
+        <p id="total-error" class="error"></p>
        </div>
        <div>
-        <label for="down" data-template-id="down-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เงินดาวน์ (บาท)</label><input id="down" class="field" type="number" min="0" step="0.01" value="0" required="">
+        <label data-template-id="down-label" for="down" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เงินดาวน์ (บาท)</label><input id="down" class="field" type="number" min="0" step="0.01" value="0">
+        <p id="down-error" class="error"></p>
        </div>
        <div>
-        <label for="installments" data-template-id="installments-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนงวด</label><input id="installments" class="field" type="number" min="1" step="1" required="">
+        <label data-template-id="installments-label" for="installments" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนงวด</label><input id="installments" class="field" type="number" min="1" step="1">
+        <p id="installments-error" class="error"></p>
        </div>
        <div>
-        <label for="start-date" data-template-id="start-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่เริ่มผ่อน</label><input id="start-date" class="field" type="date" required="">
+        <label data-template-id="start-label" for="start-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่เริ่มผ่อน</label><input id="start-date" class="field" type="date">
+        <p id="start-date-error" class="error"></p>
        </div>
        <div>
-        <label for="end-date" data-template-id="end-label" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันสิ้นสุดสัญญา</label><input id="end-date" class="field" type="date" required="">
+        <label data-template-id="end-label" for="end-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันครบกำหนด</label><input id="end-date" class="field" type="date">
+        <p id="end-date-error" class="error"></p>
        </div>
-       <p id="calculated-payment" class="sm:col-span-2 self-end muted" aria-live="polite"></p><button type="submit" data-template-id="add-contract-button" class="canva-button primary rounded-xl px-5 py-3 font-bold lg:col-span-4 lg:justify-self-start" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">+ สร้างรายการผ่อน</button>
+       <div class="sm:col-span-2">
+        <label data-template-id="contract-note-label" for="contract-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="contract-note" class="field" maxlength="180">
+       </div>
+       <p id="calculated-payment" class="sm:col-span-2 self-center muted" aria-live="polite"></p><button type="submit" data-template-id="add-contract-button" class="canva-button primary rounded-xl px-5 py-3 font-bold lg:col-span-4 lg:justify-self-start" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">+ สร้างรายการผ่อน</button>
       </form>
       <div class="panel p-5">
        <div class="grid sm:grid-cols-3 gap-3">
         <div>
-         <label data-template-id="contract-search-label" class="canva-text block mb-2 font-semibold" for="contract-search" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาเลขที่รายการ ลูกค้า หรือสิ่งของ</label><input id="contract-search" type="search" class="field">
+         <label data-template-id="contract-search-label" for="contract-search" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหาเลขที่รายการ ลูกค้า หรือสิ่งของ</label><input id="contract-search" type="search" class="field">
         </div>
         <div>
-         <label data-template-id="status-filter-label" class="canva-text block mb-2 font-semibold" for="status-filter" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">สถานะ</label><select id="status-filter" class="field"><option value="all">ทุกสถานะ</option><option value="active">กำลังผ่อน</option><option value="soon">ใกล้ครบกำหนด</option><option value="late">ค้างชำระ</option><option value="done">ปิดยอดแล้ว</option></select>
+         <label data-template-id="status-filter-label" for="status-filter" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">สถานะ</label><select id="status-filter" class="field"><option value="all">ทุกสถานะ</option><option value="active">กำลังผ่อน</option><option value="soon">ใกล้ครบกำหนด</option><option value="late">ค้างชำระ</option><option value="done">ปิดยอดแล้ว</option></select>
         </div>
         <div>
-         <label data-template-id="sort-label" class="canva-text block mb-2 font-semibold" for="sort-order" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เรียงลำดับ</label><select id="sort-order" class="field"><option value="new">ใหม่ล่าสุด</option><option value="due">ครบกำหนดใกล้ที่สุด</option><option value="balance">ยอดคงเหลือสูงสุด</option></select>
+         <label data-template-id="sort-label" for="sort-order" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เรียงลำดับ</label><select id="sort-order" class="field"><option value="new">ใหม่ล่าสุด</option><option value="due">ครบกำหนดใกล้ที่สุด</option><option value="balance">ยอดคงเหลือสูงสุด</option></select>
         </div>
        </div>
        <div id="contract-list" class="table-wrap mt-4"></div>
       </div>
      </section>
      <section id="view-payments" class="view space-y-5" hidden="" aria-labelledby="payments-heading">
-      <h2 id="payments-heading" data-template-id="payments-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 24px;">รับชำระเงิน</h2>
-      <form id="payment-form" class="panel p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <h2 id="payments-heading" data-template-id="payments-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">รับชำระเงิน</h2>
+      <form id="payment-form" novalidate="" class="panel p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
        <div>
-        <label data-template-id="payment-contract-label" for="payment-contract" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการผ่อน</label><select id="payment-contract" class="field" required=""></select>
+        <label data-template-id="payment-contract-label" for="payment-contract" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">รายการผ่อน</label><select id="payment-contract" class="field"></select>
+        <p id="payment-contract-error" class="error"></p>
        </div>
        <div>
-        <label data-template-id="payment-date-label" for="payment-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่ชำระ</label><input id="payment-date" type="date" class="field" required="">
+        <label data-template-id="payment-date-label" for="payment-date" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">วันที่ชำระ</label><input id="payment-date" type="date" class="field">
+        <p id="payment-date-error" class="error"></p>
        </div>
        <div>
-        <label data-template-id="payment-amount-label" for="payment-amount" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนเงิน (บาท)</label><input id="payment-amount" type="number" min="0.01" step="0.01" class="field" required="">
+        <label data-template-id="payment-amount-label" for="payment-amount" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">จำนวนเงิน (บาท)</label><input id="payment-amount" type="number" min="0.01" step="0.01" class="field">
+        <p id="payment-amount-error" class="error"></p>
        </div>
        <div>
         <label data-template-id="payment-note-label" for="payment-note" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">หมายเหตุ</label><input id="payment-note" maxlength="180" class="field">
        </div><button type="submit" data-template-id="save-payment-button" class="canva-button primary rounded-xl px-5 py-3 font-bold lg:col-span-4 lg:justify-self-start" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">บันทึกการชำระ</button>
       </form>
       <article class="panel p-5">
-       <h3 data-template-id="payment-history-title" class="canva-text font-bold mb-4" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">ประวัติการชำระ</h3>
+       <h3 data-template-id="payment-history-title" class="canva-text font-bold mb-3" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">ประวัติการชำระ</h3>
        <div id="payment-list" class="table-wrap"></div>
       </article>
      </section>
      <section id="view-reports" class="view space-y-5" hidden="" aria-labelledby="reports-heading">
-      <h2 id="reports-heading" data-template-id="reports-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 24px;">รายงานสรุป</h2>
+      <h2 id="reports-heading" data-template-id="reports-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">รายงานสรุป</h2>
       <div class="panel p-5 grid sm:grid-cols-2 gap-4">
        <div>
         <label data-template-id="report-from-label" for="report-from" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ตั้งแต่วันที่</label><input id="report-from" type="date" class="field">
@@ -202,16 +209,23 @@
        </div>
       </div>
       <div id="report-summary" class="grid sm:grid-cols-3 gap-4"></div>
-      <div class="panel p-5">
-       <h3 data-template-id="report-details-title" class="canva-text font-bold mb-4" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">รายการรับชำระในช่วงที่เลือก</h3>
+      <article class="panel p-5">
+       <h3 data-template-id="report-details-title" class="canva-text font-bold mb-3" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">รายการรับชำระในช่วงที่เลือก</h3>
        <div id="report-list" class="table-wrap"></div>
-      </div>
+      </article>
+     </section>
+     <section id="view-check" class="view space-y-5" hidden="" aria-labelledby="check-heading">
+      <h2 id="check-heading" data-template-id="check-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">ตรวจสอบยอดชำระ</h2>
+      <p data-template-id="check-disclosure" class="canva-text rounded-xl p-4 border" style="background: var(--soft); border-color: var(--border); color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">สำหรับตรวจดูข้อมูลภายในพื้นที่ทำงานเท่านั้น ไม่ใช่การยืนยันตัวตนหรือหน้าตรวจสอบสำหรับลูกค้าภายนอก</p>
+      <form id="check-form" class="panel p-5 flex flex-wrap items-end gap-3">
+       <div class="flex-1 min-w-48">
+        <label data-template-id="check-id-label" for="check-id" class="canva-text block font-semibold mb-2" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เลขที่รายการ</label><input id="check-id" class="field">
+       </div><button type="submit" data-template-id="check-button" class="canva-button primary rounded-xl px-5 py-3" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">ค้นหา</button> <button type="button" id="clear-check" data-template-id="clear-check-button" class="canva-button secondary rounded-xl px-5 py-3" style="background: rgb(255, 255, 255); color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">ล้างข้อมูล</button>
+      </form>
+      <div id="check-result" class="panel p-5" aria-live="polite"></div>
      </section>
      <section id="view-settings" class="view space-y-5" hidden="" aria-labelledby="settings-heading">
-      <div>
-       <h2 id="settings-heading" data-template-id="settings-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 24px;">ตั้งค่าระบบ</h2>
-       <p data-template-id="settings-description" class="canva-text muted mt-2" style="color: rgb(98, 117, 135); font-weight: 400; font-style: normal; font-size: 16px;">เลือกธีมเพื่อดูตัวอย่าง แล้วบันทึกการตั้งค่าเมื่อพร้อมใช้งาน</p>
-      </div>
+      <h2 id="settings-heading" data-template-id="settings-heading" class="canva-text font-bold" style="color: rgb(23, 43, 61); font-weight: 700; font-style: normal; font-size: 24px;">ตั้งค่าระบบ</h2>
       <div class="panel p-5">
        <h3 data-template-id="theme-heading" class="canva-text font-bold mb-4" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 19px;">เลือกธีม</h3>
        <div id="theme-grid" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3"></div>
@@ -222,7 +236,9 @@
         <div class="flex items-center gap-3 pt-6">
          <input id="motion-toggle" type="checkbox" checked="" class="w-5 h-5"><label data-template-id="motion-label" for="motion-toggle" class="canva-text font-semibold" style="color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">เปิดภาพเคลื่อนไหว</label>
         </div>
-       </div><button id="save-settings" type="button" data-template-id="save-settings-button" class="canva-button primary rounded-xl px-5 py-3 font-bold mt-6" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">บันทึกการตั้งค่า</button>
+       </div>
+       <div class="flex flex-wrap gap-3 mt-6"><button id="save-settings" type="button" data-template-id="save-settings-button" class="canva-button primary rounded-xl px-5 py-3 font-bold" style="background: rgb(20, 104, 168); color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: 16px;">บันทึกการตั้งค่า</button> <button id="reset-settings" type="button" data-template-id="reset-settings-button" class="canva-button secondary rounded-xl px-5 py-3" style="background: rgb(255, 255, 255); color: rgb(23, 43, 61); font-weight: 400; font-style: normal; font-size: 16px;">คืนค่าเดิม</button>
+       </div>
       </div>
      </section>
     </main>
@@ -231,10 +247,7 @@
   <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const navItems = [
-    ["dashboard","สรุปภาพรวม"],["customers","ลูกค้า"],["contracts","รายการผ่อน"],
-    ["payments","รับชำระเงิน"],["reports","รายงาน"],["settings","ตั้งค่าระบบ"]
-  ];
+  const nav = [["dashboard","Dashboard"],["customers","ลูกค้า"],["contracts","รายการผ่อน"],["payments","รับชำระเงิน"],["reports","รายงาน"],["check","ตรวจสอบยอดชำระ"],["settings","ตั้งค่าระบบ"]];
   const themes = [
     {id:"blue",name:"Professional Blue",base:"#f3f7fa",surface:"#ffffff",ink:"#172b3d",accent:"#1468a8",soft:"#e5f2fc"},
     {id:"fresh",name:"Fresh Finance",base:"#f0f9f4",surface:"#ffffff",ink:"#16392c",accent:"#16845d",soft:"#ddf5e8"},
@@ -243,232 +256,268 @@
     {id:"gradient",name:"Modern Gradient",base:"#f2f5fc",surface:"#ffffff",ink:"#243454",accent:"#5268c7",soft:"#e9edff"},
     {id:"warm",name:"Warm Premium",base:"#faf5ed",surface:"#fffdfa",ink:"#453328",accent:"#a66530",soft:"#f8e9d5"}
   ];
-  let records=[], loaded=false, timer, page="dashboard", pendingTheme="blue", pendingMode="light", pendingMotion=true, savedSetting=null;
-  const money=n=>new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",maximumFractionDigits:2}).format(Number(n)||0);
-  const date=s=>s ? new Intl.DateTimeFormat("th-TH",{year:"numeric",month:"short",day:"numeric"}).format(new Date(s+"T12:00:00")) : "—";
-  const today=()=>new Date().toISOString().slice(0,10);
-  const customers=()=>records.filter(r=>r.record_type==="customer");
-  const contracts=()=>records.filter(r=>r.record_type==="contract");
-  const payments=()=>records.filter(r=>r.record_type==="payment");
-  const customerName=id=>customers().find(r=>r.customer_id===id)?.customer_name||"ไม่พบลูกค้า";
-  const paid=id=>payments().filter(p=>p.payment_contract_id===id).reduce((a,p)=>a+Number(p.payment_amount||0),0);
-  const balance=c=>Math.max(0,Number(c.contract_total||0)-Number(c.contract_down_payment||0)-paid(c.contract_id));
-  function nextDue(c) {
-    const start=new Date(c.contract_start_date+"T12:00:00");
-    if(isNaN(start)) return c.contract_end_date;
-    const count=Math.max(1,Number(c.contract_installments)||1);
-    const per=Number(c.contract_per_installment)||1;
-    const completed=Math.min(count,Math.floor((paid(c.contract_id)+0.001)/per));
-    const d=new Date(start);
-    const day=d.getDate();
-    d.setDate(1);
-    d.setMonth(d.getMonth()+completed+1);
+  let records=[], ready=false, timer, page="dashboard", selected={theme:"blue",mode:"light",motion:true}, lastSettingId=null;
+  const money = n => new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB"}).format(Number(n)||0);
+  const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+  const date = s => s ? new Intl.DateTimeFormat("th-TH",{day:"numeric",month:"short",year:"numeric"}).format(new Date(s+"T12:00:00")) : "—";
+  const kind = type => records.filter(r=>r.record_type===type);
+  const customers = () => kind("customer");
+  const contracts = () => kind("contract");
+  const payments = () => kind("payment");
+  const customerName = id => customers().find(c=>c.customer_id===id)?.customer_name || "ไม่พบลูกค้า";
+  const paid = id => payments().filter(p=>p.payment_contract_id===id).reduce((sum,p)=>sum+Number(p.payment_amount||0),0);
+  const net = c => Math.max(0,Number(c.contract_total||0)-Number(c.contract_down_payment||0));
+  const balance = c => Math.max(0,Math.round((net(c)-paid(c))*100)/100);
+  function due(c) {
+    const start=new Date((c.contract_start_date||"")+"T12:00:00");
+    if(isNaN(start)) return c.contract_end_date || today();
+    const per=Number(c.contract_per_installment)||net(c)/Math.max(1,Number(c.contract_installments));
+    const completed=Math.min(Number(c.contract_installments)||1,Math.floor((paid(c.contract_id)+0.001)/per));
+    const day=start.getDate();
+    const d=new Date(start.getFullYear(),start.getMonth()+completed+1,1,12);
     d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
-    const computed=d.toISOString().slice(0,10);
+    const computed=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     return c.contract_end_date && computed>c.contract_end_date ? c.contract_end_date : computed;
   }
   function status(c) {
     if(balance(c)<=0.005) return "done";
-    const due=nextDue(c);
-    const diff=Math.ceil((new Date(due+"T12:00:00")-new Date(today()+"T12:00:00"))/86400000);
-    return diff<0?"late":diff<=7?"soon":"active";
+    const days=Math.ceil((new Date(due(c)+"T12:00:00")-new Date(today()+"T12:00:00"))/86400000);
+    return days<0?"late":days<=7?"soon":"active";
   }
-  const statusNames={active:"กำลังผ่อน",soon:"ใกล้ครบกำหนด",late:"ค้างชำระ",done:"ปิดยอดแล้ว"};
-  function el(tag,cls,text) {const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=String(text);return node;}
-  function notice(message,kind="success") {const n=$("notification");n.textContent=message;n.className="rounded-xl px-4 py-3 font-semibold "+(kind==="error"?"bg-red-100 text-red-900":"bg-emerald-100 text-emerald-900");n.hidden=false;}
-  function clear(node) {node.replaceChildren();}
-  function empty(node,message) {clear(node);node.append(el("p","muted py-8 text-center",message));}
-  function card(label,value,detail) {const box=el("article","panel p-5");box.append(el("p","muted text-sm font-semibold",label),el("p","font-bold text-2xl mt-3",value),el("p","muted text-xs mt-2",detail));return box;}
+  const statusName={active:"กำลังผ่อน",soon:"ใกล้ครบกำหนด",late:"ค้างชำระ",done:"ปิดยอดแล้ว"};
+  function node(tag,cls,text) { const e=document.createElement(tag); e.className=cls||""; if(text!==undefined)e.textContent=String(text); return e; }
+  function notify(text,error=false) { const e=$("notice");e.textContent=text;e.className="rounded-xl px-4 py-3 font-semibold "+(error?"bg-red-100 text-red-900":"bg-emerald-100 text-emerald-900");e.hidden=false; }
+  function empty(host,message="ไม่พบข้อมูล") { host.replaceChildren(node("p","muted py-7 text-center",message)); }
+  function card(label,value,detail) { const e=node("article","panel p-5");e.append(node("p","muted text-sm",label),node("p","font-bold mt-2",value),node("p","muted text-xs mt-2",detail));return e; }
   function table(host,heads,rows) {
-    clear(host);
-    if(!rows.length) {empty(host,"ยังไม่มีข้อมูลในส่วนนี้ เริ่มต้นด้วยการเพิ่มรายการจากฟอร์มด้านบน");return;}
-    const t=el("table"),thead=el("thead"),tr=el("tr");
-    heads.forEach(h=>tr.append(el("th","",h)));thead.append(tr);t.append(thead);
-    const body=el("tbody");rows.forEach(cells=>{const row=el("tr");cells.forEach(cell=>{const td=el("td");td.append(cell instanceof Node?cell:document.createTextNode(String(cell)));row.append(td)});body.append(row)});t.append(body);host.append(t);
+    if(!rows.length){empty(host);return;}
+    const t=node("table"),head=node("thead"),hr=node("tr"),body=node("tbody");
+    heads.forEach(h=>hr.append(node("th","",h)));head.append(hr);
+    rows.forEach(cells=>{const tr=node("tr");cells.forEach(value=>{const td=node("td");td.append(value instanceof Node?value:document.createTextNode(String(value)));tr.append(td)});body.append(tr)});
+    t.append(head,body);host.replaceChildren(t);
   }
-  function badge(c) {return el("span","badge "+({active:"good",soon:"soon",late:"late",done:"done"}[status(c)]),statusNames[status(c)]);}
-  function progress(c) {
-    const wrap=el("div","min-w-28"),txt=el("div","text-xs muted mb-1",`${Math.min(Number(c.contract_installments),Math.floor(paid(c.contract_id)/(Number(c.contract_per_installment)||1)))} / ${c.contract_installments} งวด`);
-    const track=el("div","h-2 rounded-full overflow-hidden soft"),fill=el("div","h-full rounded-full primary");
-    fill.style.width=Math.min(100,Math.max(0,(Number(c.contract_total)-balance(c))/Math.max(1,Number(c.contract_total))*100))+"%";
-    track.append(fill);wrap.append(txt,track);return wrap;
-  }
-  function removeButton(record,blocked) {
-    const wrap=el("div","flex gap-1 items-center"),btn=el("button","rounded-lg border border-red-300 text-red-700 px-3 py-1 text-sm","ลบ");
-    btn.type="button";wrap.append(btn);
-    btn.addEventListener("click",()=>{
-      if(blocked()) {notice("ไม่สามารถลบรายการที่มีข้อมูลเกี่ยวข้องอยู่ กรุณาตรวจสอบรายการผ่อนหรือประวัติชำระก่อน","error");return;}
-      btn.hidden=true;
-      const yes=el("button","rounded-lg bg-red-700 text-white px-2 py-1 text-sm","ยืนยันลบ"),no=el("button","rounded-lg border px-2 py-1 text-sm","ยกเลิก");
-      yes.type=no.type="button";wrap.append(yes,no);
-      no.onclick=()=>{yes.remove();no.remove();btn.hidden=false;};
-      yes.onclick=async()=>{
-        yes.disabled=true;yes.textContent="กำลังลบ...";
-        try {
-          const result=await window.dataSdk.delete(record);
-          if(!result.isOk) notice("ไม่สามารถยืนยันการลบได้ กรุณาตรวจสอบข้อมูลก่อนลองใหม่","error");
-          else {wrap.closest("tr")?.remove();notice("ลบรายการแล้ว");}
-        } catch {notice("ไม่สามารถยืนยันการลบได้ กรุณาตรวจสอบข้อมูลก่อนลองใหม่","error");}
-        finally {yes.disabled=false;yes.textContent="ยืนยันลบ";if(yes.isConnected){yes.remove();no.remove();btn.hidden=false;}}
-      };
-    });
+  function action(text,fn,style="secondary") { const b=node("button",style+" rounded-lg px-3 py-2 text-sm",text);b.type="button";b.addEventListener("click",fn);return b; }
+  function openContract(id) { showPage("contracts");$("contract-search").value=id;renderContracts();$("contract-list").scrollIntoView({behavior:"smooth",block:"nearest"}); }
+  function openPayment(id) { showPage("payments");$("payment-contract").value=id;$("payment-contract").focus(); }
+  function detail(c) {
+    const wrap=node("div","space-y-2");
+    wrap.append(node("p","font-bold",`${c.contract_id} · ${customerName(c.contract_customer_id)}`),
+      node("p","",`สิ่งของ: ${c.contract_items} (${c.contract_item_count} ชิ้น)`),
+      node("p","",`ยอดสุทธิ ${money(net(c))} · ยอดต่องวด ${money(c.contract_per_installment)}`),
+      node("p","",`ชำระแล้ว ${money(paid(c.contract_id))} · คงเหลือ ${money(balance(c))}`),
+      node("p","",`เริ่ม ${date(c.contract_start_date)} · ครบกำหนด ${date(c.contract_end_date)} · สถานะ ${statusName[status(c)]}`));
+    if(c.contract_note)wrap.append(node("p","muted",`หมายเหตุ: ${c.contract_note}`));
     return wrap;
   }
-  function renderDashboard(){
-    const cs=contracts(),ps=payments(),month=today().slice(0,7),sum=ps.filter(p=>p.payment_date?.startsWith(month)).reduce((a,p)=>a+Number(p.payment_amount||0),0);
-    const metrics=$("metrics");clear(metrics);
-    metrics.append(card("ลูกค้าทั้งหมด",customers().length,"รายการที่บันทึก"),card("กำลังผ่อน",cs.filter(c=>status(c)==="active").length,"รายการปัจจุบัน"),card("ใกล้ครบกำหนด / ค้างชำระ",cs.filter(c=>["soon","late"].includes(status(c))).length,"ควรติดตาม"),card("รับชำระเดือนนี้",money(sum),"ยอดจากประวัติการชำระ"));
-    const chart=$("chart");clear(chart);
-    const months=Array.from({length:6},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-5+i);return d.toISOString().slice(0,7)});
+  function removeControl(record,blocked) {
+    const wrap=node("span","inline-flex flex-wrap gap-1");
+    const initial=action("ลบ",()=>{
+      if(blocked()){notify("ลบไม่ได้: มีข้อมูลที่เกี่ยวข้อง กรุณาตรวจสอบรายการผ่อนหรือประวัติชำระก่อน",true);return;}
+      const yes=action("ยืนยันลบ",async()=>{
+        yes.disabled=true;yes.setAttribute("aria-busy","true");
+        try {
+          const current=records.find(r=>r.__backendId===record.__backendId);
+          if(!current){notify("ไม่พบข้อมูลล่าสุด กรุณาลองใหม่",true);return;}
+          const result=await window.dataSdk.delete(current);
+          if(!result.isOk){notify("ไม่สามารถยืนยันการลบได้ กรุณาตรวจสอบข้อมูลก่อนลองใหม่",true);return;}
+          wrap.closest("tr")?.remove();notify("ลบข้อมูลแล้ว");
+        }catch{notify("ไม่สามารถยืนยันการลบได้ กรุณาตรวจสอบการเชื่อมต่อ",true)}
+        finally{yes.disabled=false;yes.removeAttribute("aria-busy")}
+      },"primary");
+      const no=action("ยกเลิก",()=>wrap.replaceChildren(initial));
+      wrap.replaceChildren(yes,no);
+    });
+    wrap.append(initial);return wrap;
+  }
+  function renderDashboard() {
+    const cs=contracts(),ps=payments(),month=today().slice(0,7);
+    $("metrics").replaceChildren(
+      card("ลูกค้าทั้งหมด",customers().length,"รายการที่บันทึก"),
+      card("กำลังผ่อน",cs.filter(c=>status(c)==="active").length,"รายการปัจจุบัน"),
+      card("ใกล้ครบกำหนด / ค้างชำระ",cs.filter(c=>["soon","late"].includes(status(c))).length,"ควรติดตาม"),
+      card("รับชำระเดือนนี้",money(ps.filter(p=>p.payment_date?.startsWith(month)).reduce((a,p)=>a+Number(p.payment_amount||0),0)),"จากประวัติชำระ")
+    );
+    const months=Array.from({length:6},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-5+i);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`});
     const values=months.map(m=>ps.filter(p=>p.payment_date?.startsWith(m)).reduce((a,p)=>a+Number(p.payment_amount||0),0)),max=Math.max(1,...values);
-    months.forEach((m,i)=>{const col=el("div","flex-1 flex flex-col items-center justify-end h-full min-w-0");const amount=el("span","text-xs muted truncate max-w-full",values[i]?money(values[i]):"0");const bar=el("div","primary rounded-t-lg w-full max-w-16 mt-2");bar.style.height=Math.max(5,Math.round(values[i]/max*105))+"px";const label=el("span","text-xs muted mt-2",m.slice(5));col.append(amount,bar,label);chart.append(col)});
-    const activity=$("activity");clear(activity);
-    const latest=[...ps].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,4);
-    if(!latest.length) empty(activity,"ยังไม่มีกิจกรรม เริ่มบันทึกการชำระเงินเพื่อดูสรุปที่นี่");
-    latest.forEach(p=>{const line=el("div","border-b pb-2 text-sm");line.style.borderColor="var(--border)";line.append(el("p","font-semibold",`${p.payment_contract_id} · ${money(p.payment_amount)}`),el("p","muted",date(p.payment_date)));activity.append(line)});
-    renderContractTable($("dashboard-contracts"),cs.slice(0,5),false);
+    $("chart").replaceChildren(...months.map((m,i)=>{
+      const col=node("div","flex-1 flex flex-col items-center justify-end h-full min-w-0");
+      const bar=node("div","rounded-t-lg w-full max-w-16 mt-2");bar.style.background="var(--accent)";bar.style.height=Math.max(5,Math.round(values[i]/max*105))+"px";
+      col.append(node("span","text-xs muted truncate max-w-full",values[i]?money(values[i]):"0"),bar,node("span","text-xs muted mt-2",m.slice(5)));return col;
+    }));
+    const activity=$("activity");activity.replaceChildren();
+    const recent=[...ps].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,4);
+    if(!recent.length)empty(activity);
+    recent.forEach(p=>activity.append(action(`${p.payment_contract_id} · ${money(p.payment_amount)} · ${date(p.payment_date)}`,()=>openContract(p.payment_contract_id))));
+    renderContractTable($("dashboard-list"),[...cs].filter(c=>status(c)!=="done").sort((a,b)=>due(a).localeCompare(due(b))).slice(0,5),false);
   }
-  function renderCustomers(){
-    const q=$("customer-search").value.trim().toLowerCase();
-    table($("customer-list"),["ลูกค้า","ช่องทางติดต่อ","หมายเหตุ","รายการผ่อน","จัดการ"],customers().filter(c=>(c.customer_name+" "+(c.customer_note||"")).toLowerCase().includes(q)).map(c=>[
-      c.customer_name,"บันทึกไว้ (ไม่แสดงรายละเอียด)",c.customer_note||"—",contracts().filter(x=>x.contract_customer_id===c.customer_id).length,
-      removeButton(c,()=>contracts().some(x=>x.contract_customer_id===c.customer_id))
-    ]));
+  function renderCustomers() {
+    const q=$("customer-search").value.trim().toLocaleLowerCase();
+    table($("customer-list"),["ลูกค้า","หมายเหตุ","รายการผ่อน","จัดการ"],
+      customers().filter(c=>(c.customer_name+" "+(c.customer_note||"")).toLocaleLowerCase().includes(q)).map(c=>{
+        const actions=node("div","flex flex-wrap gap-2");
+        actions.append(action("ดูรายละเอียด",()=>notify(`${c.customer_name} · รายการผ่อน ${contracts().filter(x=>x.contract_customer_id===c.customer_id).length} รายการ · ${c.customer_note||"ไม่มีหมายเหตุ"}`)),
+          removeControl(c,()=>contracts().some(x=>x.contract_customer_id===c.customer_id)));
+        return [c.customer_name,c.customer_note||"—",contracts().filter(x=>x.contract_customer_id===c.customer_id).length,actions];
+      }));
   }
-  function renderContractTable(host,list,actions=true){
-    table(host,["เลขที่ / ลูกค้า","สิ่งของ","ความคืบหน้า","คงเหลือ / งวดถัดไป","สถานะ",...(actions?["จัดการ"]:[])],
-      list.map(c=>[
-        `${c.contract_id} · ${customerName(c.contract_customer_id)}`,
-        `${c.contract_items} (${c.contract_item_count} ชิ้น)`,
-        progress(c),
-        `${money(balance(c))} · ${status(c)==="done"?"ปิดยอด":date(nextDue(c))}`,
-        badge(c),
-        ...(actions?[removeButton(c,()=>payments().some(p=>p.payment_contract_id===c.contract_id))]:[])
-      ]));
+  function renderContractTable(host,list,withActions=true) {
+    table(host,["เลขที่ / ลูกค้า","สิ่งของ","ชำระแล้ว / คงเหลือ","งวด / สถานะ","จัดการ"],
+      list.map(c=>{
+        const installment=Math.min(Number(c.contract_installments)||1,Math.floor((paid(c.contract_id)+0.001)/(Number(c.contract_per_installment)||1)));
+        const badge=node("span","badge "+status(c)+"-badge",statusName[status(c)]);
+        const progress=node("div","space-y-1");
+        progress.append(node("p","text-xs muted",`${installment}/${c.contract_installments} งวด · ${Math.min(100,Math.round(paid(c.contract_id)/Math.max(net(c),0.01)*100))}%`),badge);
+        const actions=node("div","flex flex-wrap gap-1");
+        actions.append(action("ดูรายละเอียด",()=>{$("contract-search").value=c.contract_id;renderContracts();notify(`${c.contract_id}: ยอดสุทธิ ${money(net(c))}, ชำระแล้ว ${money(paid(c.contract_id))}, คงเหลือ ${money(balance(c))}, ครบกำหนด ${date(due(c))}${c.contract_note?" · "+c.contract_note:""}`)}));
+        if(withActions)actions.append(action("รับชำระ",()=>openPayment(c.contract_id)),removeControl(c,()=>payments().some(p=>p.payment_contract_id===c.contract_id)));
+        return [`${c.contract_id} · ${customerName(c.contract_customer_id)}`,`${c.contract_items} (${c.contract_item_count} ชิ้น)`,
+          `${money(paid(c.contract_id))} / ${money(balance(c))}`,progress,actions];
+      }));
   }
-  function renderContracts(){
-    const q=$("contract-search").value.trim().toLowerCase(),filter=$("status-filter").value,sort=$("sort-order").value;
-    const list=contracts().filter(c=>(c.contract_id+" "+c.contract_items+" "+customerName(c.contract_customer_id)).toLowerCase().includes(q) && (filter==="all"||status(c)===filter));
-    list.sort((a,b)=>sort==="balance"?balance(b)-balance(a):sort==="due"?nextDue(a).localeCompare(nextDue(b)):(b.created_at||"").localeCompare(a.created_at||""));
+  function renderContracts() {
+    const q=$("contract-search").value.trim().toLocaleLowerCase(),filter=$("status-filter").value,sort=$("sort-order").value;
+    const list=contracts().filter(c=>(c.contract_id+" "+c.contract_items+" "+customerName(c.contract_customer_id)).toLocaleLowerCase().includes(q)&&(filter==="all"||status(c)===filter));
+    list.sort((a,b)=>sort==="balance"?balance(b)-balance(a):sort==="due"?due(a).localeCompare(due(b)):(b.created_at||"").localeCompare(a.created_at||""));
     renderContractTable($("contract-list"),list);
   }
-  function renderPayments(){
+  function renderPayments() {
     const list=[...payments()].sort((a,b)=>(b.payment_date||"").localeCompare(a.payment_date||""));
-    table($("payment-list"),["วันที่","เลขที่รายการ","ยอดรับ","หมายเหตุ","จัดการ"],list.map(p=>[date(p.payment_date),p.payment_contract_id,money(p.payment_amount),p.payment_note||"—",removeButton(p,()=>false)]));
+    table($("payment-list"),["วันที่","เลขที่รายการ","ยอดรับ","หมายเหตุ","จัดการ"],list.map(p=>[
+      date(p.payment_date),p.payment_contract_id,money(p.payment_amount),p.payment_note||"—",
+      (()=>{const wrap=node("div","flex flex-wrap gap-1");wrap.append(action("ดูรายละเอียด",()=>openContract(p.payment_contract_id)),removeControl(p,()=>false));return wrap})()
+    ]));
   }
-  function renderReports(){
+  function renderReports() {
     const from=$("report-from").value,to=$("report-to").value;
-    if(from&&to&&from>to){empty($("report-list"),"วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด");clear($("report-summary"));return;}
+    if(from&&to&&from>to){$("report-summary").replaceChildren();empty($("report-list"),"วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด");return;}
     const list=payments().filter(p=>(!from||p.payment_date>=from)&&(!to||p.payment_date<=to)).sort((a,b)=>(b.payment_date||"").localeCompare(a.payment_date||""));
-    const host=$("report-summary");clear(host);
-    host.append(card("ยอดรับชำระ",money(list.reduce((a,p)=>a+Number(p.payment_amount||0),0)),"ตามช่วงวันที่ที่เลือก"),
-      card("จำนวนครั้งที่รับชำระ",list.length,"รายการ"),
-      card("สัญญาที่มีการชำระ",new Set(list.map(p=>p.payment_contract_id)).size,"รายการ"));
+    $("report-summary").replaceChildren(card("ยอดรับชำระ",money(list.reduce((s,p)=>s+Number(p.payment_amount||0),0)),"ตามช่วงวันที่"),
+      card("จำนวนครั้งที่รับชำระ",list.length,"รายการ"),card("รายการผ่อนที่มีการชำระ",new Set(list.map(p=>p.payment_contract_id)).size,"รายการ"));
     table($("report-list"),["วันที่","เลขที่รายการ","ยอดชำระ"],list.map(p=>[date(p.payment_date),p.payment_contract_id,money(p.payment_amount)]));
   }
-  function selectOptions(host,list,placeholder,getValue,getLabel){
-    const current=host.value;clear(host);const first=el("option","",placeholder);first.value="";host.append(first);
-    list.forEach(item=>{const option=el("option","",getLabel(item));option.value=getValue(item);host.append(option)});
-    if([...host.options].some(o=>o.value===current)) host.value=current;
+  function options(host,list,placeholder,value,label) {
+    const previous=host.value;host.replaceChildren();
+    const first=node("option","",placeholder);first.value="";host.append(first);
+    list.forEach(item=>{const o=node("option","",label(item));o.value=value(item);host.append(o)});
+    if([...host.options].some(o=>o.value===previous))host.value=previous;
   }
-  function renderOptions(){
-    selectOptions($("contract-customer"),customers(),"เลือกลูกค้า",x=>x.customer_id,x=>x.customer_name);
-    selectOptions($("payment-contract"),contracts().filter(c=>balance(c)>0.005),"เลือกรายการผ่อน",x=>x.contract_id,x=>`${x.contract_id} · คงเหลือ ${money(balance(x))}`);
+  function render() {
+    options($("contract-customer"),customers(),"เลือกลูกค้า",c=>c.customer_id,c=>c.customer_name);
+    options($("payment-contract"),contracts().filter(c=>balance(c)>.005),"เลือกรายการผ่อน",c=>c.contract_id,c=>`${c.contract_id} · คงเหลือ ${money(balance(c))}`);
+    renderDashboard();renderCustomers();renderContracts();renderPayments();renderReports();
   }
-  function render(){renderOptions();renderDashboard();renderCustomers();renderContracts();renderPayments();renderReports();}
-  function showPage(name){
+  function showPage(name) {
     page=name;document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!=="view-"+name);
     document.querySelectorAll("[data-page]").forEach(b=>{const active=b.dataset.page===name;b.classList.toggle("active",active);if(active)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   }
-  function applyTheme(){
-    const chosen=themes.find(t=>t.id===pendingTheme)||themes[0];
-    const dark=pendingMode==="dark"||(pendingMode==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);
-    const root=document.documentElement;
-    const colors={...chosen};
-    if(dark&&chosen.id!=="executive"){colors.base="#101c27";colors.surface="#192936";colors.ink="#f4f8fa";colors.soft="#263e4a"}
-    if(!dark&&chosen.id==="executive"){colors.base="#f1f5f6";colors.surface="#ffffff";colors.ink="#172b3d";colors.soft="#e4f4f5"}
-    ["base","surface","ink","accent","soft"].forEach(k=>root.style.setProperty("--"+(k==="soft"?"accent-soft":k),colors[k]));
-    root.style.setProperty("--border",dark?"#35505e":"#dce7ed");
-    root.classList.toggle("no-motion",!pendingMotion);
-    document.querySelectorAll(".theme-card").forEach(b=>b.classList.toggle("selected",b.dataset.theme===pendingTheme));
-  }
-  function setupThemes(){
-    themes.forEach(theme=>{
-      const b=el("button","theme-card","");b.type="button";b.dataset.theme=theme.id;b.setAttribute("aria-label","ดูตัวอย่างธีม "+theme.name);
-      const stripe=el("div","rounded-xl h-14 mb-3 flex overflow-hidden");stripe.style.background=theme.base;
-      const block=el("div","w-1/3 h-full");block.style.background=theme.accent;stripe.append(block);
-      const title=el("span","font-bold block",theme.name);b.append(stripe,title);
-      b.onclick=()=>{pendingTheme=theme.id;applyTheme()};
-      $("theme-grid").append(b);
-    });
-    $("mode-select").onchange=e=>{pendingMode=e.target.value;applyTheme()};
-    $("motion-toggle").onchange=e=>{pendingMotion=e.target.checked;applyTheme()};
-    matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>{if(pendingMode==="auto")applyTheme()});
-    applyTheme();
-  }
-  function setSettingFromRecords(){
-    const row=records.find(r=>r.record_type==="setting"&&r.setting_key==="appearance");
-    if(row?.__backendId===savedSetting?.__backendId) return;
-    savedSetting=row||null;
-    if(row){try{const x=JSON.parse(row.setting_value);if(themes.some(t=>t.id===x.theme))pendingTheme=x.theme;if(["light","dark","auto"].includes(x.mode))pendingMode=x.mode;pendingMotion=x.motion!==false;$("mode-select").value=pendingMode;$("motion-toggle").checked=pendingMotion;applyTheme()}catch{}}
-  }
-  async function save(record,button,onSuccess){
-    if(records.length>=999){notice("ถึงขีดจำกัด 999 รายการแล้ว ไม่สามารถเพิ่มข้อมูลได้","error");return;}
+  function fieldError(id,message) { $(id+"-error").textContent=message;$(id).setAttribute("aria-invalid",message?"true":"false");return !!message; }
+  function clearErrors(form) {form.querySelectorAll(".error").forEach(e=>e.textContent="");form.querySelectorAll("[aria-invalid]").forEach(e=>e.removeAttribute("aria-invalid"))}
+  async function create(record,button,onSuccess) {
+    if(records.length>=999){notify("ถึงขีดจำกัด 999 รายการแล้ว กรุณาลบข้อมูลที่ไม่จำเป็น",true);return}
     button.disabled=true;button.setAttribute("aria-busy","true");
     try{
       const result=await window.dataSdk.create(record);
-      if(!result.isOk){notice("ไม่สามารถยืนยันการบันทึกได้ กรุณาตรวจสอบข้อมูลก่อนลองใหม่","error");return;}
-      onSuccess?.();notice("บันทึกสำเร็จ");
-    }catch{notice("ไม่สามารถยืนยันการบันทึกได้ กรุณาตรวจสอบข้อมูลก่อนลองใหม่","error");}
+      if(!result.isOk){notify("ไม่สามารถยืนยันการบันทึกได้ กรุณาตรวจสอบข้อมูลก่อนลองใหม่",true);return}
+      onSuccess?.();notify("บันทึกข้อมูลสำเร็จ");
+    }catch{notify("ไม่สามารถยืนยันการบันทึกได้ กรุณาตรวจสอบการเชื่อมต่อ",true)}
     finally{button.disabled=false;button.removeAttribute("aria-busy")}
   }
-  function calculate(){
-    const total=Number($("total").value),down=Number($("down").value),n=Number($("installments").value);
-    $("calculated-payment").textContent=total>0&&down>=0&&down<total&&n>0?`ประมาณ ${money((total-down)/n)} ต่องวด`:"ระบุยอดรวม เงินดาวน์ และจำนวนงวดเพื่อคำนวณ";
+  function calculate() {
+    const t=Number($("total").value),d=Number($("down").value),n=Number($("installments").value);
+    $("calculated-payment").textContent=t>0&&d>=0&&d<t&&Number.isInteger(n)&&n>0
+      ?`ยอดสุทธิ ${money(t-d)} · ชำระประมาณ ${money((t-d)/n)} ต่องวด`
+      :"ระบุยอดรวม เงินดาวน์ และจำนวนงวดเพื่อคำนวณ";
   }
-  function wireForms(){
-    $("customer-form").addEventListener("submit",async e=>{
-      e.preventDefault();const name=$("customer-name").value.trim(),contact=$("customer-contact").value.trim();
-      if(!name||!contact){notice("กรุณากรอกชื่อลูกค้าและช่องทางติดต่อ","error");return;}
-      await save({record_type:"customer",customer_id:crypto.randomUUID(),customer_name:name,customer_phone:contact,customer_note:$("customer-note").value.trim(),created_at:new Date().toISOString()},e.submitter,()=>e.target.reset());
-    });
-    ["total","down","installments"].forEach(id=>$(id).addEventListener("input",calculate));calculate();
-    $("contract-form").addEventListener("submit",async e=>{
-      e.preventDefault();
-      const id=$("contract-id").value.trim(),total=Number($("total").value),down=Number($("down").value),n=Number($("installments").value),count=Number($("item-count").value);
-      if(contracts().some(c=>c.contract_id.toLowerCase()===id.toLowerCase())){notice("เลขที่รายการนี้มีอยู่แล้ว","error");return;}
-      if(!id||!$("contract-customer").value||!Number.isInteger(count)||count<1||!Number.isInteger(n)||n<1||!(total>0)||down<0||down>=total||$("end-date").value<=$("start-date").value){notice("ตรวจสอบลูกค้า ยอดเงิน จำนวนงวด และวันที่เริ่ม/สิ้นสุดอีกครั้ง","error");return;}
-      await save({record_type:"contract",contract_id:id,contract_customer_id:$("contract-customer").value,contract_items:$("contract-items").value.trim(),contract_item_count:count,contract_total:total,contract_down_payment:down,contract_installments:n,contract_per_installment:Number(((total-down)/n).toFixed(2)),contract_start_date:$("start-date").value,contract_end_date:$("end-date").value,contract_status:"active",created_at:new Date().toISOString()},e.submitter,()=>{e.target.reset();$("item-count").value=1;$("down").value=0;calculate()});
-    });
-    $("payment-form").addEventListener("submit",async e=>{
-      e.preventDefault();const id=$("payment-contract").value,c=contracts().find(x=>x.contract_id===id),amount=Number($("payment-amount").value);
-      if(!c||!(amount>0)||amount>balance(c)+0.005){notice("เลือกสัญญาและระบุยอดชำระที่มากกว่า 0 แต่ไม่เกินยอดคงเหลือ","error");return;}
-      await save({record_type:"payment",payment_contract_id:id,payment_date:$("payment-date").value,payment_amount:amount,payment_note:$("payment-note").value.trim(),created_at:new Date().toISOString()},e.submitter,()=>{e.target.reset();$("payment-date").value=today()});
-    });
-    $("save-settings").addEventListener("click",async e=>{
-      if(savedSetting){notice("การตั้งค่านี้มีข้อมูลเดิมอยู่แล้ว แต่หน้านี้ไม่สามารถแก้ไขระเบียนเดิมได้อย่างปลอดภัย ดูตัวอย่างธีมได้โดยไม่บันทึก","error");return;}
-      await save({record_type:"setting",setting_key:"appearance",setting_value:JSON.stringify({theme:pendingTheme,mode:pendingMode,motion:pendingMotion}),created_at:new Date().toISOString()},e.currentTarget);
-    });
-    ["customer-search","contract-search","status-filter","sort-order","report-from","report-to"].forEach(id=>$(id).addEventListener("input",render));
-    $("payment-date").value=today();$("start-date").value=today();
+  function applyTheme() {
+    const theme=themes.find(t=>t.id===selected.theme)||themes[0];
+    const dark=selected.mode==="dark"||(selected.mode==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);
+    const palette={...theme};
+    if(dark&&theme.id!=="executive")Object.assign(palette,{base:"#101c27",surface:"#192936",ink:"#f4f8fa",soft:"#263e4a"});
+    if(!dark&&theme.id==="executive")Object.assign(palette,{base:"#f1f5f6",surface:"#ffffff",ink:"#172b3d",soft:"#e4f4f5"});
+    ["base","surface","ink","accent","soft"].forEach(k=>document.documentElement.style.setProperty("--"+k,palette[k]));
+    document.documentElement.style.setProperty("--border",dark?"#35505e":"#dce7ed");
+    document.documentElement.classList.toggle("no-motion",!selected.motion);
+    document.querySelectorAll(".theme-card").forEach(b=>{b.classList.toggle("selected",b.dataset.theme===selected.theme);b.setAttribute("aria-pressed",String(b.dataset.theme===selected.theme))});
   }
-  async function init(){
-    $("loading").hidden=false;$("load-error").hidden=true;
-    clearTimeout(timer);
-    timer=setTimeout(()=>{if(!loaded){$("loading").hidden=true;$("load-error").hidden=false}},8000);
+  function restoreSettings() {
+    const latest=kind("setting").filter(r=>r.setting_key==="appearance").sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""))[0];
+    if(!latest||latest.__backendId===lastSettingId)return;
+    try {
+      const value=JSON.parse(latest.setting_value);
+      if(themes.some(t=>t.id===value.theme))selected.theme=value.theme;
+      if(["light","dark","auto"].includes(value.mode))selected.mode=value.mode;
+      selected.motion=value.motion!==false;
+      $("mode-select").value=selected.mode;$("motion-toggle").checked=selected.motion;applyTheme();lastSettingId=latest.__backendId;
+    }catch{notify("การตั้งค่าที่บันทึกไว้ไม่ถูกต้อง กรุณาเลือกธีมแล้วบันทึกใหม่",true)}
+  }
+  async function init() {
+    ready=false;$("loading").hidden=false;$("load-error").hidden=true;clearTimeout(timer);
+    timer=setTimeout(()=>{if(!ready){$("loading").hidden=true;$("load-error").hidden=false}},8000);
     try{
       const result=await window.dataSdk.init({onDataChanged(data){
-        loaded=true;clearTimeout(timer);records=data;
-        $("loading").hidden=true;$("load-error").hidden=true;
-        setSettingFromRecords();render();showPage(page);
+        ready=true;clearTimeout(timer);records=data;$("loading").hidden=true;$("load-error").hidden=true;
+        restoreSettings();render();
       }});
-      if(!result.isOk){clearTimeout(timer);$("loading").hidden=true;$("load-error").hidden=false;}
-    }catch{clearTimeout(timer);$("loading").hidden=true;$("load-error").hidden=false;}
+      if(!result.isOk){clearTimeout(timer);$("loading").hidden=true;$("load-error").hidden=false}
+    }catch{clearTimeout(timer);$("loading").hidden=true;$("load-error").hidden=false}
   }
-  navItems.forEach(([id,label])=>{for(const host of [$("desktop-nav"),$("mobile-nav")]){const b=el("button","nav-button text-sm font-semibold",label);b.type="button";b.dataset.page=id;b.onclick=()=>showPage(id);host.append(b)}});
+  nav.forEach(([id,label])=>[$("desktop-nav"),$("mobile-nav")].forEach(host=>{
+    const b=node("button","nav-button text-sm",label);b.type="button";b.dataset.page=id;b.onclick=()=>showPage(id);host.append(b);
+  }));
   $("today-label").textContent=new Intl.DateTimeFormat("th-TH",{day:"numeric",month:"short",year:"numeric"}).format(new Date());
   $("retry").onclick=init;
-  setupThemes();wireForms();showPage("dashboard");init();
+  themes.forEach(theme=>{
+    const b=node("button","theme-card");b.type="button";b.dataset.theme=theme.id;
+    const stripe=node("div","rounded-xl h-14 mb-3 flex overflow-hidden");stripe.style.background=theme.base;
+    const block=node("div","w-1/3 h-full");block.style.background=theme.accent;stripe.append(block);
+    b.append(stripe,node("span","font-bold",theme.name));b.onclick=()=>{selected.theme=theme.id;applyTheme()};$("theme-grid").append(b);
+  });
+  $("mode-select").onchange=e=>{selected.mode=e.target.value;applyTheme()};
+  $("motion-toggle").onchange=e=>{selected.motion=e.target.checked;applyTheme()};
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>{if(selected.mode==="auto")applyTheme()});
+  $("save-settings").onclick=e=>create({record_type:"setting",setting_key:"appearance",setting_value:JSON.stringify(selected),created_at:new Date().toISOString()},e.currentTarget);
+  $("reset-settings").onclick=()=>{selected={theme:"blue",mode:"light",motion:true};$("mode-select").value="light";$("motion-toggle").checked=true;applyTheme();notify("คืนค่าตัวอย่างแล้ว กดบันทึกการตั้งค่าเพื่อเก็บการเปลี่ยนแปลง")};
+  $("customer-form").onsubmit=async e=>{
+    e.preventDefault();clearErrors(e.currentTarget);
+    const name=$("customer-name").value.trim(),phone=$("customer-phone").value.trim();
+    const invalid=[fieldError("customer-name",!name?"กรุณากรอกชื่อลูกค้า":""),fieldError("customer-phone",!phone?"กรุณากรอกเบอร์โทรศัพท์":!/^[0-9+\-\s]{8,20}$/.test(phone)?"ตรวจสอบรูปแบบเบอร์โทรศัพท์":"")].some(Boolean);
+    if(invalid)return;
+    await create({record_type:"customer",customer_id:crypto.randomUUID(),customer_name:name,customer_phone:phone,customer_note:$("customer-note").value.trim(),created_at:new Date().toISOString()},e.submitter,()=>e.target.reset());
+  };
+  ["total","down","installments"].forEach(id=>$(id).addEventListener("input",calculate));
+  $("contract-form").onsubmit=async e=>{
+    e.preventDefault();clearErrors(e.currentTarget);
+    const id=$("contract-id").value.trim(),items=$("contract-items").value.trim(),count=Number($("item-count").value),total=Number($("total").value),down=Number($("down").value),n=Number($("installments").value),start=$("start-date").value,end=$("end-date").value;
+    const errors=[
+      fieldError("contract-id",!id?"กรุณากรอกเลขที่รายการ":contracts().some(c=>c.contract_id.toLowerCase()===id.toLowerCase())?"เลขที่รายการนี้มีอยู่แล้ว":""),
+      fieldError("contract-customer",!customers().some(c=>c.customer_id===$("contract-customer").value)?"กรุณาเลือกลูกค้า":""),
+      fieldError("contract-items",!items?"กรุณากรอกรายการสิ่งของ":""),
+      fieldError("item-count",!Number.isInteger(count)||count<1?"จำนวนสิ่งของต้องเป็นจำนวนเต็มอย่างน้อย 1":""),
+      fieldError("total",!Number.isFinite(total)||total<=0?"ยอดรวมต้องมากกว่า 0":""),
+      fieldError("down",!Number.isFinite(down)||down<0||down>=total?"เงินดาวน์ต้องไม่ติดลบและน้อยกว่ายอดรวม":""),
+      fieldError("installments",!Number.isInteger(n)||n<1?"จำนวนงวดต้องเป็นจำนวนเต็มอย่างน้อย 1":""),
+      fieldError("start-date",!start?"กรุณาระบุวันที่เริ่ม":""),
+      fieldError("end-date",!end||!!start&&end<=start?"วันครบกำหนดต้องหลังวันที่เริ่ม":"")
+    ];
+    if(errors.some(Boolean))return;
+    await create({record_type:"contract",contract_id:id,contract_customer_id:$("contract-customer").value,contract_items:items,contract_item_count:count,contract_total:total,contract_down_payment:down,contract_installments:n,contract_per_installment:Math.round((total-down)/n*100)/100,contract_start_date:start,contract_end_date:end,contract_note:$("contract-note").value.trim(),contract_status:"active",created_at:new Date().toISOString()},e.submitter,()=>{e.target.reset();$("item-count").value=1;$("down").value=0;calculate()});
+  };
+  $("payment-form").onsubmit=async e=>{
+    e.preventDefault();clearErrors(e.currentTarget);
+    const id=$("payment-contract").value,c=contracts().find(x=>x.contract_id===id),amount=Number($("payment-amount").value);
+    const errors=[fieldError("payment-contract",!c?"กรุณาเลือกรายการผ่อน":""),fieldError("payment-date",!$("payment-date").value?"กรุณาระบุวันที่ชำระ":""),fieldError("payment-amount",!Number.isFinite(amount)||amount<=0?"จำนวนเงินต้องมากกว่า 0":c&&amount>balance(c)+.005?"จำนวนเงินเกินยอดคงเหลือ":"")];
+    if(errors.some(Boolean))return;
+    await create({record_type:"payment",payment_contract_id:id,payment_date:$("payment-date").value,payment_amount:amount,payment_note:$("payment-note").value.trim(),created_at:new Date().toISOString()},e.submitter,()=>{e.target.reset();$("payment-date").value=today()});
+  };
+  ["customer-search","contract-search","status-filter","sort-order","report-from","report-to"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="customer-search")renderCustomers();else if(["report-from","report-to"].includes(id))renderReports();else renderContracts()}));
+  $("check-form").onsubmit=e=>{
+    e.preventDefault();const id=$("check-id").value.trim(),c=contracts().find(x=>x.contract_id.toLowerCase()===id.toLowerCase());
+    if(!id){empty($("check-result"),"กรุณากรอกเลขที่รายการ");return}
+    if(!c){empty($("check-result"),"ไม่พบข้อมูล กรุณาตรวจสอบเลขที่รายการ");return}
+    $("check-result").replaceChildren(detail(c));
+  };
+  $("clear-check").onclick=()=>{$("check-id").value="";empty($("check-result"));$("check-id").focus()};
+  $("start-date").value=today();$("payment-date").value=today();calculate();applyTheme();empty($("check-result"));showPage("dashboard");init();
 })();
 </script>
  
