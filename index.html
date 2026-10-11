@@ -19,9 +19,16 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.8";
+    const CURRENT_VERSION = "V.11.9";
     
     const APP_CHANGELOG = [
+        {
+            version: "V.11.9",
+            date: "11/10/2026",
+            changes: [
+                "ปลดล็อกขีดจำกัดเพิ่มรายการลูกค้า และเพิ่มการรองรับฐานข้อมูลประวัติแยกตาราง (app_history) สมบูรณ์"
+            ]
+        },
         {
             version: "V.11.8",
             date: "12/09/2026",
@@ -90,15 +97,33 @@
             return;
         }
         try {
-            const { data, error } = await supabaseClient.from('app_records').select('data');
-            if (error) throw error;
-            if (data && window._dataHandler) {
-                const appData = data.map(row => row.data);
-                window._dataHandler.onDataChanged(appData);
+            // ดึงข้อมูลหลักจาก app_records
+            const { data: recordsData, error: recordsError } = await supabaseClient
+                .from('app_records')
+                .select('data')
+                .limit(5000);
+            if (recordsError) throw recordsError;
+
+            // ดึงข้อมูลประวัติจาก app_history
+            const { data: historyData, error: historyError } = await supabaseClient
+                .from('app_history')
+                .select('data')
+                .limit(5000);
+            if (historyError && historyError.code !== '42P01') {
+                console.warn("Notice fetching app_history:", historyError);
+            }
+
+            const appRecords = (recordsData || []).map(row => row.data);
+            const historyRecords = (historyData || []).map(row => row.data);
+
+            const combinedData = [...appRecords, ...historyRecords];
+
+            if (window._dataHandler) {
+                window._dataHandler.onDataChanged(combinedData);
             }
         } catch (e) {
             console.error("Error fetching data:", e);
-            if (e.code === '42P01' || e.message.includes('does not exist')) showSetupModal();
+            if (e.code === '42P01' || (e.message && e.message.includes('does not exist'))) showSetupModal();
             else if (e.code === '42501') showSetupModal("Permission Denied (RLS)");
             else showConnectionErrorModal(e.message);
             if (window._dataHandler) window._dataHandler.onDataChanged([]);
@@ -153,6 +178,12 @@
                     fetchAndNotify();
                 })
                 .subscribe();
+
+            supabaseClient.channel('public:app_history')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'app_history' }, () => {
+                    fetchAndNotify();
+                })
+                .subscribe();
         } else {
             setTimeout(() => handler.onDataChanged([]), 0);
         }
@@ -161,7 +192,8 @@
       create: async (record) => {
         if (!supabaseClient) return { isOk: false, error: { message: "Offline" } };
         try {
-          const { error } = await supabaseClient.from('app_records').insert({ id: record.id, type: record.type, data: record });
+          const tableName = record.type === 'history' ? 'app_history' : 'app_records';
+          const { error } = await supabaseClient.from(tableName).insert({ id: record.id, type: record.type, data: record });
           if (error) throw error;
           await fetchAndNotify(); 
           return { isOk: true };
@@ -173,7 +205,8 @@
       update: async (record) => {
         if (!supabaseClient) return { isOk: false, error: { message: "Offline" } };
         try {
-          const { error } = await supabaseClient.from('app_records').update({ data: record, type: record.type }).eq('id', record.id);
+          const tableName = record.type === 'history' ? 'app_history' : 'app_records';
+          const { error } = await supabaseClient.from(tableName).update({ data: record, type: record.type }).eq('id', record.id);
           if (error) throw error;
           await fetchAndNotify();
           return { isOk: true };
@@ -182,7 +215,8 @@
       delete: async (record) => {
         if (!supabaseClient) return { isOk: false, error: { message: "Offline" } };
         try {
-          const { error } = await supabaseClient.from('app_records').delete().eq('id', record.id);
+          const tableName = record.type === 'history' ? 'app_history' : 'app_records';
+          const { error } = await supabaseClient.from(tableName).delete().eq('id', record.id);
           if (error) throw error;
           await fetchAndNotify();
           return { isOk: true };
@@ -768,7 +802,6 @@
     }
 
     async function addCustomer(customerData) {
-      if (allRecords.filter(r => r.type === 'customer').length >= 999) return showToast('ถึงขีดจำกัด 999 รายการแล้ว', true);
       let monthlyPayment = customerData.billAmount ? parseInt(customerData.billAmount) : calculateMonthlyPayment(customerData.productPrice, customerData.interestRate, customerData.installments, customerData.billFee);
       const newCustomer = {
         type: 'customer', id: 'cust_' + Date.now(), customer_name: customerData.customerName,
@@ -1157,7 +1190,6 @@
 
     function renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
       const users = allRecords.filter(r => r.type === 'user');
-      // 🟢 แก้ไข: ใช้ data-reset-user และ data-delete-user ให้สอดคล้องกับ EventListener 
       return `<div class="p-4 md:p-8"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-2xl shadow-xl transition-all" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};"><table class="w-full min-w-[600px]"><thead style="background: ${dark ? '#374151' : '#f8fafc'}; border-bottom: 1px solid ${dark?'#4b5563':'#e2e8f0'};"><tr><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ลำดับ</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">วันที่สมัคร</th><th class="px-6 py-4 text-center text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark ? '#374151' : '#f1f5f9'};"><td class="px-6 py-4 font-medium" style="color: ${textColor};">${idx + 1}</td><td class="px-6 py-4 font-bold text-base" style="color: ${textColor};">${u.username}</td><td class="px-6 py-4 font-medium opacity-80" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-6 py-4 text-center"><div class="flex justify-center gap-3"><button type="button" class="btn-reset-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-reset-user="${u.id}" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button type="button" class="btn-delete-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-delete-user="${u.id}" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
     }
 
@@ -1819,23 +1851,23 @@
       const isAdmin = currentUser && currentUser.isAdmin;
 
       return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-6 h-6 rounded border-gray-300" style="accent-color: ${primaryColor};"><span class="font-semibold text-lg" style="color: ${textColor};">เปิดโหมดมืด (Dark Mode)</span></label></div><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-3 font-semibold" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-5 py-3 rounded-xl border font-bold text-lg" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"><p class="text-sm mt-3 font-medium opacity-60" style="color: ${textColor};">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระตามจำนวนวันที่ตั้งไว้</p></div>
-      ${isAdmin ? `<div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}40; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};">
+      ${isAdmin ? `<div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}40; box-shadow:${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};">
         <h3 class="font-black text-lg mb-6 flex items-center gap-3 uppercase tracking-wider" style="color: ${textColor};">
             🔌 การตั้งค่าระบบ (Admin Only)
         </h3>
         <div class="space-y-5">
             <div>
                 <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">ระยะเวลาแสดงแจ้งเตือน (วินาที)</label>
-                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-5 py-3 rounded-xl border font-semibold" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
+                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-5 py-3 rounded-xl border font-semibold" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color:${primaryColor};">
             </div>
             <div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div>
             <div>
                 <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase URL</label>
-                <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
+                <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color:${primaryColor};">
             </div>
             <div>
                 <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase Key (Anon/Public)</label>
-                <input type="password" id="setting-supabase-key" autocomplete="new-password" spellcheck="false" data-lpignore="true" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
+                <input type="password" id="setting-supabase-key" autocomplete="new-password" spellcheck="false" data-lpignore="true" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color:${primaryColor};">
             </div>
             <div class="flex flex-col sm:flex-row gap-3 pt-2">
                 <button id="save-connection-btn" class="flex-1 py-3 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor};">บันทึกและรีโหลด</button>
@@ -2134,127 +2166,4 @@
 
               const newContractDate = document.getElementById('edit-contract-date').value;
               const newMonthlyPayment = parseFloat(document.getElementById('edit-monthly-payment').value);
-              const newInstallments = parseInt(document.getElementById('edit-installments').value);
-              const newPaidInstallments = parseInt(document.getElementById('edit-paid-installments').value) || 0;
-
-              let nextPaymentDate = addMonthsToDate(newContractDate, newPaidInstallments + 1);
-              let newStatus = newPaidInstallments >= newInstallments ? 'completed' : 'active';
-
-              await updateCustomer(editingCustomer, {
-                  customer_name: document.getElementById('edit-customer-name').value,
-                  product: document.getElementById('edit-product').value,
-                  product_price: parseFloat(document.getElementById('edit-product-price').value),
-                  monthly_payment: newMonthlyPayment,
-                  installments: newInstallments,
-                  paid_installments: newPaidInstallments,
-                  contract_date: newContractDate,
-                  next_payment_date: nextPaymentDate,
-                  status: newStatus 
-              });
-          });
-          document.getElementById('cancel-edit-btn').addEventListener('click', hideModal);
-          
-          document.getElementById('delete-customer-btn')?.addEventListener('click', async () => { 
-              if(confirm('คุณต้องการลบข้อมูลลูกค้านี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-                  await deleteCustomer(editingCustomer);
-                  hideModal();
-              }
-          });
-          
-          document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => { await deleteCustomer(confirmDeleteId); hideModal(); });
-      }
-
-      const adminResetForm = document.getElementById('admin-reset-form');
-      if(adminResetForm) {
-          adminResetForm.addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const newPass = document.getElementById('admin-new-pass').value;
-              if(!newPass) return showToast('กรุณากรอกรหัสผ่าน', true);
-              await adminResetPassword(editingUser, newPass);
-          });
-          
-          const cancelAdminReset = document.getElementById('cancel-admin-reset-btn');
-          if(cancelAdminReset) cancelAdminReset.addEventListener('click', hideModal);
-      }
-
-      const dm = document.getElementById('dark-mode-toggle');
-      if(dm) dm.addEventListener('change', (e) => { if(e.target.checked) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); });
-      const saveSet = document.getElementById('save-settings-btn');
-      if(saveSet) saveSet.addEventListener('click', async () => {
-          saveSet.innerHTML = '<div class="spinner"></div>';
-          const perms = [];
-          ['add','manage','history','statement','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
-          
-          let toastDuration = undefined;
-          const toastInput = document.getElementById('setting-toast-duration');
-          if (toastInput) {
-              toastDuration = parseFloat(toastInput.value) * 1000;
-          }
-          
-          await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), toastDuration);
-          saveSet.innerHTML = 'บันทึกการตั้งค่า';
-      });
-
-      const saveConn = document.getElementById('save-connection-btn');
-      if(saveConn) saveConn.addEventListener('click', () => {
-          let url = document.getElementById('setting-supabase-url').value;
-          let key = document.getElementById('setting-supabase-key').value;
-          
-          if(!url || !key) return showToast('กรุณากรอกข้อมูลให้ครบถ้วน', true);
-          
-          url = url.trim().replace(/\/$/, "");
-          key = key.trim();
-          
-          localStorage.setItem('app_supabase_config', JSON.stringify({ url, key }));
-          showToast('บันทึกค่าเชื่อมต่อเรียบร้อย ระบบจะรีโหลด...');
-          setTimeout(() => location.reload(), 1500);
-      });
-
-      const resetConn = document.getElementById('reset-connection-btn');
-      if(resetConn) resetConn.addEventListener('click', () => {
-          if(confirm('คุณต้องการรีเซ็ตค่าการเชื่อมต่อเป็นค่าเริ่มต้นหรือไม่?')) {
-              localStorage.removeItem('app_supabase_config');
-              showToast('รีเซ็ตค่าเรียบร้อย ระบบจะรีโหลด...');
-              setTimeout(() => location.reload(), 1500);
-          }
-      });
-
-      const stmtYearP = document.getElementById('stmt-year-picker');
-      if(stmtYearP) stmtYearP.addEventListener('change', (e) => {
-          if(e.target.value) {
-              stmtSelectedDate = new Date(e.target.value, 0, 1);
-              renderApp();
-          }
-      });
-
-      if (currentView === 'statement') {
-          const config = window.elementSdk?.config || defaultConfig;
-          const dark = isDarkMode();
-          const txtColor = dark ? '#f9fafb' : config.text_color;
-          const isGuest = currentUser && currentUser.isGuestView;
-          const data = getAggregatedStatementData();
-          setTimeout(() => {
-              initDashboardCharts(data, config.primary_color, txtColor, dark, isGuest);
-          }, 50); 
-      }
-    }
-
-    async function init() {
-      window.dataSdk.init(dataHandler); 
-      checkLogin();
-      window.elementSdk.init({ defaultConfig, onConfigChange: () => renderApp() });
-      renderApp();
-      
-      setTimeout(() => {
-          const showedWhatsNew = checkAndShowWhatsNew();
-          if (!showedWhatsNew) {
-              checkAndShowPaymentReminder();
-          }
-      }, 1500); 
-      startUpdateChecker();
-    }
-
-    init();
-  </script>
- </body>
-</html>
+              const newInstallments = parseInt(document.getElementById('edit-
