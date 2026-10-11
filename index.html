@@ -19,32 +19,21 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.9.1";
+    const CURRENT_VERSION = "V.11.9.2";
     
     const APP_CHANGELOG = [
+        {
+            version: "V.11.9.2",
+            date: "11/10/2026",
+            changes: [
+                "แก้ไขปัญหารายการลูกค้าใหม่ไม่แสดง โดยกรองแยกประวัติเก่าออกจาก app_records ป้องกันข้อมูลทะลุลิมิต 1,000 แถว"
+            ]
+        },
         {
             version: "V.11.9.1",
             date: "11/10/2026",
             changes: [
-                "เพิ่มระบบป้องกันหน้าค้าง (Safe Initial Render) โหลดหน้าจอหลักทันทีเมื่อเปิดแอป",
-                "ปรับปรุงระบบดึงข้อมูลประวัติ (app_history) ให้ทำงานแบบแยกอิสระ ป้องกันการค้างจากฐานข้อมูล"
-            ]
-        },
-        {
-            version: "V.11.8",
-            date: "12/09/2026",
-            changes: [
-                "แก้ไขบั๊กหน้าจัดการผู้ใช้งาน (Admin) ที่ปุ่มเปลี่ยนรหัสผ่านและปุ่มลบบัญชีไม่ทำงาน เนื่องจาก Attribute ของปุ่มไม่ตรงกัน"
-            ]
-        },
-        {
-            version: "V.11.7",
-            date: "10/09/2026",
-            changes: [
-                "แก้ไขปัญหาหน้าจอล็อกอินค้าง (Infinite Loading) ด้วยระบบดักจับ Error อัจฉริยะ",
-                "ปิดกั้นป๊อปอัปเปลี่ยนรหัสผ่านของเบราว์เซอร์กวนใจ 100%",
-                "ซ่อนการแจ้งเตือนค้างชำระในเมนูของบัญชี Guest อย่างสมบูรณ์",
-                "ปรับแก้ฟอนต์และขนาดตัวอักษรให้สวยงามตรงตามรูปตัวอย่างต้นฉบับ"
+                "เพิ่มระบบป้องกันหน้าค้าง (Safe Initial Render) โหลดหน้าจอหลักทันทีเมื่อเปิดแอป"
             ]
         }
     ];
@@ -76,15 +65,16 @@
             return;
         }
         try {
-            // ดึงข้อมูลหลักจาก app_records
+            // 🟢 ดึงข้อมูลหลักจาก app_records โดยข้ามประวัติเก่าที่เคยสะสมในตารางนี้
             const { data: recordsData, error: recordsError } = await supabaseClient
                 .from('app_records')
                 .select('data')
+                .neq('type', 'history')
                 .limit(5000);
 
             if (recordsError) throw recordsError;
 
-            // ดึงข้อมูลประวัติจาก app_history (ถ้ามี)
+            // 🟢 ดึงข้อมูลประวัติจากตารางใหม่ app_history
             let historyData = [];
             try {
                 const { data: hData, error: hError } = await supabaseClient
@@ -1817,7 +1807,7 @@
             <div class="flex flex-col sm:flex-row gap-5 justify-between items-start sm:items-center mb-8 border-b pb-6" style="border-color: ${dark ? '#374151' : '#e2e8f0'};">
                 <div>
                     <h2 class="text-3xl font-black tracking-tight" style="color: ${textColor};">Maintenance Dashboard</h2>
-                    <p class="text-sm font-bold opacity-50 uppercase tracking-widest mt-1" style="color: ${textColor};">รายงานสรุปผลกำไร-ขาดทุน (อัปเดตอัตโนมัติ)</p>
+                    <p class="text-sm font-bold uppercase tracking-widest opacity-50 mt-1" style="color: ${textColor};">รายงานสรุปผลกำไร-ขาดทุน (อัปเดตอัตโนมัติ)</p>
                 </div>
                 <div class="w-full sm:w-auto flex justify-end">
                     ${datePickerHtml}
@@ -1890,10 +1880,10 @@
       }
       if (editingCustomer) {
         const customer = allRecords.find(r => r && r.id === editingCustomer); if (!customer) return '';
-        return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 600px;"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-5"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+        return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 600px;"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-5"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         <div class="grid grid-cols-2 gap-5">
-            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">จำนวนงวดรวม</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
-            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชำระแล้ว (งวด)</label><input type="number" id="edit-paid-installments" value="${customer.paid_installments || 0}" min="0" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">จำนวนงวดรวม</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
+            <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชำระแล้ว (งวด)</label><input type="number" id="edit-paid-installments" value="${customer.paid_installments || 0}" min="0" class="w-full px-5 py-3 rounded-xl border focus:ring-4 transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         </div>
         <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">วันที่ทำสัญญา</label><input type="date" id="edit-contract-date" value="${customer.contract_date}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         <div class="flex gap-4 pt-4"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div>${confirmDeleteId === customer.id ? `<button type="button" id="confirm-delete-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ยืนยันการลบถาวร</button>` : `<button type="button" id="delete-customer-btn" class="w-full py-3.5 mt-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: #ef4444;">ลบข้อมูล</button>`}</form></div></div>`;
