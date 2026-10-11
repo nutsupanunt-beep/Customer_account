@@ -19,14 +19,15 @@
     // ==========================================
     // 🟢 ระบบจัดการเวอร์ชัน (Version Control)
     // ==========================================
-    const CURRENT_VERSION = "V.11.9";
+    const CURRENT_VERSION = "V.11.9.1";
     
     const APP_CHANGELOG = [
         {
-            version: "V.11.9",
+            version: "V.11.9.1",
             date: "11/10/2026",
             changes: [
-                "ปลดล็อกขีดจำกัดเพิ่มรายการลูกค้า และเพิ่มการรองรับฐานข้อมูลประวัติแยกตาราง (app_history) สมบูรณ์"
+                "เพิ่มระบบป้องกันหน้าค้าง (Safe Initial Render) โหลดหน้าจอหลักทันทีเมื่อเปิดแอป",
+                "ปรับปรุงระบบดึงข้อมูลประวัติ (app_history) ให้ทำงานแบบแยกอิสระ ป้องกันการค้างจากฐานข้อมูล"
             ]
         },
         {
@@ -44,28 +45,6 @@
                 "ปิดกั้นป๊อปอัปเปลี่ยนรหัสผ่านของเบราว์เซอร์กวนใจ 100%",
                 "ซ่อนการแจ้งเตือนค้างชำระในเมนูของบัญชี Guest อย่างสมบูรณ์",
                 "ปรับแก้ฟอนต์และขนาดตัวอักษรให้สวยงามตรงตามรูปตัวอย่างต้นฉบับ"
-            ]
-        },
-        {
-            version: "V.11.6",
-            date: "10/09/2026",
-            changes: [
-                "แก้ไขบั๊กตัวอักษรเมนูด้านซ้ายขาดหาย โดยปรับให้ข้อความยาวปัดบรรทัดใหม่อัตโนมัติ"
-            ]
-        },
-        {
-            version: "V.11.5",
-            date: "10/09/2026",
-            changes: [
-                "ปรับปรุงการจัดเรียงในหน้าจัดการลูกค้า ให้คลีนและใหญ่ขึ้นตามดีไซน์ต้นแบบ"
-            ]
-        },
-        {
-            version: "V.11.3",
-            date: "10/09/2026",
-            changes: [
-                "เพิ่มระบบ 'แจ้งเตือนเรียกเก็บเงินอัจฉริยะ' แสดงยอดรวมที่ต้องเก็บเมื่อถึงกำหนด",
-                "เพิ่มตัวเลข (Badge) สีแดงที่เมนูจัดการลูกค้า เพื่อบอกจำนวนรายการที่ค้างชำระ"
             ]
         }
     ];
@@ -102,19 +81,25 @@
                 .from('app_records')
                 .select('data')
                 .limit(5000);
+
             if (recordsError) throw recordsError;
 
-            // ดึงข้อมูลประวัติจาก app_history
-            const { data: historyData, error: historyError } = await supabaseClient
-                .from('app_history')
-                .select('data')
-                .limit(5000);
-            if (historyError && historyError.code !== '42P01') {
-                console.warn("Notice fetching app_history:", historyError);
+            // ดึงข้อมูลประวัติจาก app_history (ถ้ามี)
+            let historyData = [];
+            try {
+                const { data: hData, error: hError } = await supabaseClient
+                    .from('app_history')
+                    .select('data')
+                    .limit(5000);
+                if (!hError && hData) {
+                    historyData = hData;
+                }
+            } catch(he) {
+                console.warn("Notice fetching app_history:", he);
             }
 
-            const appRecords = (recordsData || []).map(row => row.data);
-            const historyRecords = (historyData || []).map(row => row.data);
+            const appRecords = (recordsData || []).map(row => row ? row.data : null).filter(Boolean);
+            const historyRecords = (historyData || []).map(row => row ? row.data : null).filter(Boolean);
 
             const combinedData = [...appRecords, ...historyRecords];
 
@@ -125,7 +110,7 @@
             console.error("Error fetching data:", e);
             if (e.code === '42P01' || (e.message && e.message.includes('does not exist'))) showSetupModal();
             else if (e.code === '42501') showSetupModal("Permission Denied (RLS)");
-            else showConnectionErrorModal(e.message);
+            else showConnectionErrorModal(e.message || String(e));
             if (window._dataHandler) window._dataHandler.onDataChanged([]);
         }
     }
@@ -173,17 +158,21 @@
         window._dataHandler = handler;
         if (supabaseClient) {
             await fetchAndNotify(); 
-            supabaseClient.channel('public:app_records')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'app_records' }, () => {
-                    fetchAndNotify();
-                })
-                .subscribe();
+            try {
+                supabaseClient.channel('public:app_records')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_records' }, () => {
+                        fetchAndNotify();
+                    })
+                    .subscribe();
 
-            supabaseClient.channel('public:app_history')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'app_history' }, () => {
-                    fetchAndNotify();
-                })
-                .subscribe();
+                supabaseClient.channel('public:app_history')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_history' }, () => {
+                        fetchAndNotify();
+                    })
+                    .subscribe();
+            } catch(scErr) {
+                console.warn("Realtime channel error:", scErr);
+            }
         } else {
             setTimeout(() => handler.onDataChanged([]), 0);
         }
@@ -501,7 +490,7 @@
     };
 
     function getToastDuration() {
-        const settingsRecords = allRecords.filter(r => r.type === 'settings');
+        const settingsRecords = allRecords.filter(r => r && r.type === 'settings');
         if (settingsRecords.length > 0) {
             try {
                 settingsRecords.sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0));
@@ -563,7 +552,7 @@
             renderApp();
             return true;
           }
-          const userRecord = allRecords.find(r => r.type === 'user' && r.username === username && r.password_hash === hashPassword(password));
+          const userRecord = allRecords.find(r => r && r.type === 'user' && r.username === username && r.password_hash === hashPassword(password));
           if (userRecord) {
             currentUser = { username: userRecord.username, id: userRecord.id };
             if (rememberMe) localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -595,7 +584,7 @@
     }
 
     async function register(username, password) {
-      const exists = allRecords.find(r => r.type === 'user' && r.username === username);
+      const exists = allRecords.find(r => r && r.type === 'user' && r.username === username);
       if (exists) { showToast('ชื่อผู้ใช้นี้มีอยู่แล้ว', true); return false; }
       const userRecord = { type: 'user', id: 'user_' + Date.now(), username: username, password_hash: hashPassword(password), created_at: new Date().toISOString() };
       const result = await window.dataSdk.create(userRecord);
@@ -605,7 +594,7 @@
 
     async function resetPassword(username, adminKey, newPassword) {
       if (adminKey !== 'admin') { showToast('รหัส admin ไม่ถูกต้อง', true); return false; }
-      const userRecord = allRecords.find(r => r.type === 'user' && r.username === username);
+      const userRecord = allRecords.find(r => r && r.type === 'user' && r.username === username);
       if (!userRecord) { showToast('ไม่พบชื่อผู้ใช้นี้', true); return false; }
       const updatedRecord = { ...userRecord, password_hash: hashPassword(newPassword), updated_at: new Date().toISOString() };
       const result = await window.dataSdk.update(updatedRecord);
@@ -629,12 +618,12 @@
         return { ...defaultSettings, guest_permissions: 'manage' };
       }
       
-      const userSettings = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.id);
+      const userSettings = allRecords.find(r => r && r.type === 'settings' && r.account_id === currentUser.id);
       return userSettings ? { ...defaultSettings, ...userSettings } : defaultSettings; 
     }
     
     function getGlobalGuestSettings() {
-        const adminSettings = allRecords.find(r => r.type === 'settings' && r.account_id === 'super_admin');
+        const adminSettings = allRecords.find(r => r && r.type === 'settings' && r.account_id === 'super_admin');
         if (adminSettings) return adminSettings;
         return null;
     }
@@ -646,7 +635,7 @@
       let recordToUpdate = existing;
       
       if (currentUser.isAdmin) {
-         const anySettings = allRecords.find(r => r.type === 'settings');
+         const anySettings = allRecords.find(r => r && r.type === 'settings');
          if(anySettings) recordToUpdate = anySettings;
          else recordToUpdate = null; 
       }
@@ -681,11 +670,11 @@
       if (currentUser.isAdmin) return true;
       
       if (currentUser.isGuestView) {
-          const targetSettings = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.targetAccountId);
+          const targetSettings = allRecords.find(r => r && r.type === 'settings' && r.account_id === currentUser.targetAccountId);
           if (targetSettings && targetSettings.guest_permissions) {
               return targetSettings.guest_permissions.includes(view);
           }
-          const adminSettings = allRecords.find(r => r.type === 'settings' && r.account_id === 'super_admin');
+          const adminSettings = allRecords.find(r => r && r.type === 'settings' && r.account_id === 'super_admin');
           if (adminSettings && adminSettings.guest_permissions) {
               return adminSettings.guest_permissions.includes(view);
           }
@@ -700,11 +689,11 @@
         if (currentUser.isAdmin) return true;
         
         if (currentUser.isGuestView) {
-             const targetSettings = allRecords.find(r => r.type === 'settings' && r.account_id === currentUser.targetAccountId);
+             const targetSettings = allRecords.find(r => r && r.type === 'settings' && r.account_id === currentUser.targetAccountId);
              if (targetSettings && targetSettings.guest_permissions) {
                  return targetSettings.guest_permissions.includes('edit');
              }
-             const adminSettings = allRecords.find(r => r.type === 'settings' && r.account_id === 'super_admin');
+             const adminSettings = allRecords.find(r => r && r.type === 'settings' && r.account_id === 'super_admin');
              if (adminSettings && adminSettings.guest_permissions) {
                  return adminSettings.guest_permissions.includes('edit');
              }
@@ -819,7 +808,7 @@
     }
 
     async function updateCustomer(customerId, updates) {
-      const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
+      const customer = allRecords.find(r => r && r.id === customerId); if (!customer) return;
       
       let changes = [];
       if (customer.customer_name !== updates.customer_name) changes.push(`ชื่อลูกค้า: ${customer.customer_name} ➔ ${updates.customer_name}`);
@@ -849,7 +838,7 @@
     }
 
     async function makePayment(customerId) {
-      const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
+      const customer = allRecords.find(r => r && r.id === customerId); if (!customer) return;
       const newPaid = customer.paid_installments + 1;
       const isComplete = newPaid >= customer.installments;
       const updates = isComplete ? { paid_installments: newPaid, status: 'completed' } : { paid_installments: newPaid, next_payment_date: addMonthsToDate(customer.next_payment_date, 1) };
@@ -864,7 +853,7 @@
 
     async function payAllForCustomer(name) {
         const daysBefore = getPaymentDaysBefore();
-        const targets = getActiveCustomers().filter(c => c.customer_name === name && canPayNow(c.next_payment_date, daysBefore));
+        const targets = getActiveCustomers().filter(c => c && c.customer_name === name && canPayNow(c.next_payment_date, daysBefore));
         if(targets.length === 0) {
             showToast('ไม่มีรายการที่ถึงกำหนดชำระ', true);
             return;
@@ -891,7 +880,7 @@
     }
 
     async function deleteCustomer(customerId) {
-      const customer = allRecords.find(r => r.id === customerId); if (!customer) return;
+      const customer = allRecords.find(r => r && r.id === customerId); if (!customer) return;
       const result = await window.dataSdk.delete(customer);
       if (result.isOk) { 
           await addHistory('ลบข้อมูล', `ลบข้อมูลของ <b>${customer.customer_name}</b><br><span class="block mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"><b>รายละเอียดที่ถูกลบ:</b><br>• สินค้า: ${customer.product}<br>• ราคา: ฿${(customer.product_price||0).toLocaleString()}<br>• ค่างวด: ฿${(customer.monthly_payment||0).toLocaleString()}</span>`); 
@@ -902,7 +891,7 @@
     }
 
     async function deleteUser(userId) {
-        const user = allRecords.find(r => r.id === userId && r.type === 'user'); 
+        const user = allRecords.find(r => r && r.id === userId && r.type === 'user'); 
         if(!user) {
             showToast('ไม่พบข้อมูลผู้ใช้', true);
             return;
@@ -912,7 +901,7 @@
     }
 
     async function adminResetPassword(userId, newPassword) {
-        const user = allRecords.find(r => r.id === userId && r.type === 'user'); if(!user) return;
+        const user = allRecords.find(r => r && r.id === userId && r.type === 'user'); if(!user) return;
         const result = await window.dataSdk.update({ ...user, password_hash: hashPassword(newPassword), updated_at: new Date().toISOString() });
         if(result.isOk) { showToast('เปลี่ยนรหัสผ่านสำเร็จ'); hideModal(); } else showToast('เปลี่ยนรหัสผ่านไม่สำเร็จ: ' + result.error.message, true);
     }
@@ -922,37 +911,38 @@
     }
 
     function getActiveCustomers() {
-      if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r.type === 'customer' && r.status === 'active');
+      if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r && r.type === 'customer' && r.status === 'active');
       if (currentUser && currentUser.isGuestView) {
-          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r.type === 'customer' && r.status === 'active');
-          return allRecords.filter(r => r.type === 'customer' && r.status === 'active' && r.account_id === currentUser.targetAccountId);
+          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r && r.type === 'customer' && r.status === 'active');
+          return allRecords.filter(r => r && r.type === 'customer' && r.status === 'active' && r.account_id === currentUser.targetAccountId);
       }
-      return allRecords.filter(r => r.type === 'customer' && r.status === 'active' && (currentUser ? r.account_id === currentUser.id : true));
+      return allRecords.filter(r => r && r.type === 'customer' && r.status === 'active' && (currentUser ? r.account_id === currentUser.id : true));
     }
 
     function getCompletedCustomers() {
-      if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r.type === 'customer' && r.status === 'completed');
+      if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r && r.type === 'customer' && r.status === 'completed');
       if (currentUser && currentUser.isGuestView) {
-          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r.type === 'customer' && r.status === 'completed');
-          return allRecords.filter(r => r.type === 'customer' && r.status === 'completed' && r.account_id === currentUser.targetAccountId);
+          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r && r.type === 'customer' && r.status === 'completed');
+          return allRecords.filter(r => r && r.type === 'customer' && r.status === 'completed' && r.account_id === currentUser.targetAccountId);
       }
-      return allRecords.filter(r => r.type === 'customer' && r.status === 'completed' && (currentUser ? r.account_id === currentUser.id : true));
+      return allRecords.filter(r => r && r.type === 'customer' && r.status === 'completed' && (currentUser ? r.account_id === currentUser.id : true));
     }
 
     function getHistoryRecords() {
       const sorter = (a, b) => new Date(b.history_date) - new Date(a.history_date);
-      if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r.type === 'history').sort(sorter);
+      if (currentUser && currentUser.isAdmin) return allRecords.filter(r => r && r.type === 'history').sort(sorter);
       if (currentUser && currentUser.isGuestView) {
-          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r.type === 'history').sort(sorter);
-          return allRecords.filter(r => r.type === 'history' && r.account_id === currentUser.targetAccountId).sort(sorter);
+          if (currentUser.targetAccountId === 'ALL') return allRecords.filter(r => r && r.type === 'history').sort(sorter);
+          return allRecords.filter(r => r && r.type === 'history' && r.account_id === currentUser.targetAccountId).sort(sorter);
       }
-      return allRecords.filter(r => r.type === 'history' && (currentUser ? r.account_id === currentUser.id : true)).sort(sorter);
+      return allRecords.filter(r => r && r.type === 'history' && (currentUser ? r.account_id === currentUser.id : true)).sort(sorter);
     }
 
     function getCustomersSummary(customersList) {
       const customers = customersList || getActiveCustomers();
       const summary = {};
       customers.forEach(c => {
+        if (!c || !c.customer_name) return;
         if (!summary[c.customer_name]) {
             summary[c.customer_name] = { 
                 name: c.customer_name, 
@@ -965,7 +955,7 @@
         summary[c.customer_name].count += 1;
         
         let ownerName = '-';
-        const o = allRecords.find(r => r.type === 'user' && r.id === c.account_id);
+        const o = allRecords.find(r => r && r.type === 'user' && r.id === c.account_id);
         if (o) ownerName = o.username;
         
         if (!summary[c.customer_name].lenderTotals[ownerName]) {
@@ -979,6 +969,8 @@
     function renderApp() {
       try {
           const app = document.getElementById('app');
+          if (!app) return;
+          
           const config = window.elementSdk?.config || defaultConfig;
           const settings = getUserSettings();
           
@@ -1189,7 +1181,7 @@
     }
 
     function renderAdminUsers(config, dark, surfaceColor, textColor, primaryColor, secondaryColor) {
-      const users = allRecords.filter(r => r.type === 'user');
+      const users = allRecords.filter(r => r && r.type === 'user');
       return `<div class="p-4 md:p-8"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">จัดการผู้ใช้งานระบบ</h2><div class="overflow-x-auto rounded-2xl shadow-xl transition-all" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark ? '0 10px 25px -5px rgba(0, 0, 0, 0.5)' : '0 20px 25px -5px rgba(203, 213, 225, 0.3)'};"><table class="w-full min-w-[600px]"><thead style="background: ${dark ? '#374151' : '#f8fafc'}; border-bottom: 1px solid ${dark?'#4b5563':'#e2e8f0'};"><tr><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ลำดับ</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">ชื่อผู้ใช้</th><th class="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">วันที่สมัคร</th><th class="px-6 py-4 text-center text-sm font-bold uppercase tracking-wider opacity-80" style="color: ${textColor};">การจัดการ</th></tr></thead><tbody>${users.map((u, idx) => `<tr class="border-b last:border-0 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors" style="border-color: ${dark ? '#374151' : '#f1f5f9'};"><td class="px-6 py-4 font-medium" style="color: ${textColor};">${idx + 1}</td><td class="px-6 py-4 font-bold text-base" style="color: ${textColor};">${u.username}</td><td class="px-6 py-4 font-medium opacity-80" style="color: ${textColor};">${new Date(u.created_at).toLocaleDateString('th-TH')}</td><td class="px-6 py-4 text-center"><div class="flex justify-center gap-3"><button type="button" class="btn-reset-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-reset-user="${u.id}" style="background: ${primaryColor}; color: white;" title="เปลี่ยนรหัสผ่าน">🔑</button><button type="button" class="btn-delete-user w-10 h-10 flex items-center justify-center rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" data-delete-user="${u.id}" style="background: #ef4444; color: white;" title="ลบบัญชี">🗑️</button></div></td></tr>`).join('')}</tbody></table></div></div>`;
     }
 
@@ -1244,13 +1236,13 @@
       
       if (manageSearchTerm) {
           const term = manageSearchTerm.toLowerCase();
-          customers = customers.filter(c => 
-              c.customer_name.toLowerCase().includes(term) || 
-              c.product.toLowerCase().includes(term)
-          );
+          customers = customers.filter(c => c && (
+              (c.customer_name && c.customer_name.toLowerCase().includes(term)) || 
+              (c.product && c.product.toLowerCase().includes(term))
+          ));
       }
       
-      customers.sort((a, b) => a.customer_name.localeCompare(b.customer_name, 'th'));
+      customers.sort((a, b) => (a.customer_name || '').localeCompare(b.customer_name || '', 'th'));
       const summary = getCustomersSummary(customers);
       const grandTotal = summary.reduce((sum, item) => sum + item.totalNextMonth, 0);
 
@@ -1287,7 +1279,7 @@
             <div class="flex flex-col space-y-4">
             ${summary.length===0?`<p class="text-center py-8 font-medium opacity-50 bg-white dark:bg-gray-800 rounded-2xl border" style="border-color: ${dark?'#374151':'#f1f5f9'}; color: ${textColor};">ไม่พบข้อมูล</p>`:''}
             ${summary.map(s=>{
-                  let customerItems = customers.filter(c => c.customer_name === s.name);
+                  let customerItems = customers.filter(c => c && c.customer_name === s.name);
                   
                   customerItems.sort((a, b) => {
                       let valA, valB;
@@ -1304,8 +1296,8 @@
                           valA = parseInt(a.installments) || 0; valB = parseInt(b.installments) || 0;
                           return tableSortAsc ? valA - valB : valB - valA;
                       } else {
-                          let ownerA = '-'; const userA = allRecords.find(r => r.type === 'user' && r.id === a.account_id); if(userA) ownerA = userA.username;
-                          let ownerB = '-'; const userB = allRecords.find(r => r.type === 'user' && r.id === b.account_id); if(userB) ownerB = userB.username;
+                          let ownerA = '-'; const userA = allRecords.find(r => r && r.type === 'user' && r.id === a.account_id); if(userA) ownerA = userA.username;
+                          let ownerB = '-'; const userB = allRecords.find(r => r && r.type === 'user' && r.id === b.account_id); if(userB) ownerB = userB.username;
                           return ownerA.localeCompare(ownerB, 'th');
                       }
                   });
@@ -1411,7 +1403,7 @@
                                       const hasEditPermission = canEditData();
                                       
                                       let ownerName = '-';
-                                      const o = allRecords.find(r => r.type === 'user' && r.id === c.account_id);
+                                      const o = allRecords.find(r => r && r.type === 'user' && r.id === c.account_id);
                                       if(o) ownerName = o.username;
 
                                       const lenderColor = getLenderColor(ownerName, dark);
@@ -1430,7 +1422,7 @@
                                               ${hasEditPermission ? `
                                               <div class="flex justify-center gap-3 items-center">
                                                   <button data-pay="${c.id}" class="flex items-center justify-center w-11 h-11 rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 ${canPay?'':'payment-disabled'}" style="background: ${canPay?primaryColor:'#9ca3af'}; color: white;" ${canPay?'':'disabled'} title="ชำระเงิน">
-                                                      <img src="pay-icon.png" alt="Pay" class="w-6 h-6 object-contain filter drop-shadow-sm" onerror="this.outerHTML='<span class=\\'text-xl\\'>💰</span>'">
+                                                      <span class="text-xl">💰</span>
                                                   </button>
                                                   <button data-edit="${c.id}" class="flex items-center justify-center w-11 h-11 rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5" style="background: ${dark?'#374151':'#ffffff'}; border: 1px solid ${dark?'#4b5563':'#e2e8f0'}; color: ${textColor};" title="แก้ไข"><span class="text-lg">✏️</span></button>
                                               </div>
@@ -1473,7 +1465,7 @@
                     
                     let cardBg = surfaceColor;
                     
-                    let updatedDetails = h.history_details.replace(/text-xs/g, 'text-sm').replace(/p-2/g, 'p-4 rounded-xl').replace(/mt-1\.5/g, 'mt-4');
+                    let updatedDetails = (h.history_details || '').replace(/text-xs/g, 'text-sm').replace(/p-2/g, 'p-4 rounded-xl').replace(/mt-1\.5/g, 'mt-4');
                     
                     return `
                     <div class="relative pl-10 md:pl-12">
@@ -1508,13 +1500,14 @@
 
     function getPaymentData() {
         const history = getHistoryRecords(); 
-        const allCustomers = allRecords.filter(r => r.type === 'customer');
+        const allCustomers = allRecords.filter(r => r && r.type === 'customer');
         const payments = [];
         const regex = /^(.+?) ชำระเงินค่า (.+?) งวดที่ \d+ ราคา ([\d,]+(\.\d{1,2})?) บาท/;
 
         history.forEach(h => {
-            if (h.history_action === 'ชำระเงิน' || h.history_action === 'ชำระเงินครบ') {
-                const match = h.history_details.match(regex);
+            if (h && (h.history_action === 'ชำระเงิน' || h.history_action === 'ชำระเงินครบ')) {
+                const details = h.history_details || '';
+                const match = details.match(regex);
                 
                 if (match) {
                     const name = match[1].trim();
@@ -1525,7 +1518,7 @@
                     let cost = 0;
                     let profit = amount;
                     
-                    const cust = allCustomers.find(c => c.customer_name === name && c.product === product);
+                    const cust = allCustomers.find(c => c && c.customer_name === name && c.product === product);
                     
                     if (cust && cust.product_price && cust.installments && parseInt(cust.installments) > 0) {
                         cost = Math.round(parseFloat(cust.product_price) / parseInt(cust.installments));
@@ -1544,8 +1537,8 @@
                         profit: profit
                     });
                 } else {
-                    const nameMatch = h.history_details.match(/^(.+?) ชำระเงินค่า/);
-                    const amountMatch = h.history_details.match(/ราคา ([\d,]+(\.\d{1,2})?) บาท/);
+                    const nameMatch = details.match(/^(.+?) ชำระเงินค่า/);
+                    const amountMatch = details.match(/ราคา ([\d,]+(\.\d{1,2})?) บาท/);
                     if (nameMatch && amountMatch) {
                          const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
                          payments.push({
@@ -1566,7 +1559,7 @@
     function getAggregatedStatementData() {
         const payments = getPaymentData();
         const year = stmtSelectedDate.getFullYear();
-        let filtered = payments.filter(p => p.date.getFullYear() === year);
+        let filtered = payments.filter(p => p && p.date && p.date.getFullYear() === year);
 
         let summaryByCustomer = {};
         let totalAmount = 0;
@@ -1851,23 +1844,23 @@
       const isAdmin = currentUser && currentUser.isAdmin;
 
       return `<div class="p-4 md:p-8 max-w-2xl mx-auto"><h2 class="text-2xl font-black mb-8 tracking-tight" style="color: ${textColor};">${config.menu_settings}</h2><div class="space-y-6"><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">โหมดการแสดงผล</h3><label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="dark-mode-toggle" ${currentDarkMode ? 'checked' : ''} class="w-6 h-6 rounded border-gray-300" style="accent-color: ${primaryColor};"><span class="font-semibold text-lg" style="color: ${textColor};">เปิดโหมดมืด (Dark Mode)</span></label></div><div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};"><h3 class="font-bold text-lg mb-6 uppercase tracking-wider opacity-90" style="color: ${textColor};">การชำระเงิน</h3><label class="block mb-3 font-semibold" style="color: ${textColor};">เปิดให้ชำระเงินก่อนกำหนด (วัน)</label><input type="number" id="payment-days-before" value="${currentDaysBefore}" min="0" max="30" class="w-full px-5 py-3 rounded-xl border font-bold text-lg" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"><p class="text-sm mt-3 font-medium opacity-60" style="color: ${textColor};">ระบบจะเปิดปุ่มชำระเงินเมื่อใกล้ถึงกำหนดชำระตามจำนวนวันที่ตั้งไว้</p></div>
-      ${isAdmin ? `<div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}40; box-shadow:${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};">
+      ${isAdmin ? `<div class="p-8 rounded-2xl shadow-xl" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}40; box-shadow: ${dark?'0 10px 25px -5px rgba(0,0,0,0.5)':'0 20px 25px -5px rgba(203,213,225,0.3)'};">
         <h3 class="font-black text-lg mb-6 flex items-center gap-3 uppercase tracking-wider" style="color: ${textColor};">
             🔌 การตั้งค่าระบบ (Admin Only)
         </h3>
         <div class="space-y-5">
             <div>
                 <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">ระยะเวลาแสดงแจ้งเตือน (วินาที)</label>
-                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-5 py-3 rounded-xl border font-semibold" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color:${primaryColor};">
+                <input type="number" id="setting-toast-duration" value="${currentToastDuration}" step="0.5" min="0.5" max="10" class="w-full px-5 py-3 rounded-xl border font-semibold" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
             </div>
             <div class="h-px bg-slate-200 my-4 dark:bg-gray-700"></div>
             <div>
                 <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase URL</label>
-                <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color:${primaryColor};">
+                <input type="text" id="setting-supabase-url" value="${supabaseUrl}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
             </div>
             <div>
                 <label class="block text-sm font-bold mb-2 opacity-80" style="color: ${textColor};">Supabase Key (Anon/Public)</label>
-                <input type="password" id="setting-supabase-key" autocomplete="new-password" spellcheck="false" data-lpignore="true" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color:${primaryColor};">
+                <input type="password" id="setting-supabase-key" autocomplete="new-password" spellcheck="false" data-lpignore="true" value="${supabaseKey}" class="w-full px-5 py-3 rounded-xl border font-mono text-sm" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};">
             </div>
             <div class="flex flex-col sm:flex-row gap-3 pt-2">
                 <button id="save-connection-btn" class="flex-1 py-3 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-all" style="background: ${primaryColor};">บันทึกและรีโหลด</button>
@@ -1892,11 +1885,11 @@
 
     function renderModal(config, dark, surfaceColor, textColor, primaryColor) {
       if (editingUser) {
-          const user = allRecords.find(r => r.id === editingUser); if(!user) return '';
+          const user = allRecords.find(r => r && r.id === editingUser); if(!user) return '';
           return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'};"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">เปลี่ยนรหัสผ่าน: ${user.username}</h3><form id="admin-reset-form" class="space-y-6"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">รหัสผ่านใหม่</label><input type="password" id="admin-new-pass" autocomplete="new-password" spellcheck="false" data-lpignore="true" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div class="flex gap-4 pt-2"><button type="submit" class="flex-1 py-3.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all text-white" style="background: ${primaryColor};">บันทึก</button><button type="button" id="cancel-admin-reset-btn" class="flex-1 py-3.5 rounded-xl font-bold transition-all hover:bg-slate-200 dark:hover:bg-gray-700" style="background: ${dark ? '#374151' : '#f1f5f9'}; color: ${textColor};">ยกเลิก</button></div></form></div></div>`;
       }
       if (editingCustomer) {
-        const customer = allRecords.find(r => r.id === editingCustomer); if (!customer) return '';
+        const customer = allRecords.find(r => r && r.id === editingCustomer); if (!customer) return '';
         return `<div class="modal-overlay"><div class="modal-content" style="background: ${surfaceColor}; border: 1px solid ${dark?'#374151':'#f1f5f9'}; max-width: 600px;"><h3 class="text-2xl font-black mb-6 tracking-tight" style="color: ${textColor};">แก้ไขข้อมูลลูกค้า</h3><form id="edit-customer-form" class="space-y-5"><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ชื่อลูกค้า</label><input type="text" id="edit-customer-name" value="${customer.customer_name}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">สินค้า</label><input type="text" id="edit-product" value="${customer.product}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ราคาสินค้า</label><input type="number" id="edit-product-price" value="${customer.product_price || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div><div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">ค่างวด</label><input type="number" id="edit-monthly-payment" value="${customer.monthly_payment || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
         <div class="grid grid-cols-2 gap-5">
             <div><label class="block text-sm font-bold mb-2 opacity-90" style="color: ${textColor};">จำนวนงวดรวม</label><input type="number" id="edit-installments" value="${customer.installments || ''}" class="w-full px-5 py-3 rounded-xl border focus:ring-4 font-bold transition-all" style="background: ${dark ? '#374151' : '#f8fafc'}; border-color: ${dark ? '#4b5563' : '#e2e8f0'}; color: ${textColor}; outline-color: ${primaryColor};"></div>
@@ -2161,9 +2154,143 @@
           editForm.addEventListener('submit', async (e) => {
               e.preventDefault();
               
-              const customer = allRecords.find(r => r.id === editingCustomer);
+              const customer = allRecords.find(r => r && r.id === editingCustomer);
               if (!customer) return;
 
               const newContractDate = document.getElementById('edit-contract-date').value;
               const newMonthlyPayment = parseFloat(document.getElementById('edit-monthly-payment').value);
-              const newInstallments = parseInt(document.getElementById('edit-
+              const newInstallments = parseInt(document.getElementById('edit-installments').value);
+              const newPaidInstallments = parseInt(document.getElementById('edit-paid-installments').value) || 0;
+
+              let nextPaymentDate = addMonthsToDate(newContractDate, newPaidInstallments + 1);
+              let newStatus = newPaidInstallments >= newInstallments ? 'completed' : 'active';
+
+              await updateCustomer(editingCustomer, {
+                  customer_name: document.getElementById('edit-customer-name').value,
+                  product: document.getElementById('edit-product').value,
+                  product_price: parseFloat(document.getElementById('edit-product-price').value),
+                  monthly_payment: newMonthlyPayment,
+                  installments: newInstallments,
+                  paid_installments: newPaidInstallments,
+                  contract_date: newContractDate,
+                  next_payment_date: nextPaymentDate,
+                  status: newStatus 
+              });
+          });
+          document.getElementById('cancel-edit-btn').addEventListener('click', hideModal);
+          
+          document.getElementById('delete-customer-btn')?.addEventListener('click', async () => { 
+              if(confirm('คุณต้องการลบข้อมูลลูกค้านี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+                  await deleteCustomer(editingCustomer);
+                  hideModal();
+              }
+          });
+          
+          document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => { await deleteCustomer(confirmDeleteId); hideModal(); });
+      }
+
+      const adminResetForm = document.getElementById('admin-reset-form');
+      if(adminResetForm) {
+          adminResetForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const newPass = document.getElementById('admin-new-pass').value;
+              if(!newPass) return showToast('กรุณากรอกรหัสผ่าน', true);
+              await adminResetPassword(editingUser, newPass);
+          });
+          
+          const cancelAdminReset = document.getElementById('cancel-admin-reset-btn');
+          if(cancelAdminReset) cancelAdminReset.addEventListener('click', hideModal);
+      }
+
+      const dm = document.getElementById('dark-mode-toggle');
+      if(dm) dm.addEventListener('change', (e) => { if(e.target.checked) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); });
+      const saveSet = document.getElementById('save-settings-btn');
+      if(saveSet) saveSet.addEventListener('click', async () => {
+          saveSet.innerHTML = '<div class="spinner"></div>';
+          const perms = [];
+          ['add','manage','history','statement','settings','edit'].forEach(p => { if(document.getElementById(`guest-${p}`)?.checked) perms.push(p); });
+          
+          let toastDuration = undefined;
+          const toastInput = document.getElementById('setting-toast-duration');
+          if (toastInput) {
+              toastDuration = parseFloat(toastInput.value) * 1000;
+          }
+          
+          await saveSettings(dm.checked, parseInt(document.getElementById('payment-days-before').value), perms.join(','), toastDuration);
+          saveSet.innerHTML = 'บันทึกการตั้งค่า';
+      });
+
+      const saveConn = document.getElementById('save-connection-btn');
+      if(saveConn) saveConn.addEventListener('click', () => {
+          let url = document.getElementById('setting-supabase-url').value;
+          let key = document.getElementById('setting-supabase-key').value;
+          
+          if(!url || !key) return showToast('กรุณากรอกข้อมูลให้ครบถ้วน', true);
+          
+          url = url.trim().replace(/\/$/, "");
+          key = key.trim();
+          
+          localStorage.setItem('app_supabase_config', JSON.stringify({ url, key }));
+          showToast('บันทึกค่าเชื่อมต่อเรียบร้อย ระบบจะรีโหลด...');
+          setTimeout(() => location.reload(), 1500);
+      });
+
+      const resetConn = document.getElementById('reset-connection-btn');
+      if(resetConn) resetConn.addEventListener('click', () => {
+          if(confirm('คุณต้องการรีเซ็ตค่าการเชื่อมต่อเป็นค่าเริ่มต้นหรือไม่?')) {
+              localStorage.removeItem('app_supabase_config');
+              showToast('รีเซ็ตค่าเรียบร้อย ระบบจะรีโหลด...');
+              setTimeout(() => location.reload(), 1500);
+          }
+      });
+
+      const stmtYearP = document.getElementById('stmt-year-picker');
+      if(stmtYearP) stmtYearP.addEventListener('change', (e) => {
+          if(e.target.value) {
+              stmtSelectedDate = new Date(e.target.value, 0, 1);
+              renderApp();
+          }
+      });
+
+      if (currentView === 'statement') {
+          const config = window.elementSdk?.config || defaultConfig;
+          const dark = isDarkMode();
+          const txtColor = dark ? '#f9fafb' : config.text_color;
+          const isGuest = currentUser && currentUser.isGuestView;
+          const data = getAggregatedStatementData();
+          setTimeout(() => {
+              initDashboardCharts(data, config.primary_color, txtColor, dark, isGuest);
+          }, 50); 
+      }
+    }
+
+    async function init() {
+      checkLogin();
+      window.elementSdk.init({ defaultConfig, onConfigChange: () => renderApp() });
+      renderApp();
+
+      if (window.dataSdk) {
+          window.dataSdk.init(dataHandler);
+      }
+
+      setTimeout(() => {
+          const app = document.getElementById('app');
+          if (app && app.innerHTML.includes('กำลังโหลดระบบ...')) {
+              renderApp();
+          }
+      }, 1500);
+
+      setTimeout(() => {
+          const showedWhatsNew = checkAndShowWhatsNew();
+          if (!showedWhatsNew) {
+              checkAndShowPaymentReminder();
+          }
+      }, 2000); 
+
+      startUpdateChecker();
+    }
+
+    init();
+  </script>
+ </body>
+</html>
